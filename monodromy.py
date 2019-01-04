@@ -1,10 +1,9 @@
-# Monodromy matrix 
-# Bryan Kaiser
 # 
 
 import h5py
 import numpy as np
 import math as ma
+import cmath as cm
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -14,386 +13,325 @@ from scipy import signal
 from scipy.fftpack import fft, fftshift
 import matplotlib.patches as mpatches
 from matplotlib.colors import colorConverter as cc
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
-figure_path = "./monodromy/figures"
-data_path = "./monodromy/data"
+figure_path = "./figures/"
 
 
-# Need to implement boundary conditions!!!
-# Do that by setting some parts of submatrices to zero ... set them after 
-# advancing?
 
-# add chebyshev node discretization
+# =============================================================================
+# functions
 
-# =============================================================================    
-# classes and functions
+def steady_nonrotating_solution( f, N, omg, tht, nu, kap, t, z ):
+ # Phillips (1970) / Wunsch (1970) non-rotating steady solution
 
-class LegendObject(object):
-    def __init__(self, facecolor='red', edgecolor='white', dashed=False):
-        self.facecolor = facecolor
-        self.edgecolor = edgecolor
-        self.dashed = dashed
+ Nt = np.shape(t)[0]
+ Nz = np.shape(z)[0]
+ Pr = nu / kap
+
+ d0=((4.*nu**2.)/((N**2.)*(np.sin(tht))**2.))**(1./4.) 
+
+ b0 = np.zeros([Nz,Nt])
+ u0 = np.zeros([Nz,Nt])
+ #bz0 = np.zeros([Nz,Nt])
+
+ for i in range(0,Nz):
+  for j in range(0,Nt):
+   Z = z[i]/d0
+   u0[i,j] = 2.0*nu/d0*(np.tan(tht)**(-1.))*np.exp(-Z)*np.sin(Z)
+   b0[i,j] = (N**2.)*d0*np.cos(tht)*np.exp(-Z)*np.cos(Z)
+   #bz0[i,j] = -(N**2.)*d0*np.cos(tht)*np.exp(-Z)*( np.sin(Z) + np.cos(Z) )/d0
+
+ return b0, u0
+
+def xforcing_nonrotating_solution( U, f, N, omg, tht, nu, kap, t, z ):
+
+ Nt = np.shape(t)[0]
+ Nz = np.shape(z)[0]
+ Pr = nu / kap
  
-    def legend_artist(self, legend, orig_handle, fontsize, handlebox):
-        x0, y0 = handlebox.xdescent, handlebox.ydescent
-        width, height = handlebox.width, handlebox.height
-        patch = mpatches.Rectangle(
-            # create a rectangle that is filled with color
-            [x0, y0], width, height, facecolor=self.facecolor,
-            # and whose edges are the faded color
-            edgecolor=self.edgecolor, lw=3)
-        handlebox.add_artist(patch)
- 
-        # if we're creating the legend for a dashed line,
-        # manually add the dash in to our rectangle
-        if self.dashed:
-            patch1 = mpatches.Rectangle(
-                [x0 + 2*width/5, y0], width/5, height, facecolor=self.edgecolor,
-                transform=handlebox.get_transform())
-            handlebox.add_artist(patch1)
- 
-        return patch
+ thtcrit = ma.asin(omg/N) # radians 
+ criticality = tht/thtcrit
+ #print(criticality)
 
-def spectral_density( uz, t, dt, band_flag ):
+ Bs = U*(N**2.0)*np.sin(tht)/omg
+ d1 = 0.; d2 = 0.; u1 = 0.; u2 = 0.; b1 = 0.; b2 = 0.; Ld = 0.
+
+ if criticality > 1.0:
+   d1 = np.power( np.power( (omg*(1.+Pr)/(4.*nu))**2. + \
+       Pr*(N**2.*np.sin(tht)**2.-omg**2.)/(4.*nu**2.) , 1./2.) + \
+       omg*(1.+Pr)/(4.*nu), -1./2.)
+   d2 = np.power( np.power( (omg*(1.+Pr)/(4.*nu))**2. + \
+       Pr*(N**2.*np.sin(tht)**2.-omg**2.)/(4.*nu**2.) , 1./2.) - \
+       omg*(1.+Pr)/(4.*nu), -1./2.)
+   Ld = np.power(((d1**2.+d2**2.)*(4.*(nu/Pr)**2. + \
+      omg**2.*d1**2.*d2**2.))/(omg**2.*d1*d2), 1./4.) 
+   u1 = 2.*kap/(d2*omg**2.*Ld**4.)+d2/(omg*Ld**4.) # s/m^3
+   u2 = d1/(omg*Ld**4.)-2.*kap/(d1*omg**2.*Ld**4.) # s/m^3
+   b1 = d1/(omg*Ld**4.) # s/m^3
+   b2 = d2/(omg*Ld**4.) # s/m^3
+   alpha1 = (omg*d1**2.-2.*nu/Pr)/(Ld*omg*d1)
+   alpha2 = (2.*nu/Pr-omg*d2**2.)/(Ld*omg*d2)
+
+ elif criticality < 1.0:
+   d1 = np.power( omg*(1.+Pr)/(4.*nu) + \
+       np.power((omg*(1.+Pr)/(4.*nu))**2. + \
+       Pr*(N**2.*np.sin(tht)**2.-omg**2.)/(4.*nu**2.) , 1./2. ), -1./2.)
+   d2 = np.power( omg*(1.+Pr)/(4.*nu) - \
+       np.power((omg*(1.+Pr)/(4.*nu))**2. + \
+       Pr*(N**2.*np.sin(tht)**2.-omg**2.)/(4.*nu**2.) , 1./2. ), -1./2.)
+   Ld = ((d1-d2)*(2.*nu/Pr+omg*d1*d2))/(omg*d1*d2) # wall-normal buoyancy gradient lengthscale
+   u1 = d2*(omg*d1**2.-2.*nu/Pr)/(Ld*omg*d1*d2) # unitless
+   u2 = d1*(2.*nu/Pr-omg*d2**2.)/(Ld*omg*d1*d2) # unitless
+   b1 = d1/Ld # unitless
+   b2 = d2/Ld # unitless
+   alpha1 = u1*(2.*kap*d1 + omg*d2**2.*d1)
+   alpha2 = u1*(2.*kap*d2 - omg*d1**2.*d2)
+   alpha3 = u2*( omg*d1**2.*d2 - 2.*kap*d2)
+   alpha4 = u2*(2.*kap*d1 + omg*d2**2.*d1)
+   beta1 = b1*(omg*d1**2.*d2-2.*kap*d2)
+   beta2 = b1*(2.*kap*d1+omg*d1*d2**2.)
+   beta3 = b2*(2.*kap*d1+omg*d1*d2**2.)
+   beta4 = b2*(2.*kap*d2-omg*d1**2.*d2)
   
-  N = np.shape([t])[1] # unitless number of discrete samples
-  L = t[N-1]-t[0]+dt # s, time series length
+ elif criticality == 1.:
+   print('ERROR: critical slope')
+   return
 
-  # Hann window
-  window = signal.hann(N)
-  uz = np.multiply(uz,window)
-
-  # wavenumbers/frequencies
-  k = np.zeros([N])
-  k[1:int(N/2)+1] = np.linspace( 1., N/2., num=int(N/2) )*(2.*np.pi/L) # rads/s
-  k[int(N/2)+1:N] = -np.fliplr( [np.linspace(1., N/2.-1., num=int(N/2-1) )*(2.*np.pi/L)])[0]    
-
-  # spectral density:
-  UZ = np.fft.fft(uz-np.mean(uz))
-  PHI = (np.conj(UZ)*UZ) # * 2.*L/N**2.
-  PHI1 = PHI[0:int(N/2+1)]*2.
-  k1 = k[0:int(N/2+1)]
-
-  # band-averaging:
-  if band_flag == 1: 
-    nb = 2 # number of points per band
-    Nb = int(N/(2*nb)) # number of bands
-    PHI1b = np.zeros([Nb],dtype=complex)
-    k1b = np.zeros([Nb])
-    for j in range(0,Nb):
-      #print(int(j*nb))
-      #print(int((j+1)*nb-1))
-      PHI1b[j] = np.mean(PHI1[int(j*nb):int((j+1)*nb-1)])
-      k1b[j] = np.mean(k1[int(j*nb):int((j+1)*nb-1)])
-  else:
-    PHI1b = PHI1 
-    k1b = k1
-    Nb = N
-
-  # 95% confidence intervals for chi-square distributed random error
-  alpha = 0.05 # 95% confidence interval
-  nu = 2*Nb-1 # number degrees of freedom
-  [hi,lo] = chi2.interval(1-alpha,nu) # nu/Chi^2_(nu/alpha/2) & nu/Chi^2_(nu/(1-alpha/2))
-  lo = nu/lo
-  hi = nu/hi
-  ub = PHI1b*hi # upper bound
-  lb = PHI1b*lo # lower bound
-
-  return PHI1b,ub,lb,k1b # spectral density, confidence interval upper/lower bounds, frequencies
-
-
-def find_interval( t ):
-  # returns the indices of the beginning of the first complete tidal cycle 
-  # and the last complete tidal cycle  
-  N = np.shape([t])[1]
-  ti = ma.ceil(t[0]) # the beginning of the first complete tidal cycle
-  tf = ma.floor(t[N-1]) # the last complete tidal cycle
-  ni = np.zeros([N]) # index for the beginning
-  j = 0 # counter for the length of the set of complete cycles
-  for m in range(0,N):
-    if t[m] >= ti:
-      ni[m] = 0
-    else: 
-      ni[m] = 1
-    if t[m] >= ti and t[m] <= tf:
-      j = j + 1
-  Nt = make_even(int(j)) # index length of the set of complete tidal cycles 
-  Nt0 = int(sum(ni)) # initial index of the set of complete tidal cycles
-  return Nt,Nt0
-
-def make_even( N ):
-  # is the integer N odd? If so, returns N-1
-  if N % 2 == 0:
-    return N
-  else:
-    N = N-1
-    return N
-
-def time_interval( t0 ):
-  # t must be the unitless form, t/T
-  # dt is dimensional
-  [Nt,Nt0] = find_interval( t0 )
-  t = np.zeros([Nt])
-  t = t0[int(Nt0):int(Nt0+Nt)] # unitless
-  Ncycles = int(round(t[Nt-1]-t[0]))
-  t = t*T # s
-  #L = t[Nt-1]-t[0]+dt # s
-  #u = u0[int(Nt0):int(Nt0+Nt)] 
-  return Nt,Nt0,Ncycles,t
-
-def parseval_check( u , UZD , L ):
-  var = np.mean(np.power(u-np.mean(u),2.))
-  fcf = sum(UZD/L) # Fourier coefficients of spectral density
-  #UZM = np.fft.fft(uzm7-np.mean(uzm7))
-  #fcf = sum(np.power(abs(UZM/np.shape(UZM)[0]),2.))
-  string = 'Parseval theorem:\nVariance - summed Fourier coefficients = %.16f' %(abs(var-fcf))
-  print(string)
-  return
-
-def spectral_plot( PHI, UB, LB, k, L, plottitle, axes, colors, color_mean, color_shading, legend_name, figure_path, plot_name ): 
-  plt.fill_between(k,np.real(UB)/L,np.real(LB)/L,color=color_shading,alpha=0.5) 
-  p1=plt.loglog(k,np.real(PHI)/L, color=color_mean)
-  #p2=plt.loglog(k[20:int(np.shape(k1b7)[0]-10500)]*L7/(2.*np.pi*Ncycles7)*5.,3e-10*np.power(k1b7[20:int(np.shape(k1b7)  [0]-10500)]*L7/200.,-10./3.), '--k')
-  plt.xlabel('cycles per tidal oscillation')
-  #plottitle = 'spectral density of du/dz' #, forcing k =  %.5f rads/m' %(kx)
-  plt.title(plottitle)
-  plt.grid()
-  plt.axis(axes) # axes = [2e-2,4e2,1e-23,2e-4]
-  bg = np.array([1,1,1])  # background of the legend is white
-  #colors = ['green'] #,'blue'] #,'green','green']
-  # with alpha = .5, the faded color is the average of the background and color
-  colors_faded = [(np.array(cc.to_rgb(color)) + bg) / 2.0 for color in colors]
-  plt.legend([0], legend_name,handler_map={0: LegendObject(colors[0], colors_faded[0])},loc=1)
-               # 1: LegendObject(colors[1], colors_faded[1])},loc=1)
-               #2: LegendObject(colors[2], colors_faded[2], dashed=True),    
-  plt.savefig( figure_path + plot_name ) # plotname = '/uz_spectral_density_loglog_7.png'
-  plt.close()
-  return
-
-def spectral_subplot( PHI, UB, LB, k, L, plottitle, axes, colors, color_mean, color_shading, legend_name, figure_ylabel, ytick_label_flag , xtick_label_flag): 
-  plt.fill_between(k,np.real(UB)/L,np.real(LB)/L,color=color_shading,alpha=0.5) 
-  p1=plt.loglog(k,np.real(PHI)/L, color=color_mean)
-  #p2=plt.loglog(k[20:int(np.shape(k1b7)[0]-10500)]*L7/(2.*np.pi*Ncycles7)*5.,3e-10*np.power(k1b7[20:int(np.shape(k1b7)  [0]-10500)]*L7/200.,-10./3.), '--k')
-  plt.ylabel(figure_ylabel, fontsize=16) 
-  #plt.yticks([1e-20,1e-17,1e-14,1e-11,1e-8,1e-5,1e-2]) #np.arange(1e-20, 1e-2, 1e-4))
-  plt.yticks([1e-20,1e-14,1e-8,1e-2]) #np.arange(1e-20, 1e-2, 1e-4))
-  plt.grid()
-  plt.axis(axes) # axes = [2e-2,4e2,1e-23,2e-4]
-  if ytick_label_flag == 0:
-    plt.tick_params(
-      axis='y',          # changes apply to the x-axis
-      #which='both',      # both major and minor ticks are affected
-      #bottom='on',      # ticks along the bottom edge are off
-      #top='on',         # ticks along the top edge are off
-      #labelbottom='off') # labels along the bottom edge are off
-      labelleft='off') # labels along the bottom edge are off
-  if xtick_label_flag == 0:
-    plt.tick_params(
-      axis='x',          # changes apply to the x-axis
-      #which='both',      # both major and minor ticks are affected
-      #bottom='on',      # ticks along the bottom edge are off
-      #top='on',         # ticks along the top edge are off
-      labelbottom='off') # labels along the bottom edge are off
-  #else:
-  plt.xlabel(r"$\omega/\Omega$", fontsize=16)
-  bg = np.array([1,1,1])  # background of the legend is white
-  #colors = ['green'] #,'blue'] #,'green','green']
-  # with alpha = .5, the faded color is the average of the background and color
-  colors_faded = [(np.array(cc.to_rgb(color)) + bg) / 2.0 for color in colors]
-  plt.legend([0], [legend_name],handler_map={0: LegendObject(colors[0], colors_faded[0])},loc=3)
-               # 1: LegendObject(colors[1], colors_faded[1])},loc=1)
-               #2: LegendObject(colors[2], colors_faded[2], dashed=True),    
-  return
-
-def time_series_plot( t, T, u, color_mean, legend_label, figure_path, figure_name, figure_ylabel, plot_title ):
-  fig = plt.figure()
-  plotname = figure_path + figure_name 
-  plot_title = "z-integrated y-mean du/dz"
-  fig = plt.figure() 
-  plt.plot(t/T,u,color_mean,label=legend_label); 
-  plt.xlabel("t/T"); plt.legend(loc=4); plt.ylabel(figure_ylabel); 
-  plt.title(plot_title);
-  plt.axis('tight')  
-  plt.savefig(plotname,format="png"); 
-  plt.close(fig)
-  return
-
-def time_series_subplot( t, T, u, color_mean, legend_label , figure_ylabel, tick_label_flag ):
-  plt.plot(t/T,u,color_mean,label=legend_label); 
-  if tick_label_flag == 0:
-    plt.tick_params(
-      axis='y',          # changes apply to the x-axis
-      #which='both',      # both major and minor ticks are affected
-      #bottom='on',      # ticks along the bottom edge are off
-      #top='on',         # ticks along the top edge are off
-      #labelbottom='off') # labels along the bottom edge are off
-      labelleft='off') # labels along the bottom edge are off
-  plt.xlabel(r"$\mathrm{t}/\mathrm{T}$", fontsize=16); 
-  plt.legend(loc=4); plt.ylabel(figure_ylabel, fontsize=16); 
-  plt.axis('tight')  
-  return
-
-def plug_solutions(N,T,Uw,nu,Pr,C,time,Nz,H):
-
- # from inputs:
- kap = nu/Pr # m^2/s, thermometric diffusivity
- omg = 2.0*np.pi/T # rads/s
- #print(N,omg,T)
- thtcrit = ma.asin(omg/N) # radians
- Lex = Uw/omg # m, excursion length
- tht = C*thtcrit # rads
- # Chebyshev grid:
- #kz = np.linspace(1., Nz, num=Nz)
- #z = -np.cos((kz*2.-1.)/(2.*Nz)*np.pi)*H/2.+H/2. # m
- # uniform grid:
- z= np.linspace(0.0 , H, num=Nz) # m 
- dz = z[1]-z[0] # m
+ b = np.zeros([Nz,Nt])
+ u = np.zeros([Nz,Nt])
+ uz = np.zeros([Nz,Nt])
+ bz = np.zeros([Nz,Nt])
  
- d0=((4.*nu**2.)/((N**2.)*(np.sin(tht))**2.))**(1./4.) # Phillips-Wunsch BL thickness
- Bw = Uw*(N**2.0)*np.sin(tht)/omg # forcing amplitude
- Re = Uw**2./(omg*nu) # the true Stokes' Reynolds number (the square of length scale ratio)
+ for i in range(0,Nz):
+   for j in range(0,Nt):
 
- if C < 1.: # subcritcal 
-  d1 = np.power( omg*(1.+Pr)/(4.*nu) + \
-      np.power((omg*(1.+Pr)/(4.*nu))**2. + \
-      Pr*(N**2.*np.sin(tht)**2.-omg**2.)/(4.*nu**2.) , 1./2. ), -1./2.)
-  d2 = np.power( omg*(1.+Pr)/(4.*nu) - \
-       np.power((omg*(1.+Pr)/(4.*nu))**2. + \
-       Pr*(N**2.*np.sin(tht)**2.-omg**2.)/(4.*nu**2.) , 1./2. ), -1./2.)
-  L = ((d1-d2)*(2.*nu/Pr+omg*d1*d2))/(omg*d1*d2) # wall-normal buoyancy gradient lengthscale
-  u1 = d2*(omg*d1**2.-2.*nu/Pr)/(L*omg*d1*d2) # unitless
-  u2 = d1*(2.*nu/Pr-omg*d2**2.)/(L*omg*d1*d2) # unitless
-  b1 = d1/L # unitless
-  b2 = d2/L # unitless
-  alpha1 = (omg*d1**2.-2.*nu/Pr)/(L*omg*d1)
-  alpha2 = (2.*nu/Pr-omg*d2**2.)/(L*omg*d2)
-  coeffs = (kap,omg,tht,thtcrit,d0,Bw,Re,d1,d2,L,u1,u2,b1,b2,alpha1,alpha2)
+     if criticality < 1.:
+       u[i,j] = U*np.real( (u1*np.exp(-(1.+1j)*z[i]/d1) + \
+                u2*np.exp(-(1.+1j)*z[i]/d2) - 1.)*np.exp(1j*omg*t[j]) )
+       uz[i,j] = - U*np.real( (u1*(1.+1j)/d1*np.exp(-(1.+1j)*z[i]/d1) + \
+               u2*(1.+1j)/d2*np.exp(-(1.+1j)*z[i]/d2) )*np.exp(1j*omg*t[j]) )
+       b[i,j] = Bs*np.real( (b1*np.exp(-(1.0+1j)*z[i]/d1) - \
+                b2*np.exp(-(1.+1j)*z[i]/d2) - 1.)*1j*np.exp(1j*omg*t[j]) )
+       bz[i,j] = Bs*np.real( ( -(1.0+1j)/d1*b1*np.exp(-(1.0+1j)*z[i]/d1) + \
+             (1.+1j)/d2*b2*np.exp(-(1.+1j)*z[i]/d2) )*1j*np.exp(1j*omg*t[j]) )
 
- if C > 1.: # supercritical 
-  d1 = np.power( np.power( (omg*(1.+Pr)/(4.*nu))**2. + \
-       Pr*(N**2.*np.sin(tht)**2.-omg**2.)/(4.*nu**2.) , 1./2.) + \
-       omg*(1.+Pr)/(4.*nu), -1./2.)
-  d2 = np.power( np.power( (omg*(1.+Pr)/(4.*nu))**2. + \
-       Pr*(N**2.*np.sin(tht)**2.-omg**2.)/(4.*nu**2.) , 1./2.) - \
-       omg*(1.+Pr)/(4.*nu), -1./2.)
-  L = np.power(((d1**2.+d2**2.)*(4.*(nu/Pr)**2. + \
-      omg**2.*d1**2.*d2**2.))/(omg**2.*d1*d2), 1./4.) 
-  u1 = 2.*kap/(d2*omg**2.*L**4.)+d2/(omg*L**4.) # s/m^3
-  u2 = d1/(omg*L**4.)-2.*kap/(d1*omg**2.*L**4.) # s/m^3
-  b1 = d1/(omg*L**4.) # s/m^3
-  b2 = d2/(omg*L**4.) # s/m^3
-  alpha1 = u1*(2.*kap*d1 + omg*d2**2.*d1)
-  alpha2 = u1*(2.*kap*d2 - omg*d1**2.*d2)
-  alpha3 = u2*( omg*d1**2.*d2 - 2.*kap*d2)
-  alpha4 = u2*(2.*kap*d1 + omg*d2**2.*d1)
-  beta1 = b1*(omg*d1**2.*d2-2.*kap*d2)
-  beta2 = b1*(2.*kap*d1+omg*d1*d2**2.)
-  beta3 = b2*(2.*kap*d1+omg*d1*d2**2.)
-  beta4 = b2*(2.*kap*d2-omg*d1**2.*d2)
-  coeffs = (kap,omg,tht,thtcrit,d0,Bw,Re,d1,d2,L,u1,u2,b1,b2,alpha1,alpha2,alpha3,alpha4,beta1,beta2,beta3,beta4)
+     if criticality > 1.:
+       u[i,j] = U*np.real( (u1*(2.*kap*d1+omg*d1*d2**2.+ \
+                1j*(2.*kap*d2-omg*d1**2.*d2))*np.exp((1j-1.0)*z[i]/d2)+ \
+                u2*(omg*d1**2.*d2-2.*kap*d2+ \
+                1j*(2.0*kap*d1+omg*d1*d2**2.))*np.exp(-(1j+1.)*z[i]/d1)- \
+                1.)*np.exp(1j*omg*t[j]) )
+       uz[i,j] = U*np.real( ( (1j-1.0)/d2*( alpha1 + 1j*alpha2 )*np.exp((1j-1.0)*z[i]/d2) \
+               -(1j+1.)/d1*(alpha3 + 1j*alpha4 )*np.exp(-(1j+1.)*z[i]/d1) )*np.exp(1j*omg*t[j]) )
+       b[i,j] = Bs*np.real( (b1*(omg*d1**2.*d2sp-2.*kap*d2+ \
+                1j*(2.*kap*d1+omg*d1*d2**2.))*np.exp(-(1j+1.0)*z[j]/d1)+ \
+                b2*(2.*kap*d1+omg*d1*d2**2.+ \
+                1j*(2.*kap*d2-omg*d1**2.*d2))*np.exp((1j-1.0)*z[i]/d2)- \
+                -1.)*1j*np.exp(1j*omg*t[j]) )
+       bz[i,j] = Bs*np.real( ( -(1j+1.0)/d1*( beta1 + 1j*beta2 )*np.exp(-(1j+1.0)*z[i]/d1)+ \
+               (1j-1.0)/d2*( beta1 + 1j*beta2 )*np.exp((1j-1.0)*z[i]/d2) )*1j*np.exp(1j*omg*t[j]) )
 
+ return  b, bz, u, uz
 
- u = np.zeros([Nz,1]); b = np.zeros([Nz,1])
- uz = np.zeros([Nz,1]); bz = np.zeros([Nz,1])
+def steady_rotating_solution( f, N, omg, tht, nu, kap, t, z ):
+ # Wunsch (1970) rotating, steady solution
 
- for j in range(0,Nz): 
-   u[j,0] = Uw
-   uz[j,0] = 0.
-   b[j,0] = 0.
-   bz[j,0] = 0.
+ Nt = np.shape(t)[0]
+ Nz = np.shape(z)[0]
+ Pr = nu / kap
+ cot = np.cos(tht) / np.sin(tht)
 
- return coeffs, z, dz, u, uz, b, bz
+ d0 = ( ( f*np.cos(tht) / (2.*nu) )**2. + ( N*np.sin(tht)/2. )**2./(nu*kap) )**(-1./4.)
+ vg = -Pr*d0*f*cot # geostrophic far field velocity
 
+ b0 = np.zeros([Nz,Nt])
+ u0 = np.zeros([Nz,Nt])
+ v0 = np.zeros([Nz,Nt])
 
-def inst_solutions(N,T,Uw,nu,Pr,C,time,Nz,H): 
+ for i in range(0,Nz):
+  for j in range(0,Nt):
+   Z = z[i]/d0
+   b0[i,j] = N**2.*d0*np.cos(tht)*np.exp(-Z)*np.cos(Z)
+   u0[i,j] = 2.*kap*cot/d0*np.exp(-Z)*np.sin(Z)
+   v0[i,j] = Pr*f*d0*cot*np.exp(-Z)*np.cos(Z) + vg
 
- # from inputs:
- kap = nu/Pr # m^2/s, thermometric diffusivity
- omg = 2.0*np.pi/T # rads/s
- #print(N,omg,T)
- thtcrit = ma.asin(omg/N) # radians
- Lex = Uw/omg # m, excursion length
- tht = C*thtcrit # rads
- # Chebyshev grid:
- #kz = np.linspace(1., Nz, num=Nz)
- #z = -np.cos((kz*2.-1.)/(2.*Nz)*np.pi)*H/2.+H/2. # m
- # uniform grid:
- z= np.linspace(0.0 , H, num=Nz) # m 
- dz = z[1]-z[0] # m
+ return b0, u0, v0
+
+def contour_bounds_2d( self ):
+ # self is an array.
+ # This function finds the absolute maximum and returns it. 
+ cb = 0. # contour bound (such that 0 will be the center of the colorbar)
+ if abs(np.amin(self)) > abs(np.amax(self)):
+    cb = abs(np.amin(self))
+ if abs(np.amax(self)) > abs(np.amin(self)):
+    cb = abs(np.amax(self))
+ return cb
+
+def zplot( z, H, self, name1, name2 ):
  
- d0=((4.*nu**2.)/((N**2.)*(np.sin(tht))**2.))**(1./4.) # Phillips-Wunsch BL thickness
- Bw = Uw*(N**2.0)*np.sin(tht)/omg # forcing amplitude
- Re = Uw**2./(omg*nu) # the true Stokes' Reynolds number (the square of length scale ratio)
+ fig = plt.figure() #figsize=(8,4))
+ plotname = figure_path + name1 #'/u0_nonrotating.png'
+ CP=plt.plot(self,z/H,'b'); 
+ plt.xlabel(name2); #plt.legend(loc=4); 
+ plt.ylabel('z/H')
+ plt.savefig(plotname,format="png"); 
+ plt.close(fig)
+ 
+ return
 
- if C < 1.: # subcritcal 
-  d1 = np.power( omg*(1.+Pr)/(4.*nu) + \
-      np.power((omg*(1.+Pr)/(4.*nu))**2. + \
-      Pr*(N**2.*np.sin(tht)**2.-omg**2.)/(4.*nu**2.) , 1./2. ), -1./2.)
-  d2 = np.power( omg*(1.+Pr)/(4.*nu) - \
-       np.power((omg*(1.+Pr)/(4.*nu))**2. + \
-       Pr*(N**2.*np.sin(tht)**2.-omg**2.)/(4.*nu**2.) , 1./2. ), -1./2.)
-  L = ((d1-d2)*(2.*nu/Pr+omg*d1*d2))/(omg*d1*d2) # wall-normal buoyancy gradient lengthscale
-  u1 = d2*(omg*d1**2.-2.*nu/Pr)/(L*omg*d1*d2) # unitless
-  u2 = d1*(2.*nu/Pr-omg*d2**2.)/(L*omg*d1*d2) # unitless
-  b1 = d1/L # unitless
-  b2 = d2/L # unitless
-  alpha1 = (omg*d1**2.-2.*nu/Pr)/(L*omg*d1)
-  alpha2 = (2.*nu/Pr-omg*d2**2.)/(L*omg*d2)
-  coeffs = (kap,omg,tht,thtcrit,d0,Bw,Re,d1,d2,L,u1,u2,b1,b2,alpha1,alpha2)
+def logzplot( z, H, self, name1, name2 ):
+ 
+ fig = plt.figure() #figsize=(8,4))
+ plotname = figure_path + name1 #'/u0_nonrotating.png'
+ CP=plt.semilogy(self,z/H,'b'); 
+ plt.xlabel(name2); #plt.legend(loc=4); 
+ plt.ylabel('z/H')
+ plt.savefig(plotname,format="png"); 
+ plt.close(fig)
+ 
+ return
 
- if C > 1.: # supercritical 
-  d1 = np.power( np.power( (omg*(1.+Pr)/(4.*nu))**2. + \
-       Pr*(N**2.*np.sin(tht)**2.-omg**2.)/(4.*nu**2.) , 1./2.) + \
-       omg*(1.+Pr)/(4.*nu), -1./2.)
-  d2 = np.power( np.power( (omg*(1.+Pr)/(4.*nu))**2. + \
-       Pr*(N**2.*np.sin(tht)**2.-omg**2.)/(4.*nu**2.) , 1./2.) - \
-       omg*(1.+Pr)/(4.*nu), -1./2.)
-  L = np.power(((d1**2.+d2**2.)*(4.*(nu/Pr)**2. + \
-      omg**2.*d1**2.*d2**2.))/(omg**2.*d1*d2), 1./4.) 
-  u1 = 2.*kap/(d2*omg**2.*L**4.)+d2/(omg*L**4.) # s/m^3
-  u2 = d1/(omg*L**4.)-2.*kap/(d1*omg**2.*L**4.) # s/m^3
-  b1 = d1/(omg*L**4.) # s/m^3
-  b2 = d2/(omg*L**4.) # s/m^3
-  alpha1 = u1*(2.*kap*d1 + omg*d2**2.*d1)
-  alpha2 = u1*(2.*kap*d2 - omg*d1**2.*d2)
-  alpha3 = u2*( omg*d1**2.*d2 - 2.*kap*d2)
-  alpha4 = u2*(2.*kap*d1 + omg*d2**2.*d1)
-  beta1 = b1*(omg*d1**2.*d2-2.*kap*d2)
-  beta2 = b1*(2.*kap*d1+omg*d1*d2**2.)
-  beta3 = b2*(2.*kap*d1+omg*d1*d2**2.)
-  beta4 = b2*(2.*kap*d2-omg*d1**2.*d2)
-  coeffs = (kap,omg,tht,thtcrit,d0,Bw,Re,d1,d2,L,u1,u2,b1,b2,alpha1,alpha2,alpha3,alpha4,beta1,beta2,beta3,beta4)
+def contour_plots( T0, Z0, u0, H, Nc, cmap1, name1, name2 ):
+
+ #u0cb = contour_bounds_2d( u0 )
+ #ctrs = np.linspace(-u0cb,u0cb,num=Nc)
+ ctrs = np.linspace(np.amin(u0),np.amax(u0),num=Nc)
+
+ fig = plt.figure(figsize=(8,4))
+ plotname = figure_path + name1 #'/u0.png'
+ CP=plt.contourf(T0,Z0,u0,ctrs,cmap=cmap1); 
+ plt.xlabel('t/T'); #plt.legend(loc=4); 
+ plt.ylabel('z')
+ fig.colorbar(CP)
+ plt.savefig(plotname,format="png"); 
+ plt.close(fig)
+
+ fig = plt.figure(figsize=(8,4))
+ plotname = figure_path + name2 #'/u0_zoom.png'
+ CP=plt.contourf(T0,Z0,u0,ctrs,cmap=cmap1); 
+ plt.xlabel('t/T'); #plt.legend(loc=4); 
+ plt.ylabel('z')
+ fig.colorbar(CP)
+ plt.axis([0.,1.,0.,H/500.])
+ plt.savefig(plotname,format="png"); 
+ plt.close(fig)
+
+ return
+
+def xforcing_rotating_solution( U, f, N, omg, tht, nu, kap, t, z ):
+
+ Nt = np.shape(t)[0]
+ Nz = np.shape(z)[0]
+ Pr = nu / kap
+ L = U / omg
+ sqfcos = ( f * np.cos( tht ) )**2.
+ sqNsin = ( N * np.sin( tht ) )**2.
+
+ A = L*(omg**2. - sqfcos - sqNsin )
+ 
+ # characteristic equation coefficients:
+ a4 = - ( 2.*omg/nu + omg/kap ) 
+ a2 = - (omg/nu)**2. - 2.*omg**2./(nu*kap) + (f*np.cos(tht)/nu)**2. + (N*np.sin(tht))**2./(nu*kap) 
+ a0 =  omg / kap * ( (omg/nu)**2. - (f*np.cos(tht)/nu)**2. - (N*np.sin(tht)/nu)**2. ) 
+ ap = ( A * N**2. * np.sin(tht) ) / ( omg**2. - sqfcos - sqNsin ) 
+
+ # solution coefficients
+ beta = ( -27.*1j*a0 + 9.*1j*a2*a4 + 2.*1j*(a4**3.) + \
+           3.*np.sqrt(3.)*np.sqrt( -27.*a0**2. + 4.*a2**3. + \
+           18.*a0*a2*a4 + a2**2.*a4**2. + 4.*a0*a4**3. ) )**(1./3.)
+ phi1 = beta/(3.*2.**(1./3.)) - (2.)**(1./3.) * (a4**2. + 3.*a2) / (3.*beta) - 1j*a4/3. 
+ phi2 = - (1. - 1j*np.sqrt(3.)) * beta / (6.*2.**(1./3.)) +  \
+          (1. + 1j*np.sqrt(3.)) * (a4**2. + 3.*a2) / (3.*2**(2./3.)*beta) - 1j*a4/3. 
+ phi3 = - (1. + 1j*np.sqrt(3.)) * beta / (6.*2.**(1./3.)) +  \
+         (1. - 1j*np.sqrt(3.)) * (a4**2. + 3.*a2) / (3.*2**(2./3.)*beta) - 1j*a4/3. 
+
+ """
+ ups = kap**2.*nu*( np.sqrt(phi2*phi3)*phi1 + np.sqrt(phi1*phi3)*phi2 + \
+                    np.sqrt(phi1*phi2)*phi3 ) + 1j*kap*nu*omg*( np.sqrt(phi1*phi2) + \
+                    np.sqrt(phi1*phi3) + np.sqrt(phi2*phi3) + phi1 + phi2 + phi3 ) + \
+                    nu*omg**2. + kap*(N*np.sin(tht))**2.
+ 
+ c2 = - ( 1./( ups*(np.sqrt(phi1)-np.sqrt(phi2))*(np.sqrt(phi1)-np.sqrt(phi3)) ) ) * ( \
+        A*kap*N**2.*np.sqrt(phi2*phi3)*np.sin(tht) + \
+        1j*A*N**2.*omg*np.sin(tht) + \
+        kap*N**2.*ap*np.sqrt(phi2*phi3)*np.sin(tht)**2. + \
+        1j*kap*nu*ap*omg*( np.sqrt(phi3)*phi2**(3./2.) + phi3*phi2 + np.sqrt(phi2)*phi3**(3./2.) ) + \
+        nu*ap*omg**2.*np.sqrt(phi2*phi3) )
 
 
- u = np.zeros([Nz,1]); b = np.zeros([Nz,1])
- uz = np.zeros([Nz,1]); bz = np.zeros([Nz,1])
+ c4 =   ( 1./( ups*(np.sqrt(phi1)-np.sqrt(phi2))*(np.sqrt(phi2)-np.sqrt(phi3)) ) ) * ( \
+        A*kap*N**2.*np.sqrt(phi1*phi3)*np.sin(tht) + \
+        1j*A*N**2.*omg*np.sin(tht) + \
+        kap*N**2.*ap*np.sqrt(phi1*phi3)*np.sin(tht)**2. + \
+        1j*kap*nu*ap*omg*( np.sqrt(phi3)*phi1**(3./2.) + phi3*phi1 + np.sqrt(phi1)*phi3**(3./2.) ) + \
+        nu*ap*omg**2.*np.sqrt(phi1*phi3) )
 
- for j in range(0,Nz): 
 
-  if C < 1.: # subcritical slopes
-   u[j,0] = Uw*np.real( (u1*np.exp(-(1.+1j)*z[j]/d1) + \
-               u2*np.exp(-(1.+1j)*z[j]/d2) - 1.)*np.exp(1j*omg*time) )
-   uz[j,0] = - Uw*np.real( (u1*(1.+1j)/d1*np.exp(-(1.+1j)*z[j]/d1) + \
-               u2*(1.+1j)/d2*np.exp(-(1.+1j)*z[j]/d2) )*np.exp(1j*omg*time) )
-   b[j,0] = Bw*np.real( (b1*np.exp(-(1.0+1j)*z[j]/d1) - \
-               b2*np.exp(-(1.+1j)*z[j]/d2) - 1.)*1j*np.exp(1j*omg*time) )
-   bz[j,0] = Bw*np.real( ( -(1.0+1j)/d1*b1*np.exp(-(1.0+1j)*z[j]/d1) + \
-             (1.+1j)/d2*b2*np.exp(-(1.+1j)*z[j]/d2) )*1j*np.exp(1j*omg*time) )
+ c6 = - ( 1./( ups*(np.sqrt(phi1)-np.sqrt(phi3))*(np.sqrt(phi2)-np.sqrt(phi3)) ) ) * ( \
+        A*kap*N**2.*np.sqrt(phi1*phi2)*np.sin(tht) + \
+        1j*A*N**2.*omg*np.sin(tht) + \
+        kap*N**2.*ap*np.sqrt(phi1*phi2)*np.sin(tht)**2. + \
+        1j*kap*nu*ap*omg*( np.sqrt(phi2)*phi1**(3./2.) + phi2*phi1 + np.sqrt(phi1)*phi2**(3./2.) ) + \
+        nu*ap*omg**2.*np.sqrt(phi1*phi2) )
+ """
 
-  if C > 1.: # supercritical slopes
-   u[j,0] = Uw*np.real( ( ( alpha1 + 1j*alpha2 )*np.exp((1j-1.0)*z[j]/d2)+ \
-               ( alpha3 + 1j*alpha4 )*np.exp(-(1j+1.)*z[j]/d1) - 1. )*np.exp(1j*omg*time) )
+ E = np.zeros([3,3],dtype= complex)
+ E[0,0] = omg + 1j*kap*phi1
+ E[0,1] = omg + 1j*kap*phi2
+ E[0,2] = omg + 1j*kap*phi3
+ E[1,0] = 1j*omg*phi1*(kap+nu) - kap*nu*phi1**2. - (N*np.sin(tht))**2. + omg**2.
+ E[1,1] = 1j*omg*phi2*(kap+nu) - kap*nu*phi2**2. - (N*np.sin(tht))**2. + omg**2.
+ E[1,2] = 1j*omg*phi3*(kap+nu) - kap*nu*phi3**2. - (N*np.sin(tht))**2. + omg**2.
+ E[2,0] = -np.sqrt(phi1)
+ E[2,1] = -np.sqrt(phi2)
+ E[2,2] = -np.sqrt(phi3)
 
-   uz[j,0] = Uw*np.real( ( (1j-1.0)/d2*( alpha1 + 1j*alpha2 )*np.exp((1j-1.0)*z[j]/d2) \
-               -(1j+1.)/d1*(alpha3 + 1j*alpha4 )*np.exp(-(1j+1.)*z[j]/d1) )*np.exp(1j*omg*time) )
+ Y = np.zeros([3,1],dtype= complex)
+ Y[0] = -omg*ap
+ Y[1] = A*N**2.*np.sin(tht) - ap*( omg**2. - (N*np.sin(tht))**2. )
+ Y[2] = 0.
+ C = np.dot(np.linalg.inv(E),Y)
+ c2 = C[0] # solution coefficient
+ c4 = C[1] # solution coefficient
+ c6 = C[2] # solution coefficient
 
-   b[j,0] = Bw*np.real( ( ( beta1 + 1j*beta2 )*np.exp(-(1j+1.0)*z[j]/d1)+ \
-               ( beta1 + 1j*beta2 )*np.exp((1j-1.0)*z[j]/d2) -1. )*1j*np.exp(1j*omg*time) )
+ u1 = c2*(omg + 1j*kap*phi1)
+ u2 = c4*(omg + 1j*kap*phi2)
+ u3 = c6*(omg + 1j*kap*phi3)
 
-   bz[j,0] = Bw*np.real( ( -(1j+1.0)/d1*( beta1 + 1j*beta2 )*np.exp(-(1j+1.0)*z[j]/d1)+ \
-               (1j-1.0)/d2*( beta1 + 1j*beta2 )*np.exp((1j-1.0)*z[j]/d2) )*1j*np.exp(1j*omg*time) )
+ v1 = c2*(1j*omg*phi1*(kap+nu)-kap*nu*phi1**2.-(N*np.sin(tht))**2.+omg**2.)
+ v2 = c4*(1j*omg*phi2*(kap+nu)-kap*nu*phi2**2.-(N*np.sin(tht))**2.+omg**2.)
+ v3 = c6*(1j*omg*phi3*(kap+nu)-kap*nu*phi3**2.-(N*np.sin(tht))**2.+omg**2.) 
 
- return coeffs, z, dz, u, uz, b, bz
+ # boundary condition checks:
+ if abs(np.real(u1+u2+u3+ap*omg)) >= 1e-16:
+  print('Wall boundary condition failure for u(z,t)')
+  return
+ if abs(np.real(v1+v2+v3-A*N**2.*np.sin(tht) + ap*(omg**2.-(N*np.sin(tht))**2) ) ) >= 1e-16:
+  print('Wall boundary condition failure for v(z,t)')
+  return 
+ if abs(np.real(-c2*np.sqrt(phi1)-c4*np.sqrt(phi2)-c6*np.sqrt(phi3))) >= 1e-16:
+  print('Wall boundary condition failure for b(z,t)')
+  return 
+ 
+ b = np.zeros([Nz,Nt])
+ u = np.zeros([Nz,Nt])
+ v = np.zeros([Nz,Nt])
+
+ for i in range(0,Nz):
+  for j in range(0,Nt):
+   u[i,j] = np.real( ( u1*np.exp(-np.sqrt(phi1)*z[i]) + u2*np.exp(-np.sqrt(phi2)*z[i]) + \
+                       u3*np.exp(-np.sqrt(phi3)*z[i]) + ap*omg ) * np.exp(1j*omg*t[j]) ) / (N**2.*np.sin(tht))
+
+   v[i,j] = np.real( ( v1*np.exp(-np.sqrt(phi1)*z[i]) + v2*np.exp(-np.sqrt(phi2)*z[i]) + \
+                       v3*np.exp(-np.sqrt(phi3)*z[i]) + ap*(omg**2.-(N*np.sin(tht))**2 ) - \
+                       A*N**2.*np.sin(tht) ) * 1j * np.exp(1j*omg*t[j]) ) / (f * np.cos(tht) * N**2.*np.sin(tht)) 
+
+   b[i,j] = np.real( ( c2*np.exp(-np.sqrt(phi1)*z[i]) + c4*np.exp(-np.sqrt(phi2)*z[i]) + \
+                       c6*np.exp(-np.sqrt(phi3)*z[i]) + ap ) * 1j * np.exp(1j*omg*t[j]) ) 
+
+ return b, u, v
 
 
 def make_Lap_inv(dz,Nz,K2):
@@ -553,11 +491,13 @@ def rk4(La_inv,pz,P4,k,l,N,T,Uw,nu,Pr,C,Nz,H,time,Phi):
  # constructs A and take the dot product A*Phi
 
  # instantaneous mean flow solutions at time t
- (coeffs, z, dz, U, Uz, B, Bz) = inst_solutions(N,T,Uw,nu,Pr,C,time,Nz,H)
+ (B, Bz, U, Uz) = xforcing_nonrotating_solution( Uw, f, N, omg, tht, nu, kap, time, z )
+ #(coeffs, z, dz, U, Uz, B, Bz) = inst_solutions(N,T,Uw,nu,Pr,C,time,Nz,H)
  #(coeffs, z, dz, U, Uz, B, Bz) = plug_solutions(N,T,Uw,nu,Pr,C,time,Nz,H) # <-------------------------|||
  
+ 
  # construction of "A" matrix at time t
- A = inst_construct_A(La_inv,pz,P4,dz,Nz,U,Uz,Bz,k,l,coeffs[6],Pr)
+ A = inst_construct_A(La_inv,pz,P4,dz,np.shape(z)[0],U,Uz,Bz,k,l,Re = Uw**2./(omg*nu),Pr)
  if np.any(np.isnan(A)):
   print('NaN detected in A in inst_construct_A()')
  if np.any(np.isinf(A)):
@@ -576,24 +516,129 @@ def rk4(La_inv,pz,P4,k,l,N,T,Uw,nu,Pr,C,Nz,H,time,Phi):
  
  return krk
 
+
+
+
 # =============================================================================
-# flow parameters
 
 # fluid properties
-N = 1e-3 # 1/s, buoyancy frequency
 nu = 2.0e-6 # m^2/s, kinematic viscosity
 Pr = 1. # Prandtl number
+kap = nu/Pr # m^2/s, thermometric diffusivity
 
-# forcing
+# flow characteristics
 T = 44700.0 # s, M2 tide period
-Uw = 0.01 # m/s, oscillation velocity amplitude
-C = 0.25 # N*sin(tht)/omg
+omg = 2.0*np.pi/T # rads/s
+f = 1e-4 # 1/s, inertial frequency
+N = 1e-3 # 1/s, buoyancy frequency
+U = 0.01 # m/s, oscillation velocity amplitude
+L = U/omg # m, excursion length
+tht = 4.0*np.pi/180. # rads, slope angle
 
-# Chebyshev grid:
-Nz = int(500) # number of points in the vertical
-H = 4.
+# resolution
+H = 10.
+Nt = 100 #44700 # total number of frames in movie
+Nz = 2000  # number of points in the vertical
 
-# try Nz=500 (dz=0.008), Nt=447000 (dt=0.1)
+# Chebyshev grid
+k = np.linspace(1., Nz, num=Nz)
+z = -np.cos((k*2.-1.)/(2.*Nz)*np.pi)*H/2.+H/2.
+#print(z)
+
+# time series
+t = [0.] #np.linspace( 0. , T , num=Nt , endpoint=False )
+#print(np.shape(t))
+#T0,Z0 = np.meshgrid(t/T,z)
+
+# =============================================================================
+# plots
+
+cmap1 = 'seismic'
+Nc = 200
+
+# Phillips (1970) / Wunsch (1970) steady non-rotating solution
+( b0, u0) = steady_nonrotating_solution( f, N, omg, tht, nu, kap, t, z )
+if np.shape(t)[0] == 1:
+ zplot( z, H, u0, '/u0_nonrotating.png', 'u0' )
+ zplot( z, H, b0, '/b0_nonrotating.png', 'b0' )
+ logzplot( z, H, u0, '/u0_nonrotating_log.png', 'u0' )
+ logzplot( z, H, b0, '/b0_nonrotating_log.png', 'b0' )
+if (np.shape(t)[0]) >= 2:
+ T0,Z0 = np.meshgrid(t/T,z)
+ contour_plots( T0, Z0, u0, H, Nc, cmap1, '/u0_nonrotating.png', '/u0_nonrotating_zoom.png' )
+ contour_plots( T0, Z0, b0, H, Nc, cmap1, '/b0_nonrotating.png', '/b0_nonrotating_zoom.png' )
+
+# non-rotating oscillating solution, Baidulov (2010):
+( b, u ) = xforcing_nonrotating_solution( U, f, N, omg, tht, nu, kap, t, z )
+if np.shape(t)[0] == 1:
+ zplot( z, H, u, '/u_nonrotating.png', 'u' )
+ zplot( z, H, b, '/b_nonrotating.png', 'b' )
+ logzplot( z, H, u, '/u_nonrotating_log.png', 'u' )
+ logzplot( z, H, b, '/b_nonrotating_log.png', 'b' )
+if np.shape(t)[0] >= 2:
+ T0,Z0 = np.meshgrid(t/T,z)
+ contour_plots( T0, Z0, u, H, Nc, cmap1, '/u_nonrotating.png', '/u_nonrotating_zoom.png' )
+ contour_plots( T0, Z0, b, H, Nc, cmap1, '/b_nonrotating.png', '/b_nonrotating_zoom.png' )
+
+# total nonrotating: steady + oscillating:
+if np.shape(t)[0] == 1:
+ zplot( z, H, u0 + u, '/u_nonrotating_total.png', 'u_total' )
+ zplot( z, H, b + b0 + N**2.*np.cos(tht), '/b_nonrotating_total.png', 'b_total' )
+ logzplot( z, H, u0 + u, '/u_nonrotating_total_log.png', 'u_total' )
+ logzplot( z, H, b + b0 + N**2.*np.cos(tht), '/b_nonrotating_total_log.png', 'b_total' )
+if np.shape(t)[0] >= 2:
+ T0,Z0 = np.meshgrid(t/T,z)
+ contour_plots( T0, Z0, u0 + u, H, Nc, cmap1, '/u_nonrotating_total.png', '/u_nonrotating_total_zoom.png' )
+ contour_plots( T0, Z0, b + b0 + N**2.*np.cos(tht), H, Nc, cmap1, '/b_nonrotating_total.png', '/b_nonrotating_total_zoom.png' )
+
+# Wunsch (1970) steady rotating solution:
+( b0, u0, v0 ) = steady_rotating_solution( f, N, omg, tht, nu, kap, t, z )
+if np.shape(t)[0] == 1:
+ zplot( z, H, u0, '/u0_rotating.png', 'u0' )
+ zplot( z, H, v0, '/v0_rotating.png', 'v0' )
+ zplot( z, H, b0, '/b0_rotating.png', 'b0' )
+ logzplot( z, H, u0, '/u0_rotating_log.png', 'u0' )
+ logzplot( z, H, v0, '/v0_rotating_log.png', 'v0' )
+ logzplot( z, H, b0, '/b0_rotating_log.png', 'b0' )
+if np.shape(t)[0] >= 2:
+ T0,Z0 = np.meshgrid(t/T,z)
+ contour_plots( T0, Z0, u0, H, Nc, cmap1, '/u0_rotating.png', '/u0_rotating_zoom.png' )
+ contour_plots( T0, Z0, v0, H, Nc, cmap1, '/v0_rotating.png', '/v0_rotating_zoom.png' )
+ contour_plots( T0, Z0, b0, H, Nc, cmap1, '/b0_rotating.png', '/b0_rotating_zoom.png' )
+
+# rotating oscillating solution:
+( b, u, v ) = xforcing_rotating_solution( U, f, N, omg, tht, nu, kap, t, z )
+if np.shape(t)[0] == 1:
+ zplot( z, H, u, '/u_rotating.png', 'u' )
+ zplot( z, H, v, '/v_rotating.png', 'v' )
+ zplot( z, H, b, '/b_rotating.png', 'b' )
+ logzplot( z, H, u, '/u_rotating_log.png', 'u' )
+ logzplot( z, H, v, '/v_rotating_log.png', 'v' )
+ logzplot( z, H, b, '/b_rotating_log.png', 'b' )
+if np.shape(t)[0] >= 2:
+ T0,Z0 = np.meshgrid(t/T,z)
+ contour_plots( T0, Z0, u, H, Nc, cmap1, '/u_rotating.png', '/u_rotating_zoom.png' )
+ contour_plots( T0, Z0, v, H, Nc, cmap1, '/v_rotating.png', '/v_rotating_zoom.png' )
+ contour_plots( T0, Z0, b, H, Nc, cmap1, '/b_rotating.png', '/b_rotating_zoom.png' )
+
+# total rotating: steady + oscillating:
+if np.shape(t)[0] == 1:
+ zplot( z, H, u0 + u, '/u_rotating_total.png', 'u_total' )
+ zplot( z, H, v0 + v, '/v_rotating_total.png', 'v_total' )
+ zplot( z, H, b + b0 + N**2.*np.cos(tht), '/b_rotating_total.png', 'b_total' )
+ logzplot( z, H, u0 + u, '/u_rotating_total_log.png', 'u_total' )
+ logzplot( z, H, v0 + v, '/v_rotating_total_log.png', 'v_total' )
+ logzplot( z, H, b + b0 + N**2.*np.cos(tht), '/b_rotating_total_log.png', 'b_total' )
+if np.shape(t)[0] >= 2:
+ T0,Z0 = np.meshgrid(t/T,z)
+ contour_plots( T0, Z0, u0 + u, H, Nc, cmap1, '/u_rotating_total.png', '/u_rotating_total_zoom.png' )
+ contour_plots( T0, Z0, v0 + v, H, Nc, cmap1, '/v_rotating_total.png', '/v_rotating_total_zoom.png' )
+ contour_plots( T0, Z0, b + b0 + N**2.*np.cos(tht), H, Nc, cmap1, '/b_rotating_total.png', '/b_rotating_total_zoom.png' )
+
+
+
+"""
+
 
 Nt = int(447000)
 tp = np.linspace(0.0, T, num=Nt) # s
@@ -614,38 +659,7 @@ Bw = coeffs[5]
 cottht = np.cos(tht)/np.sin(tht)
 Re = Uw**2./(nu*omg)
 
-"""
-# mean flow solutions 
-(coeffs, z, dz, t, dt, U, Uz, B, Bz) =  solutions(N,T,Uw,nu,Pr,C,Nt,Nz,H)
-omg = coeffs[1]
-tht = coeffs[2]
-thtcrit = coeffs[3]
-Bw = coeffs[5]
-cottht = np.cos(tht)/np.sin(tht)
-"""
 
-"""
-# check mean flow with a plot of U
-zd = Uw/N # d0sb
-zlabel = 'z*N/U'
-figure_name = '/u_subcrit.png'
-fig = plt.figure()
-plotname = figure_path + figure_name 
-plot_title = 'subcritical, C = %.2f' %(C)
-fig = plt.figure() 
-plt.semilogy(U[:,0]/Uw,z/zd,'m',label='0'); 
-plt.semilogy(U[:,int(Nt/4)]/Uw,z/zd,'r',label='T/4'); 
-plt.semilogy(U[:,int(Nt/2)]/Uw,z/zd,'g',label='T/2'); 
-plt.semilogy(U[:,int(3*Nt/4)]/Uw,z/zd,'b',label='3T/4'); 
-plt.semilogy(U[:,Nt-1]/Uw,z/zd,'--k',label='T'); 
-plt.xlabel('u/U'); plt.legend(loc=4); 
-plt.ylabel(zlabel); 
-plt.title(plot_title);
-plt.axis([-1.2,1.2,3e-6,10.]) #'tight')  
-plt.grid()
-plt.savefig(plotname,format="png"); 
-plt.close(fig)
-"""
 
  
 # initialization:
@@ -698,14 +712,7 @@ for n in range(0,Nt):
  del Phi3
 
  print(k3)
- """
- if np.any(np.isnan(k3)):
-  print('NaN detected in k3')
-  break
- if np.any(np.isinf(k3)):
-  print('NaN detected in k3')
-  break
- """
+
 
  Phi4 = Phin + k3*dt; t4 = time + dt; 
  k4 = rk4(La_inv,pz,P4,k,l,N,T,Uw,nu,Pr,C,Nz,H,t4,Phi4)
@@ -774,3 +781,7 @@ print('\nFloquet multiplier computed and written to file' + savename + '.\n')
 
 
 # log(multiplier) = exponent*T
+
+"""
+
+
