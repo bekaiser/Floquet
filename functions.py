@@ -17,373 +17,6 @@ from matplotlib.colors import colorConverter as cc
 # =============================================================================    
 # classes and functions
 
-class LegendObject(object):
-    def __init__(self, facecolor='red', edgecolor='white', dashed=False):
-        self.facecolor = facecolor
-        self.edgecolor = edgecolor
-        self.dashed = dashed
- 
-    def legend_artist(self, legend, orig_handle, fontsize, handlebox):
-        x0, y0 = handlebox.xdescent, handlebox.ydescent
-        width, height = handlebox.width, handlebox.height
-        patch = mpatches.Rectangle(
-            # create a rectangle that is filled with color
-            [x0, y0], width, height, facecolor=self.facecolor,
-            # and whose edges are the faded color
-            edgecolor=self.edgecolor, lw=3)
-        handlebox.add_artist(patch)
- 
-        # if we're creating the legend for a dashed line,
-        # manually add the dash in to our rectangle
-        if self.dashed:
-            patch1 = mpatches.Rectangle(
-                [x0 + 2*width/5, y0], width/5, height, facecolor=self.edgecolor,
-                transform=handlebox.get_transform())
-            handlebox.add_artist(patch1)
- 
-        return patch
-
-def spectral_density( uz, t, dt, band_flag ):
-  
-  N = np.shape([t])[1] # unitless number of discrete samples
-  L = t[N-1]-t[0]+dt # s, time series length
-
-  # Hann window
-  window = signal.hann(N)
-  uz = np.multiply(uz,window)
-
-  # wavenumbers/frequencies
-  k = np.zeros([N])
-  k[1:int(N/2)+1] = np.linspace( 1., N/2., num=int(N/2) )*(2.*np.pi/L) # rads/s
-  k[int(N/2)+1:N] = -np.fliplr( [np.linspace(1., N/2.-1., num=int(N/2-1) )*(2.*np.pi/L)])[0]    
-
-  # spectral density:
-  UZ = np.fft.fft(uz-np.mean(uz))
-  PHI = (np.conj(UZ)*UZ) # * 2.*L/N**2.
-  PHI1 = PHI[0:int(N/2+1)]*2.
-  k1 = k[0:int(N/2+1)]
-
-  # band-averaging:
-  if band_flag == 1: 
-    nb = 2 # number of points per band
-    Nb = int(N/(2*nb)) # number of bands
-    PHI1b = np.zeros([Nb],dtype=complex)
-    k1b = np.zeros([Nb])
-    for j in range(0,Nb):
-      #print(int(j*nb))
-      #print(int((j+1)*nb-1))
-      PHI1b[j] = np.mean(PHI1[int(j*nb):int((j+1)*nb-1)])
-      k1b[j] = np.mean(k1[int(j*nb):int((j+1)*nb-1)])
-  else:
-    PHI1b = PHI1 
-    k1b = k1
-    Nb = N
-
-  # 95% confidence intervals for chi-square distributed random error
-  alpha = 0.05 # 95% confidence interval
-  nu = 2*Nb-1 # number degrees of freedom
-  [hi,lo] = chi2.interval(1-alpha,nu) # nu/Chi^2_(nu/alpha/2) & nu/Chi^2_(nu/(1-alpha/2))
-  lo = nu/lo
-  hi = nu/hi
-  ub = PHI1b*hi # upper bound
-  lb = PHI1b*lo # lower bound
-
-  return PHI1b,ub,lb,k1b # spectral density, confidence interval upper/lower bounds, frequencies
-
-
-def find_interval( t ):
-  # returns the indices of the beginning of the first complete tidal cycle 
-  # and the last complete tidal cycle  
-  N = np.shape([t])[1]
-  ti = ma.ceil(t[0]) # the beginning of the first complete tidal cycle
-  tf = ma.floor(t[N-1]) # the last complete tidal cycle
-  ni = np.zeros([N]) # index for the beginning
-  j = 0 # counter for the length of the set of complete cycles
-  for m in range(0,N):
-    if t[m] >= ti:
-      ni[m] = 0
-    else: 
-      ni[m] = 1
-    if t[m] >= ti and t[m] <= tf:
-      j = j + 1
-  Nt = make_even(int(j)) # index length of the set of complete tidal cycles 
-  Nt0 = int(sum(ni)) # initial index of the set of complete tidal cycles
-  return Nt,Nt0
-
-def make_even( N ):
-  # is the integer N odd? If so, returns N-1
-  if N % 2 == 0:
-    return N
-  else:
-    N = N-1
-    return N
-
-def time_interval( t0 ):
-  # t must be the unitless form, t/T
-  # dt is dimensional
-  [Nt,Nt0] = find_interval( t0 )
-  t = np.zeros([Nt])
-  t = t0[int(Nt0):int(Nt0+Nt)] # unitless
-  Ncycles = int(round(t[Nt-1]-t[0]))
-  t = t*T # s
-  #L = t[Nt-1]-t[0]+dt # s
-  #u = u0[int(Nt0):int(Nt0+Nt)] 
-  return Nt,Nt0,Ncycles,t
-
-def parseval_check( u , UZD , L ):
-  var = np.mean(np.power(u-np.mean(u),2.))
-  fcf = sum(UZD/L) # Fourier coefficients of spectral density
-  #UZM = np.fft.fft(uzm7-np.mean(uzm7))
-  #fcf = sum(np.power(abs(UZM/np.shape(UZM)[0]),2.))
-  string = 'Parseval theorem:\nVariance - summed Fourier coefficients = %.16f' %(abs(var-fcf))
-  print(string)
-  return
-
-def spectral_plot( PHI, UB, LB, k, L, plottitle, axes, colors, color_mean, color_shading, legend_name, figure_path, plot_name ): 
-  plt.fill_between(k,np.real(UB)/L,np.real(LB)/L,color=color_shading,alpha=0.5) 
-  p1=plt.loglog(k,np.real(PHI)/L, color=color_mean)
-  #p2=plt.loglog(k[20:int(np.shape(k1b7)[0]-10500)]*L7/(2.*np.pi*Ncycles7)*5.,3e-10*np.power(k1b7[20:int(np.shape(k1b7)  [0]-10500)]*L7/200.,-10./3.), '--k')
-  plt.xlabel('cycles per tidal oscillation')
-  #plottitle = 'spectral density of du/dz' #, forcing k =  %.5f rads/m' %(kx)
-  plt.title(plottitle)
-  plt.grid()
-  plt.axis(axes) # axes = [2e-2,4e2,1e-23,2e-4]
-  bg = np.array([1,1,1])  # background of the legend is white
-  #colors = ['green'] #,'blue'] #,'green','green']
-  # with alpha = .5, the faded color is the average of the background and color
-  colors_faded = [(np.array(cc.to_rgb(color)) + bg) / 2.0 for color in colors]
-  plt.legend([0], legend_name,handler_map={0: LegendObject(colors[0], colors_faded[0])},loc=1)
-               # 1: LegendObject(colors[1], colors_faded[1])},loc=1)
-               #2: LegendObject(colors[2], colors_faded[2], dashed=True),    
-  plt.savefig( figure_path + plot_name ) # plotname = '/uz_spectral_density_loglog_7.png'
-  plt.close()
-  return
-
-def spectral_subplot( PHI, UB, LB, k, L, plottitle, axes, colors, color_mean, color_shading, legend_name, figure_ylabel, ytick_label_flag , xtick_label_flag): 
-  plt.fill_between(k,np.real(UB)/L,np.real(LB)/L,color=color_shading,alpha=0.5) 
-  p1=plt.loglog(k,np.real(PHI)/L, color=color_mean)
-  #p2=plt.loglog(k[20:int(np.shape(k1b7)[0]-10500)]*L7/(2.*np.pi*Ncycles7)*5.,3e-10*np.power(k1b7[20:int(np.shape(k1b7)  [0]-10500)]*L7/200.,-10./3.), '--k')
-  plt.ylabel(figure_ylabel, fontsize=16) 
-  #plt.yticks([1e-20,1e-17,1e-14,1e-11,1e-8,1e-5,1e-2]) #np.arange(1e-20, 1e-2, 1e-4))
-  plt.yticks([1e-20,1e-14,1e-8,1e-2]) #np.arange(1e-20, 1e-2, 1e-4))
-  plt.grid()
-  plt.axis(axes) # axes = [2e-2,4e2,1e-23,2e-4]
-  if ytick_label_flag == 0:
-    plt.tick_params(
-      axis='y',          # changes apply to the x-axis
-      #which='both',      # both major and minor ticks are affected
-      #bottom='on',      # ticks along the bottom edge are off
-      #top='on',         # ticks along the top edge are off
-      #labelbottom='off') # labels along the bottom edge are off
-      labelleft='off') # labels along the bottom edge are off
-  if xtick_label_flag == 0:
-    plt.tick_params(
-      axis='x',          # changes apply to the x-axis
-      #which='both',      # both major and minor ticks are affected
-      #bottom='on',      # ticks along the bottom edge are off
-      #top='on',         # ticks along the top edge are off
-      labelbottom='off') # labels along the bottom edge are off
-  #else:
-  plt.xlabel(r"$\omega/\Omega$", fontsize=16)
-  bg = np.array([1,1,1])  # background of the legend is white
-  #colors = ['green'] #,'blue'] #,'green','green']
-  # with alpha = .5, the faded color is the average of the background and color
-  colors_faded = [(np.array(cc.to_rgb(color)) + bg) / 2.0 for color in colors]
-  plt.legend([0], [legend_name],handler_map={0: LegendObject(colors[0], colors_faded[0])},loc=3)
-               # 1: LegendObject(colors[1], colors_faded[1])},loc=1)
-               #2: LegendObject(colors[2], colors_faded[2], dashed=True),    
-  return
-
-def time_series_plot( t, T, u, color_mean, legend_label, figure_path, figure_name, figure_ylabel, plot_title ):
-  fig = plt.figure()
-  plotname = figure_path + figure_name 
-  plot_title = "z-integrated y-mean du/dz"
-  fig = plt.figure() 
-  plt.plot(t/T,u,color_mean,label=legend_label); 
-  plt.xlabel("t/T"); plt.legend(loc=4); plt.ylabel(figure_ylabel); 
-  plt.title(plot_title);
-  plt.axis('tight')  
-  plt.savefig(plotname,format="png"); 
-  plt.close(fig)
-  return
-
-def time_series_subplot( t, T, u, color_mean, legend_label , figure_ylabel, tick_label_flag ):
-  plt.plot(t/T,u,color_mean,label=legend_label); 
-  if tick_label_flag == 0:
-    plt.tick_params(
-      axis='y',          # changes apply to the x-axis
-      #which='both',      # both major and minor ticks are affected
-      #bottom='on',      # ticks along the bottom edge are off
-      #top='on',         # ticks along the top edge are off
-      #labelbottom='off') # labels along the bottom edge are off
-      labelleft='off') # labels along the bottom edge are off
-  plt.xlabel(r"$\mathrm{t}/\mathrm{T}$", fontsize=16); 
-  plt.legend(loc=4); plt.ylabel(figure_ylabel, fontsize=16); 
-  plt.axis('tight')  
-  return
-
-def plug_solutions(N,T,Uw,nu,Pr,C,time,Nz,H):
-
- # from inputs:
- kap = nu/Pr # m^2/s, thermometric diffusivity
- omg = 2.0*np.pi/T # rads/s
- #print(N,omg,T)
- thtcrit = ma.asin(omg/N) # radians
- Lex = Uw/omg # m, excursion length
- tht = C*thtcrit # rads
- # Chebyshev grid:
- #kz = np.linspace(1., Nz, num=Nz)
- #z = -np.cos((kz*2.-1.)/(2.*Nz)*np.pi)*H/2.+H/2. # m
- # uniform grid:
- z= np.linspace(0.0 , H, num=Nz) # m 
- dz = z[1]-z[0] # m
- 
- d0=((4.*nu**2.)/((N**2.)*(np.sin(tht))**2.))**(1./4.) # Phillips-Wunsch BL thickness
- Bw = Uw*(N**2.0)*np.sin(tht)/omg # forcing amplitude
- Re = Uw**2./(omg*nu) # the true Stokes' Reynolds number (the square of length scale ratio)
-
- if C < 1.: # subcritcal 
-  d1 = np.power( omg*(1.+Pr)/(4.*nu) + \
-      np.power((omg*(1.+Pr)/(4.*nu))**2. + \
-      Pr*(N**2.*np.sin(tht)**2.-omg**2.)/(4.*nu**2.) , 1./2. ), -1./2.)
-  d2 = np.power( omg*(1.+Pr)/(4.*nu) - \
-       np.power((omg*(1.+Pr)/(4.*nu))**2. + \
-       Pr*(N**2.*np.sin(tht)**2.-omg**2.)/(4.*nu**2.) , 1./2. ), -1./2.)
-  L = ((d1-d2)*(2.*nu/Pr+omg*d1*d2))/(omg*d1*d2) # wall-normal buoyancy gradient lengthscale
-  u1 = d2*(omg*d1**2.-2.*nu/Pr)/(L*omg*d1*d2) # unitless
-  u2 = d1*(2.*nu/Pr-omg*d2**2.)/(L*omg*d1*d2) # unitless
-  b1 = d1/L # unitless
-  b2 = d2/L # unitless
-  alpha1 = (omg*d1**2.-2.*nu/Pr)/(L*omg*d1)
-  alpha2 = (2.*nu/Pr-omg*d2**2.)/(L*omg*d2)
-  coeffs = (kap,omg,tht,thtcrit,d0,Bw,Re,d1,d2,L,u1,u2,b1,b2,alpha1,alpha2)
-
- if C > 1.: # supercritical 
-  d1 = np.power( np.power( (omg*(1.+Pr)/(4.*nu))**2. + \
-       Pr*(N**2.*np.sin(tht)**2.-omg**2.)/(4.*nu**2.) , 1./2.) + \
-       omg*(1.+Pr)/(4.*nu), -1./2.)
-  d2 = np.power( np.power( (omg*(1.+Pr)/(4.*nu))**2. + \
-       Pr*(N**2.*np.sin(tht)**2.-omg**2.)/(4.*nu**2.) , 1./2.) - \
-       omg*(1.+Pr)/(4.*nu), -1./2.)
-  L = np.power(((d1**2.+d2**2.)*(4.*(nu/Pr)**2. + \
-      omg**2.*d1**2.*d2**2.))/(omg**2.*d1*d2), 1./4.) 
-  u1 = 2.*kap/(d2*omg**2.*L**4.)+d2/(omg*L**4.) # s/m^3
-  u2 = d1/(omg*L**4.)-2.*kap/(d1*omg**2.*L**4.) # s/m^3
-  b1 = d1/(omg*L**4.) # s/m^3
-  b2 = d2/(omg*L**4.) # s/m^3
-  alpha1 = u1*(2.*kap*d1 + omg*d2**2.*d1)
-  alpha2 = u1*(2.*kap*d2 - omg*d1**2.*d2)
-  alpha3 = u2*( omg*d1**2.*d2 - 2.*kap*d2)
-  alpha4 = u2*(2.*kap*d1 + omg*d2**2.*d1)
-  beta1 = b1*(omg*d1**2.*d2-2.*kap*d2)
-  beta2 = b1*(2.*kap*d1+omg*d1*d2**2.)
-  beta3 = b2*(2.*kap*d1+omg*d1*d2**2.)
-  beta4 = b2*(2.*kap*d2-omg*d1**2.*d2)
-  coeffs = (kap,omg,tht,thtcrit,d0,Bw,Re,d1,d2,L,u1,u2,b1,b2,alpha1,alpha2,alpha3,alpha4,beta1,beta2,beta3,beta4)
-
-
- u = np.zeros([Nz,1]); b = np.zeros([Nz,1])
- uz = np.zeros([Nz,1]); bz = np.zeros([Nz,1])
-
- for j in range(0,Nz): 
-   u[j,0] = Uw
-   uz[j,0] = 0.
-   b[j,0] = 0.
-   bz[j,0] = 0.
-
- return coeffs, z, dz, u, uz, b, bz
-
-
-def inst_solutions(N,T,Uw,nu,Pr,C,time,Nz,H): 
-
- # from inputs:
- kap = nu/Pr # m^2/s, thermometric diffusivity
- omg = 2.0*np.pi/T # rads/s
- #print(N,omg,T)
- thtcrit = ma.asin(omg/N) # radians
- Lex = Uw/omg # m, excursion length
- tht = C*thtcrit # rads
- # Chebyshev grid:
- #kz = np.linspace(1., Nz, num=Nz)
- #z = -np.cos((kz*2.-1.)/(2.*Nz)*np.pi)*H/2.+H/2. # m
- # uniform grid:
- z= np.linspace(0.0 , H, num=Nz) # m 
- dz = z[1]-z[0] # m
- 
- d0=((4.*nu**2.)/((N**2.)*(np.sin(tht))**2.))**(1./4.) # Phillips-Wunsch BL thickness
- Bw = Uw*(N**2.0)*np.sin(tht)/omg # forcing amplitude
- Re = Uw**2./(omg*nu) # the true Stokes' Reynolds number (the square of length scale ratio)
-
- if C < 1.: # subcritcal 
-  d1 = np.power( omg*(1.+Pr)/(4.*nu) + \
-      np.power((omg*(1.+Pr)/(4.*nu))**2. + \
-      Pr*(N**2.*np.sin(tht)**2.-omg**2.)/(4.*nu**2.) , 1./2. ), -1./2.)
-  d2 = np.power( omg*(1.+Pr)/(4.*nu) - \
-       np.power((omg*(1.+Pr)/(4.*nu))**2. + \
-       Pr*(N**2.*np.sin(tht)**2.-omg**2.)/(4.*nu**2.) , 1./2. ), -1./2.)
-  L = ((d1-d2)*(2.*nu/Pr+omg*d1*d2))/(omg*d1*d2) # wall-normal buoyancy gradient lengthscale
-  u1 = d2*(omg*d1**2.-2.*nu/Pr)/(L*omg*d1*d2) # unitless
-  u2 = d1*(2.*nu/Pr-omg*d2**2.)/(L*omg*d1*d2) # unitless
-  b1 = d1/L # unitless
-  b2 = d2/L # unitless
-  alpha1 = (omg*d1**2.-2.*nu/Pr)/(L*omg*d1)
-  alpha2 = (2.*nu/Pr-omg*d2**2.)/(L*omg*d2)
-  coeffs = (kap,omg,tht,thtcrit,d0,Bw,Re,d1,d2,L,u1,u2,b1,b2,alpha1,alpha2)
-
- if C > 1.: # supercritical 
-  d1 = np.power( np.power( (omg*(1.+Pr)/(4.*nu))**2. + \
-       Pr*(N**2.*np.sin(tht)**2.-omg**2.)/(4.*nu**2.) , 1./2.) + \
-       omg*(1.+Pr)/(4.*nu), -1./2.)
-  d2 = np.power( np.power( (omg*(1.+Pr)/(4.*nu))**2. + \
-       Pr*(N**2.*np.sin(tht)**2.-omg**2.)/(4.*nu**2.) , 1./2.) - \
-       omg*(1.+Pr)/(4.*nu), -1./2.)
-  L = np.power(((d1**2.+d2**2.)*(4.*(nu/Pr)**2. + \
-      omg**2.*d1**2.*d2**2.))/(omg**2.*d1*d2), 1./4.) 
-  u1 = 2.*kap/(d2*omg**2.*L**4.)+d2/(omg*L**4.) # s/m^3
-  u2 = d1/(omg*L**4.)-2.*kap/(d1*omg**2.*L**4.) # s/m^3
-  b1 = d1/(omg*L**4.) # s/m^3
-  b2 = d2/(omg*L**4.) # s/m^3
-  alpha1 = u1*(2.*kap*d1 + omg*d2**2.*d1)
-  alpha2 = u1*(2.*kap*d2 - omg*d1**2.*d2)
-  alpha3 = u2*( omg*d1**2.*d2 - 2.*kap*d2)
-  alpha4 = u2*(2.*kap*d1 + omg*d2**2.*d1)
-  beta1 = b1*(omg*d1**2.*d2-2.*kap*d2)
-  beta2 = b1*(2.*kap*d1+omg*d1*d2**2.)
-  beta3 = b2*(2.*kap*d1+omg*d1*d2**2.)
-  beta4 = b2*(2.*kap*d2-omg*d1**2.*d2)
-  coeffs = (kap,omg,tht,thtcrit,d0,Bw,Re,d1,d2,L,u1,u2,b1,b2,alpha1,alpha2,alpha3,alpha4,beta1,beta2,beta3,beta4)
-
-
- u = np.zeros([Nz,1]); b = np.zeros([Nz,1])
- uz = np.zeros([Nz,1]); bz = np.zeros([Nz,1])
-
- for j in range(0,Nz): 
-
-  if C < 1.: # subcritical slopes
-   u[j,0] = Uw*np.real( (u1*np.exp(-(1.+1j)*z[j]/d1) + \
-               u2*np.exp(-(1.+1j)*z[j]/d2) - 1.)*np.exp(1j*omg*time) )
-   uz[j,0] = - Uw*np.real( (u1*(1.+1j)/d1*np.exp(-(1.+1j)*z[j]/d1) + \
-               u2*(1.+1j)/d2*np.exp(-(1.+1j)*z[j]/d2) )*np.exp(1j*omg*time) )
-   b[j,0] = Bw*np.real( (b1*np.exp(-(1.0+1j)*z[j]/d1) - \
-               b2*np.exp(-(1.+1j)*z[j]/d2) - 1.)*1j*np.exp(1j*omg*time) )
-   bz[j,0] = Bw*np.real( ( -(1.0+1j)/d1*b1*np.exp(-(1.0+1j)*z[j]/d1) + \
-             (1.+1j)/d2*b2*np.exp(-(1.+1j)*z[j]/d2) )*1j*np.exp(1j*omg*time) )
-
-  if C > 1.: # supercritical slopes
-   u[j,0] = Uw*np.real( ( ( alpha1 + 1j*alpha2 )*np.exp((1j-1.0)*z[j]/d2)+ \
-               ( alpha3 + 1j*alpha4 )*np.exp(-(1j+1.)*z[j]/d1) - 1. )*np.exp(1j*omg*time) )
-
-   uz[j,0] = Uw*np.real( ( (1j-1.0)/d2*( alpha1 + 1j*alpha2 )*np.exp((1j-1.0)*z[j]/d2) \
-               -(1j+1.)/d1*(alpha3 + 1j*alpha4 )*np.exp(-(1j+1.)*z[j]/d1) )*np.exp(1j*omg*time) )
-
-   b[j,0] = Bw*np.real( ( ( beta1 + 1j*beta2 )*np.exp(-(1j+1.0)*z[j]/d1)+ \
-               ( beta1 + 1j*beta2 )*np.exp((1j-1.0)*z[j]/d2) -1. )*1j*np.exp(1j*omg*time) )
-
-   bz[j,0] = Bw*np.real( ( -(1j+1.0)/d1*( beta1 + 1j*beta2 )*np.exp(-(1j+1.0)*z[j]/d1)+ \
-               (1j-1.0)/d2*( beta1 + 1j*beta2 )*np.exp((1j-1.0)*z[j]/d2) )*1j*np.exp(1j*omg*time) )
-
- return coeffs, z, dz, u, uz, b, bz
-
 
 def make_Lap_inv(dz,Nz,K2):
  # 2nd order accurate truncation
@@ -412,6 +45,64 @@ def make_Lap_inv(dz,Nz,K2):
  """
  return La_inv
 
+def rk4_test( alpha, beta, omg, t, P ):
+ #print(-alpha)
+ #print(-beta)
+ #print(t[n])
+ #print(alpha,beta)
+ A0 = [[-alpha,-np.exp(1j*omg*t)],[0.,-beta]]
+ #print(Am)
+ #check_matrix(Am,'Am')
+
+ # Runge-Kutta coefficients
+ krk = np.dot(A0,P) 
+ 
+ #check_matrix(krk,'krk')
+
+ return krk
+
+def ordered_prod( alpha, beta, omg, t , dt):
+ P0 = np.exp([[-alpha,-np.exp(1j*omg*t)],[0.,-beta]]*np.ones([2,2])*dt)
+ return P0
+
+
+def time_step( Nz, N, omg, tht, nu, kap, U, t, z, dz, l, k, Phin , dt, Nt):
+
+  for n in range(0,Nt):
+   print(n)
+   #Tf=t[n]
+   time = t[n]
+
+   # Runge-Kutta, 4th order: 
+   k1 = rk4( Nz, N, omg, tht, nu, kap, U, time , z, dz, l, k, Phin )
+   k2 = rk4( Nz, N, omg, tht, nu, kap, U, time + dt/2. , z, dz, l, k, Phin + k1*dt/2.)
+   k3 = rk4( Nz, N, omg, tht, nu, kap, U, time + dt/2. , z, dz, l, k, Phin + k1*dt/2.)
+   k4 = rk4( Nz, N, omg, tht, nu, kap, U, time + dt , z, dz, l, k, Phin + k3*dt)
+   #k1 =  rk4( alph, beta, omg, time, Phin )
+   #k2 =  rk4( alph, beta, omg, time + dt/2., Phin + k1*(dt/2.)  )
+   #k3 =  rk4( alph, beta, omg, time + dt/2., Phin + k2*(dt/2.)  )
+   #k4 =  rk4( alph, beta, omg, time + dt, Phin  + k3*dt )
+   print('k1 =', k1)
+   print('k2 =', k2)
+   print('k3 =', k3)
+   print('k4 =', k4)
+   print('Phin =', Phin)
+   # A34 = -7
+   # dzP4 = 8.8
+   
+
+   Phin = Phin + ( k1 + k2*2. + k3*2. + k4 )*dt/6.; 
+   print('time =', time)
+
+   if np.any(np.isnan(Phin)) == True:
+    print('NaN detected')
+    return
+   if np.any(np.isinf(Phin)) == True:
+    print('Inf detected')
+    return
+  
+  return Phin
+
 def make_e(dz,Nz,C,tht,k):
  # 2nd order accurate truncation
  cottht = np.cos(tht)/np.sin(tht)
@@ -432,8 +123,6 @@ def make_e(dz,Nz,C,tht,k):
  #print(e)
  return e
 
-
-
 def make_partial_z(dz,Nz):
  # 2nd order accurate truncation
  diagNzm1 = np.zeros([Nz-1], dtype=complex)
@@ -445,7 +134,7 @@ def make_partial_z(dz,Nz):
  pz[Nz-1,Nz-3:Nz] = [ 1./(2.*dz), -2./dz, 3./(2.*dz) ] # upper (far field) BC
  return pz
 
-
+"""
 def make_r(dz,Nz,C,tht,k):
  # 2nd order accurate truncation
  cottht = np.cos(tht)/np.sin(tht)
@@ -460,8 +149,7 @@ def make_r(dz,Nz,C,tht,k):
  r[0,0:3] = [ -C**2.*( 1j*k + 3.*cottht/(2.*dz) ), 2.*C**2.*cottht/dz, -C**2.*cottht/(2.*dz) ] # lower (wall) BC
  r[Nz-1,Nz-3:Nz] = [ C**2.*cottht/(2.*dz), -2.*C**2.*cottht/dz, C**2.*( -1j*k + 3.*cottht/(2.*dz) ) ] # upper (far field) BC
  return r
-
-
+"""
 
 def make_stationary_matrices(dz,Nz,C,K2,tht,k):
  La_inv = make_Lap_inv(dz,Nz,K2)
@@ -471,9 +159,9 @@ def make_stationary_matrices(dz,Nz,C,K2,tht,k):
  return La_inv, pz, P4
 
 def check_matrix(self,string):
- if np.any(np.isnan(self)):
+ if np.any(np.isnan(self)) == True:
   print('NaN detected in '+ string)
- if np.any(np.isinf(self)):
+ if np.any(np.isinf(self)) == True:
   print('Inf detected in '+ string)
  return
 
@@ -501,7 +189,7 @@ def make_A13(Nz,Uz,k,P3):
 
 def make_A34(Nz,C,tht,dzP4):
  cottht = np.cos(tht)/np.sin(tht)
- A34 = np.eye(Nz,Nz,0,dtype=complex)*C**2.*cottht - dzP4 # check eye <--------------||
+ A34 = np.eye(Nz,Nz,0,dtype=complex)*C**2.*cottht - dzP4 
  # check the buoyancy boundary condition!
  #print(A34[0,0],A34[1,1])
  return A34
@@ -544,34 +232,6 @@ def make_DI(dz,Nz,U,k,l,Re):
  DI = np.eye(Nz,Nz,0,dtype=complex)*1j*k*U + D/Re
  return DI
 
-def make_DI_old(dz,Nz,U,k,Re):
- # U needs to be a vector length Nz, input U[:,nt[itime]]
- diagNz = np.zeros([Nz], dtype=complex)
- diagNzm1 = np.zeros([Nz-1], dtype=complex)
- for j in range(0,Nz):
-  diagNz[j] = 1j*k*U[j] - 1./Re*(K2 + 2./(dz**2.)) # ,nt[itime]
- for j in range(0,Nz-1):
-  diagNzm1[j] = 1./(Re*dz**2.)
- DI = np.diag(diagNzm1,k=1) + np.diag(diagNz,k=0) + np.diag(diagNzm1,k=-1)
- # now add upper and lower BCs:
- DI[0,0:4] = [1j*k*U[j] - 1./Re*(K2 - 2./(dz**2.)), -5./(Re*dz**2.), 4./(Re*dz**2.), -1./(Re*dz**2.) ] # lower (wall) BC
- DI[Nz-1,Nz-4:Nz] = [-1./(Re*dz**2.), 4./(Re*dz**2.), -5./(Re*dz**2.), 1j*k*U[j] - 1./Re*(K2 - 2./(dz**2.)) ] # upper (far field) BC
- return DI
-
-def make_D4_old(dz,Nz,U,k,Re,Pr):
- # U needs to be a vector length Nz, input U[:,nt[itime]]
- diagNz = np.zeros([Nz], dtype=complex)
- diagNzm1 = np.zeros([Nz-1], dtype=complex)
- for j in range(0,Nz):
-  diagNz[j] = 1j*k*U[j] - 1./(Re*Pr)*(K2 - 2./(dz**2.))
- for j in range(0,Nz-1):
-  diagNzm1[j] = 1./(Re*Pr*dz**2.)
- D4 = np.diag(diagNzm1,k=1) + np.diag(diagNz,k=0) + np.diag(diagNzm1,k=-1)
- # now add upper and lower BCs:
- D4[0,0:4] = [1j*k*U[j] - 1./(Re*Pr)*(K2 - 2./(dz**2.)), -5./((Re*Pr)*dz**2.), 4./((Re*Pr)*dz**2.), -1./((Re*Pr)*dz**2.) ] # lower (wall) BC
- D4[Nz-1,Nz-4:Nz] = [-1./((Re*Pr)*dz**2.), 4./((Re*Pr)*dz**2.), -5./((Re*Pr)*dz**2.), 1j*k*U[j] - 1./(Re*Pr)*(K2 - 2./(dz**2.)) ] # upper (far field) BC
- return D4
-
 def make_d(k,Uz,Nz):
  # Uz needs to be a vector length Nz, input U[:,nt[itime]]
  diagNz = np.zeros([Nz], dtype=complex)
@@ -579,15 +239,6 @@ def make_d(k,Uz,Nz):
   diagNz[j] = 1j*k*Uz[j]
  d = np.diag(diagNz,k=0) # BCs on top/bottom w applied
  return d
-
-
-def make_q(k,Uz):
- # Uz needs to be a vector length Nz, input U[:,nt[itime]]
- diagNz = np.zeros([Nz], dtype=complex)
- for j in range(0,Nz):
-  diagNz[j] = 1j*k*Uz[j]
- q = np.diag(diagNz,k=0) # no BCs needed
- return q
 
 def make_transient_matrices(dz,Nz,U,k,Re,Pr,Uz,La_inv):
  DI = make_DI(dz,Nz,U,k,Re)
@@ -613,93 +264,8 @@ def make_transient_matrices(dz,Nz,U,k,Re,Pr,Uz,La_inv):
  return DI, D4, P3
 
 
-def populate_A(DI, D4, P3, P4, pz, dz, Bz, Uz, cottht, k, l):
- A = np.zeros([int(4*Nz),int(4*Nz)], dtype=complex)
- A11 = DI
- A12 = np.zeros([Nz,Nz])
- A13 = -np.diag(Uz[:],k=0) + 1j*k*P3
- A14 = np.diag(C**2.*np.ones([Nz]),k=0)  + 1j*k*P4
- A21 = np.zeros([Nz,Nz])
- A22 = DI 
- A23 = 1j*l*P3
- A24 = 1j*l*P4
- A31 = np.zeros([Nz,Nz])
- A32 = np.zeros([Nz,Nz])
- A33 = DI - np.dot(pz,P3)
- A34 = np.diag(C**2.*cottht*np.ones([Nz]),k=0) - np.dot(pz,P4)
- A41 = np.identity(Nz)
- A42 = np.zeros([Nz,Nz])
- A43 = -np.diag(Bz[:] + cottht*np.ones([Nz]),k=0) 
- A44 = D4
- A1 = np.hstack((A11,A12,A13,A14))
- A2 = np.hstack((A21,A22,A23,A24))
- A3 = np.hstack((A31,A32,A33,A34))
- A4 = np.hstack((A41,A42,A43,A44))
- A = np.vstack((A1,A2,A3,A4))
- if np.any(np.isnan(A)):
-  print('NaN detected in A in populate_A()')
- if np.any(np.isinf(A)):
-  print('Inf detected in A in populate_A()')
- return A
 
-
-def inst_construct_A(La_inv,pz,P4,dz,Nz,U,Uz,Bz,k,l,Re,Pr):
-
- (DI, D4, P3) = make_transient_matrices(dz,Nz,U[:,0],k,Re,Pr,Uz[:,0],La_inv)
-
- # construct A:
- A = populate_A(DI, D4, P3, P4, pz, dz, Bz[:,0], Uz[:,0], cottht, k, l)
-
- # tests:
- #print(sum(sum(A[0:Nz,0:Nz]-DI)))
- #print(sum(sum(A[(2*Nz):(3*Nz),(2*Nz):(3*Nz)]-( DI - np.dot(pz,P3)) )))
- #print(sum(sum(A[0:Nz,int(2*Nz):int(3*Nz)]+np.diag(Uz[:,0],k=0) - 1j*k*P3)))
- 
- return A
-
-"""
-def rk4_test(n, Nz, N, omg, tht, nu, kap, U, t, z, dz, l, k, Phi ):
-
- A = [[-1.,np.cos(omg*t[n])],[0.,-2.]]
-
- check_matrix(Am,'Am')
-
- # Runge-Kutta coefficients
- krk = np.dot(Am,Phi) 
- 
- check_matrix(krk,'krk') 
-
- return
-"""
-
-def rk4_old(La_inv,pz,P4,k,l,N,T,Uw,nu,Pr,C,Nz,H,time,Phi): 
- # constructs A and take the dot product A*Phi
-
- # instantaneous mean flow solutions at time t
- (coeffs, z, dz, U, Uz, B, Bz) = inst_solutions(N,T,Uw,nu,Pr,C,time,Nz,H)
- #(coeffs, z, dz, U, Uz, B, Bz) = plug_solutions(N,T,Uw,nu,Pr,C,time,Nz,H) # <-------------------------|||
- 
- # construction of "A" matrix at time t
- A = inst_construct_A(La_inv,pz,P4,dz,Nz,U,Uz,Bz,k,l,coeffs[6],Pr)
- if np.any(np.isnan(A)):
-  print('NaN detected in A in inst_construct_A()')
- if np.any(np.isinf(A)):
-  print('Inf detected in A in inst_construct_A()')
- if np.any(np.isnan(Phin)):
-  print('NaN detected in Phin in inst_construct_A()')
- if np.any(np.isinf(Phin)):
-  print('Inf detected in Phin in inst_construct_A()')
-
- # Runge-Kutta coefficients
- krk = np.dot(A,Phi) 
- if np.any(np.isnan(krk)):
-  print('NaN detected in Runge-Kutta coefficient in rk4()')
- if np.any(np.isinf(krk)):
-  print('Inf detected in Runge-Kutta coefficient in rk4()')
- 
- return krk
-
-def rk4(n, Nz, N, omg, tht, nu, kap, U, t, z, dz, l, k, Phi ):
+def rk4( Nz, N, omg, tht, nu, kap, U, t, z, dz, l, k, Phi ):
  
  L = U/omg
  Re = omg*L**2./nu
@@ -709,7 +275,7 @@ def rk4(n, Nz, N, omg, tht, nu, kap, U, t, z, dz, l, k, Phi ):
  # Phillips (1970) / Wunsch (1970) steady non-rotating solution
  #( b0, u0, bz0, uz0 ) = steady_nonrotating_solution( N, omg, tht, nu, kap, [t[n]], z )
  # non-rotating oscillating solution, Baidulov (2010):
- ( b, u, bz, uz ) = xforcing_nonrotating_solution( U, N, omg, tht, nu, kap, [t[n]], z )
+ ( b, u, bz, uz ) = xforcing_nonrotating_solution( U, N, omg, tht, nu, kap, t, z ) 
 
  # pressure matrices:
  #d = make_d(k,uz0 + uz,Nz) 
@@ -724,6 +290,15 @@ def rk4(n, Nz, N, omg, tht, nu, kap, U, t, z, dz, l, k, Phi ):
  dzP3 = np.dot(partial_z,P3)
  dzP4 = np.dot(partial_z,P4)
 
+ print('e =',e)
+ print('d =',d)
+ print('La_inv =',La_inv)
+ print('partial_z =',partial_z)
+ print('P3 =',P3)
+ print('P4 =',P4)
+ print('dzP4 =',dzP4)
+ print('dzP3 =',dzP3)
+
  check_matrix(e,'e')
  check_matrix(d,'d')
  check_matrix(La_inv,'La_inv')
@@ -737,6 +312,10 @@ def rk4(n, Nz, N, omg, tht, nu, kap, U, t, z, dz, l, k, Phi ):
  DI = make_DI(dz,Nz,U,k,l,Re)
  D4 = make_D4(dz,Nz,U,k,l,Re,Pr)
   
+ print('DI =',DI)
+ print('D4 =',D4)
+
+ #print(np.shape(DI))
  A11 = DI
  A12 = np.zeros([Nz,Nz],dtype=complex) 
  #A13 = make_A13(Nz,uz0 + uz,k,P3)
@@ -764,6 +343,12 @@ def rk4(n, Nz, N, omg, tht, nu, kap, U, t, z, dz, l, k, Phi ):
  check_matrix(A34,'A34')
  check_matrix(A43,'A43')
 
+ print('A13 =',A13)
+ print('A33 =',A33)
+ print('A14 =',A14)
+ print('A34 =',A34)
+ print('A43 =',A43)
+
  A1 = np.concatenate((A11,A12,A13,A14),axis=1)
  A2 = np.concatenate((A21,A22,A23,A24),axis=1)
  A3 = np.concatenate((A31,A32,A33,A34),axis=1)
@@ -771,6 +356,7 @@ def rk4(n, Nz, N, omg, tht, nu, kap, U, t, z, dz, l, k, Phi ):
  Am = np.concatenate((A1,A2,A3,A4),axis=0)
  
  check_matrix(Am,'Am')
+ check_matrix(Phi,'Phi')
 
  # Runge-Kutta coefficients
  krk = np.dot(Am,Phi) 
@@ -779,23 +365,6 @@ def rk4(n, Nz, N, omg, tht, nu, kap, U, t, z, dz, l, k, Phi ):
 
  return krk
 
-
-
-def rk4_test( alpha, beta, omg, t, P ):
- #print(-alpha)
- #print(-beta)
- #print(t[n])
- #print(alpha,beta)
- A0 = [[-alpha,-np.exp(1j*omg*t)],[0.,-beta]]
- #print(Am)
- #check_matrix(Am,'Am')
-
- # Runge-Kutta coefficients
- krk = np.dot(A0,P) 
- 
- #check_matrix(krk,'krk')
-
- return krk
 
 def ordered_prod( alpha, beta, omg, t , dt):
  P0 = np.exp([[-alpha,-np.exp(1j*omg*t)],[0.,-beta]]*np.ones([2,2])*dt)
@@ -826,8 +395,10 @@ def steady_nonrotating_solution( N, omg, tht, nu, kap, t, z ):
  return b0, u0, bz0, uz0
 
 def xforcing_nonrotating_solution( U, N, omg, tht, nu, kap, t, z ):
-
+ 
+ t = [t]
  Nt = np.shape(t)[0]
+ #print(Nt)
  Nz = np.shape(z)[0]
  Pr = nu / kap
  
