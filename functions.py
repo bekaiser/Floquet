@@ -211,8 +211,8 @@ def make_D4(dz,Nz,U,k,l,Re,Pr):
   diagNzm1[j] = 1./(dz**2.)
  D =  np.diag(diagNzm1,k=1) + np.diag(diagNz,k=0) + np.diag(diagNzm1,k=-1) 
  # now add upper and lower BCs:
- D[0,0:4] = [ -K2 + 2./(dz**2.), -5./(dz**2.), 4./(dz**2.), -1./(dz**2.) ]  # lower (wall) BC
- D[Nz-1,Nz-4:Nz] = [ -1./(dz**2.), 4./(dz**2.), -5./(dz**2.), -K2 + 2./(dz**2.) ]  # upper (far field) BC
+ D[0,0:4] = [ 0., -5./(dz**2.), 4./(dz**2.), -1./(dz**2.) ]  # lower (wall) BC
+ D[Nz-1,Nz-4:Nz] = [ -1./(dz**2.), 4./(dz**2.), -5./(dz**2.), 0. ]  # upper (far field) BC
  D4 = np.eye(Nz,Nz,0,dtype=complex)*1j*k*U + D/(Re*Pr)
  return D4
 
@@ -227,8 +227,8 @@ def make_DI(dz,Nz,U,k,l,Re):
   diagNzm1[j] = 1./(dz**2.)
  D =  np.diag(diagNzm1,k=1) + np.diag(diagNz,k=0) + np.diag(diagNzm1,k=-1) 
  # now add upper and lower BCs:
- D[0,0:4] = [ -K2 + 2./(dz**2.), -5./(dz**2.), 4./(dz**2.), -1./(dz**2.) ]  # lower (wall) BC
- D[Nz-1,Nz-4:Nz] = [ -1./(dz**2.), 4./(dz**2.), -5./(dz**2.), -K2 + 2./(dz**2.) ]  # upper (far field) BC
+ D[0,0:4] = [ 0., -5./(dz**2.), 4./(dz**2.), -1./(dz**2.) ]  # lower (wall) BC
+ D[Nz-1,Nz-4:Nz] = [ -1./(dz**2.), 4./(dz**2.), -5./(dz**2.), 0. ]  # upper (far field) BC
  DI = np.eye(Nz,Nz,0,dtype=complex)*1j*k*U + D/Re
  return DI
 
