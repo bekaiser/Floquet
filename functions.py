@@ -30,6 +30,8 @@ def make_Lap_inv(dz,Nz,K2):
  # now add upper and lower BCs:
  La[0,0:4] = [ -K2 + 2./(dz**2.), -5./(dz**2.), 4./(dz**2.), -1./(dz**2.) ] # lower (wall) BC
  La[Nz-1,Nz-4:Nz] = [ -1./(dz**2.), 4./(dz**2.), -5./(dz**2.), -K2 + 2./(dz**2.) ] # upper (far field) BC
+ #print(La)
+ #print('funct = ',La[0,1],-5./(dz**2.))
  La_inv = np.linalg.inv(La)
  """ 
  print(La[1,0:10])
@@ -43,7 +45,7 @@ def make_Lap_inv(dz,Nz,K2):
  print(4./(dz**2.))
  print(-1./(dz**2.))
  """
- return La_inv
+ return La_inv, La
 
 def rk4_test( alpha, beta, omg, t, P ):
  #print(-alpha)
@@ -116,10 +118,8 @@ def make_e(dz,Nz,C,tht,k):
  #print(- np.diag(diagNzm1,-1) )
  e = np.diag(diagNzm1,1) + np.diag(diagNz,0) - np.diag(diagNzm1,-1)
  # now add upper and lower BCs:
- #r[0,0:3] = [ -C**2.*( 1j*k + 3.*cottht/(2.*dz) ), 2.*C**2.*cottht/dz, -C**2.*cottht/(2.*dz) ] # lower (wall) BC
- #r[Nz-1,Nz-3:Nz] = [ C**2.*cottht/(2.*dz), -2.*C**2.*cottht/dz, C**2.*( -1j*k + 3.*cottht/(2.*dz) ) ] # upper (far field) BC
- #print(- 1j*k*C**2.)
- #print(cottht*C**2./(2.*dz))
+ e[0,0:3] = [ -C**2.*( 1j*k + 3.*cottht/(2.*dz) ), 2.*C**2.*cottht/dz, -C**2.*cottht/(2.*dz) ] # lower (wall) BC
+ e[Nz-1,Nz-3:Nz] = [ C**2.*cottht/(2.*dz), -2.*C**2.*cottht/dz, C**2.*( -1j*k + 3.*cottht/(2.*dz) ) ] # upper (far field) BC
  #print(e)
  return e
 
@@ -128,7 +128,7 @@ def make_partial_z(dz,Nz):
  diagNzm1 = np.zeros([Nz-1], dtype=complex)
  for j in range(0,Nz-1):
   diagNzm1[j] = 1./(2.*dz)
- pz = np.diag(diagNzm1,k=1) + np.diag(diagNzm1,k=-1)
+ pz = np.diag(diagNzm1,k=1) - np.diag(diagNzm1,k=-1)
  # now add upper and lower BCs:
  pz[0,0:3] = [ -3./(2.*dz), 2./dz, -1./(2.*dz) ] # lower (wall) BC
  pz[Nz-1,Nz-3:Nz] = [ 1./(2.*dz), -2./dz, 3./(2.*dz) ] # upper (far field) BC
@@ -176,9 +176,9 @@ def make_A43(Nz,Bz,tht):
 
 def make_A13(Nz,Uz,k,P3):
  diagNz = np.zeros([Nz], dtype=complex)
- for j in range(1,Nz-1):
-  diagNz[j] = -Uz[j]
- A13 = np.diag(diagNz,k=0) + 1j*k*P3 
+ #for j in range(1,Nz-1):
+ # diagNz[j] = -Uz[j]
+ A13 = np.diag(-Uz,k=0) + 1j*k*P3 
  #A13[0,0] = 0.+0.*1j
  #A13[Nz-1,Nz-1] = 0.+0.*1j # BCs on top/bottom w applied
  #print(A13[0,0],A13[Nz-1,Nz-1])
@@ -194,50 +194,56 @@ def make_A34(Nz,C,tht,dzP4):
  #print(A34[0,0],A34[1,1])
  return A34
 
-def make_A14(Nz,k,P4,C):
+def make_A14(Nz,k0,P4,C):
  #G = np.eye(Nz,Nz,0,dtype=complex)*C**2.
- A14 = 1j*k*P4 + np.eye(Nz,Nz,0,dtype=complex)*C**2.
+ #print(1j*k0)
+ A14 = 1j*k0*P4 + np.eye(Nz,Nz,0,dtype=complex)*C**2.
+ #print('Again =',1j*k0*P4)
+ #print(np.eye(Nz,Nz,0,dtype=complex))
+ #print(A14)
  #print(C**2.,G[0,0],G[Nz-1,Nz-1])
  return A14
 
-def make_D4(dz,Nz,U,k,l,Re,Pr):
+def make_D4(dz,Nz,U,k0,l0,Re,Pr):
  # 2nd order accurate truncation
- K2 = k**2.+l**2.
+ K2 = k0**2.+l0**2.
  diagNz = np.zeros([Nz], dtype=complex)
  diagNzm1 = np.zeros([Nz-1], dtype=complex)
  for j in range(0,Nz):
-  diagNz[j] = - K2 - 2./(dz**2.)
+  diagNz[j] = - (K2 + 2./(dz**2.))/(Re*Pr)
  for j in range(0,Nz-1):
-  diagNzm1[j] = 1./(dz**2.)
+  diagNzm1[j] = 1./((Re*Pr)*dz**2.)
  D =  np.diag(diagNzm1,k=1) + np.diag(diagNz,k=0) + np.diag(diagNzm1,k=-1) 
  # now add upper and lower BCs:
- D[0,0:4] = [ 0., -5./(dz**2.), 4./(dz**2.), -1./(dz**2.) ]  # lower (wall) BC
- D[Nz-1,Nz-4:Nz] = [ -1./(dz**2.), 4./(dz**2.), -5./(dz**2.), 0. ]  # upper (far field) BC
- D4 = np.eye(Nz,Nz,0,dtype=complex)*1j*k*U + D/(Re*Pr)
+ D[0,0:4] = [ (2./(dz**2.)-K2)/(Re*Pr), -5./((Re*Pr)*dz**2.), 4./((Re*Pr)*dz**2.), -1./((Re*Pr)*dz**2.) ]  # lower (wall) BC
+ D[Nz-1,Nz-4:Nz] = [ -1./((Re*Pr)*dz**2.), 4./((Re*Pr)*dz**2.), -5./((Re*Pr)*dz**2.), (2./(dz**2.)-K2)/(Re*Pr) ]  # upper (far field) BC
+ D4 = np.eye(Nz,Nz,0,dtype=complex)*1j*k0*U + D
  return D4
 
-def make_DI(dz,Nz,U,k,l,Re):
+def make_DI(dz,Nz,U,k0,l0,Re):
  # 2nd order accurate truncation
- K2 = k**2.+l**2.
+ K2 = k0**2.+l0**2.
  diagNz = np.zeros([Nz], dtype=complex)
  diagNzm1 = np.zeros([Nz-1], dtype=complex)
  for j in range(0,Nz):
-  diagNz[j] = - K2 - 2./(dz**2.)
+  diagNz[j] = - (K2 + 2./(dz**2.))/Re
  for j in range(0,Nz-1):
-  diagNzm1[j] = 1./(dz**2.)
+  diagNzm1[j] = 1./(Re*dz**2.)
  D =  np.diag(diagNzm1,k=1) + np.diag(diagNz,k=0) + np.diag(diagNzm1,k=-1) 
  # now add upper and lower BCs:
- D[0,0:4] = [ 0., -5./(dz**2.), 4./(dz**2.), -1./(dz**2.) ]  # lower (wall) BC
- D[Nz-1,Nz-4:Nz] = [ -1./(dz**2.), 4./(dz**2.), -5./(dz**2.), 0. ]  # upper (far field) BC
- DI = np.eye(Nz,Nz,0,dtype=complex)*1j*k*U + D/Re
+ D[0,0:4] = [ (2./(dz**2.)-K2)/Re, -5./(Re*dz**2.), 4./(Re*dz**2.), -1./(Re*dz**2.) ]  # lower (wall) BC
+ D[Nz-1,Nz-4:Nz] = [ -1./(Re*dz**2.), 4./(Re*dz**2.), -5./(Re*dz**2.), (2./(dz**2.)-K2)/Re ]  # upper (far field) BC
+ DI = np.eye(Nz,Nz,0,dtype=complex)*1j*k0*U + D
+ #print(DI)
  return DI
 
 def make_d(k,Uz,Nz):
  # Uz needs to be a vector length Nz, input U[:,nt[itime]]
  diagNz = np.zeros([Nz], dtype=complex)
- for j in range(1,Nz-1):
+ for j in range(0,Nz):
   diagNz[j] = 1j*k*Uz[j]
- d = np.diag(diagNz,k=0) # BCs on top/bottom w applied
+ d = np.diag(diagNz,k=0) 
+ #print(d)
  return d
 
 def make_transient_matrices(dz,Nz,U,k,Re,Pr,Uz,La_inv):
@@ -263,7 +269,74 @@ def make_transient_matrices(dz,Nz,U,k,Re,Pr,Uz,La_inv):
   print('Inf detected in P3')
  return DI, D4, P3
 
+def build_A( DI , D4 , k0 , l0 , P3 , P4 , dzP3 , dzP4 , uz , bz , tht , C , Nz ): # N*np.sin(tht)/omg
+ A11 = DI
+ A12 = np.zeros([Nz,Nz],dtype=complex) 
+ A13 = make_A13(Nz,uz,k0,P3) # add the mean back in?
+ A14 = make_A14(Nz,k0,P4,N*np.sin(tht)/omg)
+ A21 = np.zeros([Nz,Nz],dtype=complex)
+ A22 = DI
+ A23 = 1j*l0*P3
+ A24 = 1j*l0*P4
+ A31 = np.zeros([Nz,Nz],dtype=complex)
+ A32 = np.zeros([Nz,Nz],dtype=complex)
+ A33 = DI - dzP3
+ A34 = make_A34(Nz,C,tht,dzP4)
+ A41 = np.eye(Nz,Nz,0,dtype=complex)
+ A42 = np.zeros([Nz,Nz],dtype=complex)
+ A43 = make_A43(Nz,bz,tht) # add the mean back in?
+ A44 = D4
+ 
+ A1 = np.concatenate((A11,A12,A13,A14),axis=1)
+ A2 = np.concatenate((A21,A22,A23,A24),axis=1)
+ A3 = np.concatenate((A31,A32,A33,A34),axis=1)
+ A4 = np.concatenate((A41,A42,A43,A44),axis=1)
+ Am = np.concatenate((A1,A2,A3,A4),axis=0)
 
+ return Am #A11, A12, A13, A14, A21, A22, A23, A24, A31, A32, A33, A34, A41, A42, A43, A44
+
+
+def build_A_test( DI , D4 , k0 , l0 , P3 , P4 , uz , bz , tht , C , Nz , dz ): # N*np.sin(tht)/omg
+
+ d = make_d(k0,uz,Nz) # add the mean back in?
+ e = make_e(dz,Nz,C,tht,k0)
+ La_inv = make_Lap_inv(dz,Nz,l0**2.+k0**2.)
+ partial_z = make_partial_z(dz,Nz)
+ #print(np.shape(partial_z))
+ #P3 = np.dot(La_inv,d)
+ #P4 = np.dot(La_inv,e)
+ #print(P4[0,0],P4[1,1])
+ #print(np.shape(P3),np.shape(P4))
+ dzP3 = np.dot(partial_z,P3)
+ dzP4 = np.dot(partial_z,P4)
+ #print(np.shape(dzP3),np.shape(P3))
+ #print(np.shape(DI),np.shape(dzP3))
+ A11 = DI
+ A12 = np.zeros([Nz,Nz],dtype=complex) 
+ A13 = make_A13(Nz,uz,k0,P3) # add the mean back in?
+ A14 = make_A14(Nz,k0,P4,C) # WHY DOES THIS MAKE IT ONLY REAL?
+ #print(np.shape(A14))
+ #print('Again =',A14)
+ A21 = np.zeros([Nz,Nz],dtype=complex)
+ A22 = DI
+ A23 = 1j*l0*P3
+ A24 = 1j*l0*P4
+ A31 = np.zeros([Nz,Nz],dtype=complex)
+ A32 = np.zeros([Nz,Nz],dtype=complex)
+ A33 = DI - dzP3
+ A34 = make_A34(Nz,C,tht,dzP4)
+ A41 = np.eye(Nz,Nz,0,dtype=complex)
+ A42 = np.zeros([Nz,Nz],dtype=complex)
+ A43 = make_A43(Nz,bz,tht) # add the mean back in?
+ A44 = D4
+
+ A1 = np.concatenate((A11,A12,A13,A14),axis=1)
+ A2 = np.concatenate((A21,A22,A23,A24),axis=1)
+ A3 = np.concatenate((A31,A32,A33,A34),axis=1)
+ A4 = np.concatenate((A41,A42,A43,A44),axis=1)
+ Am = np.concatenate((A1,A2,A3,A4),axis=0)
+
+ return A11, A12, A13, A14, A21, A22, A23, A24, A31, A32, A33, A34, A41, A42, A43, A44
 
 def rk4( Nz, N, omg, tht, nu, kap, U, t, z, dz, l, k, Phi ):
  
@@ -316,6 +389,7 @@ def rk4( Nz, N, omg, tht, nu, kap, U, t, z, dz, l, k, Phi ):
  print('D4 =',D4)
 
  #print(np.shape(DI))
+ """
  A11 = DI
  A12 = np.zeros([Nz,Nz],dtype=complex) 
  #A13 = make_A13(Nz,uz0 + uz,k,P3)
@@ -354,7 +428,10 @@ def rk4( Nz, N, omg, tht, nu, kap, U, t, z, dz, l, k, Phi ):
  A3 = np.concatenate((A31,A32,A33,A34),axis=1)
  A4 = np.concatenate((A41,A42,A43,A44),axis=1)
  Am = np.concatenate((A1,A2,A3,A4),axis=0)
+ """
  
+ Am = build_A( DI , D4 , k0 , l0 , P3 , P4 , dzP3 , dzP4 , uz , bz , tht , N*np.sin(tht)/omg , Nz )
+
  check_matrix(Am,'Am')
  check_matrix(Phi,'Phi')
 
