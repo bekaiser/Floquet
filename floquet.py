@@ -27,35 +27,44 @@ stat_path = "./"
 nu = 2.0e-6 # m^2/s, kinematic viscosity
 Pr = 1. # Prandtl number
 kap = nu/Pr # m^2/s, thermometric diffusivity
-
+print('Pr = ',Pr)
 
 # flow characteristics:
 T = 44700.0 # s, M2 tide period
 omg = 2.0*np.pi/T # rads/s
-f = 1e-4 # 1/s, inertial frequency
+#f = 1e-4 # 1/s, inertial frequency
 N = 1e-3 # 1/s, buoyancy frequency
-U = 0.001 # m/s, oscillation velocity amplitude
+U = 0.00592797 # m/s, oscillation velocity amplitude
+# U = [0.00592797, 0.01185594, 0.02371189, 0.05927972, 0.11855945] corresponds to 
+# ReS = U*np.sqrt(2./(nu*omg)) =
+# [500.,1000.,2000.,5000.,10000.]
 L = U/omg # m, excursion length
 thtc= ma.asin(omg/N) # radians    
-tht = 1./4.*thtc # radians
+C = 1./4.
+tht = C*thtc # radians, sets C = 1/4
 Re = omg*L**2./nu # Reynolds number
 dRe = np.sqrt(2.*nu/omg) # Stokes' 2nd problem BL thickness
-
+ReS = np.sqrt(2.*Re)
+print('ReS = ', ReS)
+print('C = ',tht/thtc)
 
 # grid:
-H = dRe*20.
-Nz = 6 #int(H*10)
+H = dRe*40.
+Nz = 1000 #int(H*10)
 z = np.linspace((H/Nz)/2. , H, num=Nz) # m 
 dz = z[1]-z[0] # m
-
+print('dz = ', dz)
 
 # non-dimensional perturbation wavenumbers, non-dimensionalized by L=U/omega:
-k0=1. 
-l0=1.
+k0=2.*np.pi 
+l0=2.*np.pi
+# [2pi,128pi,256pi,1024pi,2048pi]
+print('k = ', k0)
+print('l = ', l0)
 
 
 # time series:
-Nt = int(T*1000) 
+Nt = int(T*100) 
 t = np.linspace( 0. , T*1. , num=Nt , endpoint=True , dtype=float) #[0.] 
 dt = t[1]-t[0]
 print('CFL =', U*dt/dz)
@@ -64,7 +73,7 @@ print('CFLx =', U*dt*np.sqrt(k0**2.+l0**2.))
 
 # time advancement:
 Phi0 = np.eye(int(4*Nz),int(4*Nz),0,dtype=complex) # initial condition (prinicipal fundamental solution matrix)
-Phin = time_step( Nz, N, omg, tht, nu, kap, U, t, z, dz, l0, k0, Phi0 , dt, 10)
+Phin = time_step( Nz, N, omg, tht, nu, kap, U, t, z, dz, l0, k0, Phi0 , dt, 100)
 
 
 # Floquet mode/multiplier solutions:
@@ -78,12 +87,15 @@ eigvalr = np.real(eigval)
 eigvali = np.imag(eigval)
 eigvecr = np.real(eigvec)
 eigveci = np.imag(eigvec)
-print(eigval)
-print(eigvec)
+#print(eigval)
+#print(eigvec)
 
 # save results to .h5:
 h5_filename = stat_path + 'eigvals.h5' 
 f2 = h5py.File(h5_filename, "w")
+dset = f2.create_dataset('ReS', data=ReS, dtype='f8')
+dset = f2.create_dataset('Pr', data=Pr, dtype='f8')
+dset = f2.create_dataset('C', data=C, dtype='f8')
 dset = f2.create_dataset('t', data=t, dtype='f8')
 dset = f2.create_dataset('z', data=z, dtype='f8')
 dset = f2.create_dataset('k', data=k0, dtype='f8')
