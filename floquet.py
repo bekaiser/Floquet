@@ -15,6 +15,7 @@ from scipy.fftpack import fft, fftshift
 import matplotlib.patches as mpatches
 from matplotlib.colors import colorConverter as cc
 from functions import make_Lap_inv, steady_nonrotating_solution, xforcing_nonrotating_solution, make_d, make_e, make_Lap_inv, make_partial_z, make_DI, make_D4, make_A13, make_A14, make_A34, make_A43, check_matrix, rk4, ordered_prod, time_step
+from datetime import datetime 
 
 figure_path = "/home/bryan/data/floquet/figures/"
 stat_path = "./"
@@ -64,7 +65,7 @@ print('l = ', l0)
 
 
 # time series:
-Nt = int(T*100) 
+Nt = int(T*10) 
 t = np.linspace( 0. , T*1. , num=Nt , endpoint=True , dtype=float) #[0.] 
 dt = t[1]-t[0]
 print('CFL =', U*dt/dz)
@@ -73,8 +74,10 @@ print('CFLx =', U*dt*np.sqrt(k0**2.+l0**2.))
 
 # time advancement:
 Phi0 = np.eye(int(4*Nz),int(4*Nz),0,dtype=complex) # initial condition (prinicipal fundamental solution matrix)
+start_time = datetime.now()
 Phin = time_step( Nz, N, omg, tht, nu, kap, U, t, z, dz, l0, k0, Phi0 , dt, 100)
-
+time_elapsed = datetime.now() - start_time
+print('Time elapsed (hh:mm:ss.ms) {}'.format(time_elapsed))
 
 # Floquet mode/multiplier solutions:
 eigval,eigvec = np.linalg.eig(Phin) # eigenvals, eigenvecs | eigenvals = floquet multipliers
@@ -90,11 +93,15 @@ eigveci = np.imag(eigvec)
 #print(eigval)
 #print(eigvec)
 
+print(type(Pr))
+print(type(C))
+Prandtl = Pr
+
 # save results to .h5:
 h5_filename = stat_path + 'eigvals.h5' 
 f2 = h5py.File(h5_filename, "w")
 dset = f2.create_dataset('ReS', data=ReS, dtype='f8')
-dset = f2.create_dataset('Pr', data=Pr, dtype='f8')
+dset = f2.create_dataset('Prandtl', data=Prandtl, dtype='f8')
 dset = f2.create_dataset('C', data=C, dtype='f8')
 dset = f2.create_dataset('t', data=t, dtype='f8')
 dset = f2.create_dataset('z', data=z, dtype='f8')
