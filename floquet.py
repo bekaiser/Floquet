@@ -45,13 +45,14 @@ dRe = np.sqrt(2.*nu/omg)
 # resolution
 H = dRe*20.
 #print(dRe,H)
-Nz = 8 #int(H*10)
-z= np.linspace(0.0 , H, num=Nz) # m 
+Nz = 6 #int(H*10)
+z = np.linspace((H/Nz)/2. , H, num=Nz) # m 
 dz = z[1]-z[0] # m
+#z = z + dz/2. # cell centers
 print('dz = ', dz)
 
-k=1. # non-dimensional wavenumber
-l=1.
+k0=1. # non-dimensional wavenumber
+l0=1.
 
 
 #print('Buoyancy CFL =', N*dt/dt)
@@ -59,14 +60,14 @@ l=1.
 # =============================================================================
 
 
-Nt = int(T*100) 
+Nt = int(T*1000) 
 
 # time series
 t = np.linspace( 0. , T*1. , num=Nt , endpoint=True , dtype=float) #[0.] 
 dt = t[1]-t[0]
 
 print('CFL =', U*dt/dz)
-print('CFLx =', U*dt*np.sqrt(k**2.+l**2.))
+print('CFLx =', U*dt*np.sqrt(k0**2.+l0**2.))
 
 Phi0 = np.eye(int(4*Nz),int(4*Nz),0,dtype=complex)
 Tf = t[0]
@@ -74,7 +75,7 @@ Tf = t[0]
 
 
 # time advancement:
-Phin = time_step( Nz, N, omg, tht, nu, kap, U, t, z, dz, l, k, Phi0 , dt, Nt)
+Phin = time_step( Nz, N, omg, tht, nu, kap, U, t, z, dz, l0, k0, Phi0 , dt, Nt)
 
 """
 for n in range(0,Nt):

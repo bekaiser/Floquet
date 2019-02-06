@@ -45,7 +45,7 @@ def make_Lap_inv(dz,Nz,K2):
  print(4./(dz**2.))
  print(-1./(dz**2.))
  """
- return La_inv, La
+ return La_inv
 
 def rk4_test( alpha, beta, omg, t, P ):
  #print(-alpha)
@@ -68,33 +68,35 @@ def ordered_prod( alpha, beta, omg, t , dt):
  return P0
 
 
-def time_step( Nz, N, omg, tht, nu, kap, U, t, z, dz, l, k, Phin , dt, Nt):
+def time_step( Nz, N, omg, tht, nu, kap, U, t, z, dz, l0, k0, Phin , dt, Nt):
 
   for n in range(0,Nt):
-   print(n)
+   #print(n)
    #Tf=t[n]
    time = t[n]
 
    # Runge-Kutta, 4th order: 
-   k1 = rk4( Nz, N, omg, tht, nu, kap, U, time , z, dz, l, k, Phin )
-   k2 = rk4( Nz, N, omg, tht, nu, kap, U, time + dt/2. , z, dz, l, k, Phin + k1*dt/2.)
-   k3 = rk4( Nz, N, omg, tht, nu, kap, U, time + dt/2. , z, dz, l, k, Phin + k1*dt/2.)
-   k4 = rk4( Nz, N, omg, tht, nu, kap, U, time + dt , z, dz, l, k, Phin + k3*dt)
+   k1 = rk4( Nz, N, omg, tht, nu, kap, U, time , z, dz, l0, k0, Phin )
+   k2 = rk4( Nz, N, omg, tht, nu, kap, U, time + dt/2. , z, dz, l0, k0, Phin + k1*dt/2.)
+   k3 = rk4( Nz, N, omg, tht, nu, kap, U, time + dt/2. , z, dz, l0, k0, Phin + k1*dt/2.)
+   k4 = rk4( Nz, N, omg, tht, nu, kap, U, time + dt , z, dz, l0, k0, Phin + k3*dt)
    #k1 =  rk4( alph, beta, omg, time, Phin )
    #k2 =  rk4( alph, beta, omg, time + dt/2., Phin + k1*(dt/2.)  )
    #k3 =  rk4( alph, beta, omg, time + dt/2., Phin + k2*(dt/2.)  )
    #k4 =  rk4( alph, beta, omg, time + dt, Phin  + k3*dt )
+   """
    print('k1 =', k1)
    print('k2 =', k2)
    print('k3 =', k3)
    print('k4 =', k4)
    print('Phin =', Phin)
+   """
    # A34 = -7
    # dzP4 = 8.8
    
 
    Phin = Phin + ( k1 + k2*2. + k3*2. + k4 )*dt/6.; 
-   print('time =', time)
+   print('time =', time/44700.)
 
    if np.any(np.isnan(Phin)) == True:
     print('NaN detected')
@@ -269,6 +271,7 @@ def make_transient_matrices(dz,Nz,U,k,Re,Pr,Uz,La_inv):
   print('Inf detected in P3')
  return DI, D4, P3
 
+"""
 def build_A( DI , D4 , k0 , l0 , P3 , P4 , dzP3 , dzP4 , uz , bz , tht , C , Nz ): # N*np.sin(tht)/omg
  A11 = DI
  A12 = np.zeros([Nz,Nz],dtype=complex) 
@@ -294,20 +297,23 @@ def build_A( DI , D4 , k0 , l0 , P3 , P4 , dzP3 , dzP4 , uz , bz , tht , C , Nz 
  Am = np.concatenate((A1,A2,A3,A4),axis=0)
 
  return Am #A11, A12, A13, A14, A21, A22, A23, A24, A31, A32, A33, A34, A41, A42, A43, A44
+"""
 
+def build_A( DI , D4 , k0 , l0 , P3 , P4 , uz , bz , tht , C , Nz , dz ): # N*np.sin(tht)/omg
 
-def build_A_test( DI , D4 , k0 , l0 , P3 , P4 , uz , bz , tht , C , Nz , dz ): # N*np.sin(tht)/omg
-
- d = make_d(k0,uz,Nz) # add the mean back in?
- e = make_e(dz,Nz,C,tht,k0)
- La_inv = make_Lap_inv(dz,Nz,l0**2.+k0**2.)
+ #d = make_d(k0,uz,Nz) # add the mean back in?
+ #e = make_e(dz,Nz,C,tht,k0)
+ #La_inv = make_Lap_inv(dz,Nz,l0**2.+k0**2.)
  partial_z = make_partial_z(dz,Nz)
+ #print(np.shape(partial_z))
+ #print(np.shape(P3))
  #print(np.shape(partial_z))
  #P3 = np.dot(La_inv,d)
  #P4 = np.dot(La_inv,e)
  #print(P4[0,0],P4[1,1])
  #print(np.shape(P3),np.shape(P4))
  dzP3 = np.dot(partial_z,P3)
+ #print(np.shape(dzP3))
  dzP4 = np.dot(partial_z,P4)
  #print(np.shape(dzP3),np.shape(P3))
  #print(np.shape(DI),np.shape(dzP3))
@@ -336,9 +342,9 @@ def build_A_test( DI , D4 , k0 , l0 , P3 , P4 , uz , bz , tht , C , Nz , dz ): #
  A4 = np.concatenate((A41,A42,A43,A44),axis=1)
  Am = np.concatenate((A1,A2,A3,A4),axis=0)
 
- return A11, A12, A13, A14, A21, A22, A23, A24, A31, A32, A33, A34, A41, A42, A43, A44
+ return Am #A11, A12, A13, A14, A21, A22, A23, A24, A31, A32, A33, A34, A41, A42, A43, A44
 
-def rk4( Nz, N, omg, tht, nu, kap, U, t, z, dz, l, k, Phi ):
+def rk4( Nz, N, omg, tht, nu, kap, U, t, z, dz, l0, k0, Phi ):
  
  L = U/omg
  Re = omg*L**2./nu
@@ -352,17 +358,19 @@ def rk4( Nz, N, omg, tht, nu, kap, U, t, z, dz, l, k, Phi ):
 
  # pressure matrices:
  #d = make_d(k,uz0 + uz,Nz) 
- d = make_d(k,uz,Nz) # add the mean back in?
- e = make_e(dz,Nz,N*np.sin(tht)/omg,tht,k)
- La_inv = make_Lap_inv(dz,Nz,l**2.+k**2.)
- partial_z = make_partial_z(dz,Nz)
+ d = make_d(k0,uz,Nz) # add the mean back in?
+ e = make_e(dz,Nz,N*np.sin(tht)/omg,tht,k0)
+ La_inv = make_Lap_inv(dz,Nz,l0**2.+k0**2.)
+ #print(np.shape(d),np.shape(La_inv))
+ #partial_z = make_partial_z(dz,Nz)
  P3 = np.dot(La_inv,d)
  P4 = np.dot(La_inv,e)
  #print(P4[0,0],P4[1,1])
  #print(np.shape(P3),np.shape(P4))
- dzP3 = np.dot(partial_z,P3)
- dzP4 = np.dot(partial_z,P4)
+ #dzP3 = np.dot(partial_z,P3)
+ #dzP4 = np.dot(partial_z,P4)
 
+ """
  print('e =',e)
  print('d =',d)
  print('La_inv =',La_inv)
@@ -371,22 +379,25 @@ def rk4( Nz, N, omg, tht, nu, kap, U, t, z, dz, l, k, Phi ):
  print('P4 =',P4)
  print('dzP4 =',dzP4)
  print('dzP3 =',dzP3)
+ """
 
  check_matrix(e,'e')
  check_matrix(d,'d')
  check_matrix(La_inv,'La_inv')
- check_matrix(partial_z,'partial_z')
+ #check_matrix(partial_z,'partial_z')
  check_matrix(P3,'P3')
  check_matrix(P4,'P4')
- check_matrix(dzP3,'dzP3')
- check_matrix(dzP4,'dzP4')
+ #check_matrix(dzP3,'dzP3')
+ #check_matrix(dzP4,'dzP4')
  
  # advective-diffusive matrices:
- DI = make_DI(dz,Nz,U,k,l,Re)
- D4 = make_D4(dz,Nz,U,k,l,Re,Pr)
+ DI = make_DI(dz,Nz,U,k0,l0,Re)
+ D4 = make_D4(dz,Nz,U,k0,l0,Re,Pr)
   
+ """
  print('DI =',DI)
  print('D4 =',D4)
+ """
 
  #print(np.shape(DI))
  """
@@ -430,7 +441,7 @@ def rk4( Nz, N, omg, tht, nu, kap, U, t, z, dz, l, k, Phi ):
  Am = np.concatenate((A1,A2,A3,A4),axis=0)
  """
  
- Am = build_A( DI , D4 , k0 , l0 , P3 , P4 , dzP3 , dzP4 , uz , bz , tht , N*np.sin(tht)/omg , Nz )
+ Am = build_A( DI , D4 , k0 , l0 , P3 , P4 , uz , bz , tht , N*np.sin(tht)/omg , Nz , dz)
 
  check_matrix(Am,'Am')
  check_matrix(Phi,'Phi')
