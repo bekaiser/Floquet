@@ -19,6 +19,7 @@ from matplotlib.colors import colorConverter as cc
 
 
 def make_Lap_inv(dz,Nz,K2):
+ # inverse of the Laplacian 
  # 2nd order accurate truncation
  diagNz = np.zeros([Nz], dtype=complex)
  diagNzm1 = np.zeros([Nz-1], dtype=complex)
@@ -31,19 +32,14 @@ def make_Lap_inv(dz,Nz,K2):
  La[0,0:4] = [ -K2 + 2./(dz**2.), -5./(dz**2.), 4./(dz**2.), -1./(dz**2.) ] # lower (wall) BC
  La[Nz-1,Nz-4:Nz] = [ -1./(dz**2.), 4./(dz**2.), -5./(dz**2.), -K2 + 2./(dz**2.) ] # upper (far field) BC
  La_inv = np.linalg.inv(La)
-
  return La_inv
 
 
 def rk4_test( alpha, beta, omg, t, P ):
-
  A0 = [[-alpha,-np.exp(1j*omg*t)],[0.,-beta]]
-
  # Runge-Kutta coefficients
  krk = np.dot(A0,P) 
- 
  #check_matrix(krk,'krk')
-
  return krk
 
 
@@ -54,15 +50,17 @@ def ordered_prod( alpha, beta, omg, t , dt):
 
 def time_step( Nz, N, omg, tht, nu, kap, U, t, z, dz, l0, k0, Phin , dt, Nt):
 
+  [L_inv, partial_z, P4, dzP4] = make_stationary_matrices(dz,Nz,N*np.sin(tht)/omg,k0**2.+l0**2.,tht,k0)
+
   for n in range(0,Nt):
    #print(n)
    time = t[n]
 
    # Runge-Kutta, 4th order: 
-   k1 = rk4( Nz, N, omg, tht, nu, kap, U, time , z, dz, l0, k0, Phin )
-   k2 = rk4( Nz, N, omg, tht, nu, kap, U, time + dt/2. , z, dz, l0, k0, Phin + k1*dt/2.)
-   k3 = rk4( Nz, N, omg, tht, nu, kap, U, time + dt/2. , z, dz, l0, k0, Phin + k1*dt/2.)
-   k4 = rk4( Nz, N, omg, tht, nu, kap, U, time + dt , z, dz, l0, k0, Phin + k3*dt)
+   k1 = rk4( Nz, N, omg, tht, nu, kap, U, time , z, dz, l0, k0, Phin , L_inv, partial_z, P4, dzP4 )
+   k2 = rk4( Nz, N, omg, tht, nu, kap, U, time + dt/2. , z, dz, l0, k0, Phin + k1*dt/2. , L_inv, partial_z, P4, dzP4 )
+   k3 = rk4( Nz, N, omg, tht, nu, kap, U, time + dt/2. , z, dz, l0, k0, Phin + k1*dt/2. , L_inv, partial_z, P4, dzP4 )
+   k4 = rk4( Nz, N, omg, tht, nu, kap, U, time + dt , z, dz, l0, k0, Phin + k3*dt , L_inv, partial_z, P4, dzP4 )
    #k1 =  rk4( alph, beta, omg, time, Phin )
    #k2 =  rk4( alph, beta, omg, time + dt/2., Phin + k1*(dt/2.)  )
    #k3 =  rk4( alph, beta, omg, time + dt/2., Phin + k2*(dt/2.)  )
@@ -81,24 +79,25 @@ def time_step( Nz, N, omg, tht, nu, kap, U, t, z, dz, l0, k0, Phin , dt, Nt):
   return Phin
 
 
-def make_e(dz,Nz,C,tht,k):
+def make_e(dz,Nz,C,tht,k0):
+ # note: this matrix is time-independent (see .pdf document)
  # 2nd order accurate truncation
  cottht = np.cos(tht)/np.sin(tht)
  diagNz = np.zeros([Nz], dtype=complex)
  diagNzm1 = np.zeros([Nz-1], dtype=complex)
  for j in range(0,Nz):
-  diagNz[j] = - 1j*k*C**2.
+  diagNz[j] = - 1j*k0*C**2.
  for j in range(0,Nz-1):
   diagNzm1[j] = cottht*C**2./(2.*dz)
- e = np.diag(diagNzm1,1) + np.diag(diagNz,0) - np.diag(diagNzm1,-1)
+ e = np.diag(diagNzm1,1) + np.diag(diagNz,0) - np.diag(diagNzm1,-1) # tridiagonal
  # now add upper and lower BCs:
- e[0,0:3] = [ -C**2.*( 1j*k + 3.*cottht/(2.*dz) ), 2.*C**2.*cottht/dz, -C**2.*cottht/(2.*dz) ] # lower (wall) BC
- e[Nz-1,Nz-3:Nz] = [ C**2.*cottht/(2.*dz), -2.*C**2.*cottht/dz, C**2.*( -1j*k + 3.*cottht/(2.*dz) ) ] # upper (far field) BC
- #print(e)
+ e[0,0:3] = [ -C**2.*( 1j*k0 + 3.*cottht/(2.*dz) ), 2.*C**2.*cottht/dz, -C**2.*cottht/(2.*dz) ] # lower (wall) BC
+ e[Nz-1,Nz-3:Nz] = [ C**2.*cottht/(2.*dz), -2.*C**2.*cottht/dz, C**2.*( -1j*k0 + 3.*cottht/(2.*dz) ) ] # upper (far field) BC
  return e
 
 
 def make_partial_z(dz,Nz):
+ # first-order derivative matrix 
  # 2nd order accurate truncation
  diagNzm1 = np.zeros([Nz-1], dtype=complex)
  for j in range(0,Nz-1):
@@ -110,12 +109,13 @@ def make_partial_z(dz,Nz):
  return pz
 
 
-def make_stationary_matrices(dz,Nz,C,K2,tht,k):
- La_inv = make_Lap_inv(dz,Nz,K2)
- pz = make_partial_z(dz,Nz)
- r = make_r(dz,Nz,C,tht,k)
- P4 = np.dot(La_inv,r)
- return La_inv, pz, P4
+def make_stationary_matrices(dz,Nz,C,K2,tht,k0):
+ L_inv = make_Lap_inv(dz,Nz,K2)
+ partial_z = make_partial_z(dz,Nz)
+ #e = make_e(dz,Nz,C,tht,k0)
+ P4 = np.dot(L_inv,make_e(dz,Nz,C,tht,k0))
+ dzP4 = np.dot(partial_z,P4)
+ return L_inv, partial_z, P4, dzP4
 
 
 def check_matrix(self,string):
@@ -189,13 +189,8 @@ def make_DI(dz,Nz,U,k0,l0,Re):
 def make_d(k0,Uz,Nz):
  # Uz needs to be a vector length Nz, input U[:,nt[itime]]
  diagNz = np.zeros([Nz], dtype=complex)
- #print(type(Uz[0]))
- #print(type(diagNz[0]))
- #print(type(1j*k0))
  for j in range(0,Nz):
-  #print(type(diagNz[j]))
-  #print(type(1j*k0*Uz[j]))
-  diagNz[j] = 1j*k0*float(Uz[j])
+  diagNz[j] = 1j*k0*float(Uz[j]) # problem with python3.5.0 or less here
  d = np.diag(diagNz,k=0) 
  return d
 
@@ -224,11 +219,11 @@ def make_transient_matrices(dz,Nz,U,k,Re,Pr,Uz,La_inv):
  return DI, D4, P3
 
 
-def build_A( DI , D4 , k0 , l0 , P3 , P4 , uz , bz , tht , C , Nz , dz ): # N*np.sin(tht)/omg
+def build_A( DI , D4 , k0 , l0 , P3 , P4 , uz , bz , tht , C , Nz , dz , partial_z , dzP4 ): 
 
- partial_z = make_partial_z(dz,Nz)
+ #partial_z = make_partial_z(dz,Nz)
  dzP3 = np.dot(partial_z,P3)
- dzP4 = np.dot(partial_z,P4)
+ #dzP4 = np.dot(partial_z,P4)
 
  A11 = DI
  A12 = np.zeros([Nz,Nz],dtype=complex) 
@@ -255,10 +250,10 @@ def build_A( DI , D4 , k0 , l0 , P3 , P4 , uz , bz , tht , C , Nz , dz ): # N*np
 
  return Am 
 
-def rk4( Nz, N, omg, tht, nu, kap, U, t, z, dz, l0, k0, Phi ):
+def rk4( Nz, N, omg, tht, nu, kap, U, t, z, dz, l0, k0, Phi , L_inv, partial_z, P4, dzP4 ):
  
- L = U/omg
- Re = omg*L**2./nu
+ Lbl = U/omg
+ Re = omg*Lbl**2./nu
  Pr = nu/kap
  #print(t[n])
 
@@ -268,11 +263,11 @@ def rk4( Nz, N, omg, tht, nu, kap, U, t, z, dz, l0, k0, Phi ):
  ( b, u, bz, uz ) = xforcing_nonrotating_solution( U, N, omg, tht, nu, kap, t, z ) 
 
  # pressure matrices:
- d = make_d(k0,uz,Nz)
- e = make_e(dz,Nz,N*np.sin(tht)/omg,tht,k0)
- La_inv = make_Lap_inv(dz,Nz,l0**2.+k0**2.)
- P3 = np.dot(La_inv,d)
- P4 = np.dot(La_inv,e)
+ #d = make_d(k0,uz,Nz)
+ #e = make_e(dz,Nz,N*np.sin(tht)/omg,tht,k0)
+ #La_inv = make_Lap_inv(dz,Nz,l0**2.+k0**2.)
+ P3 = np.dot(L_inv,make_d(k0,uz,Nz))
+ #P4 = np.dot(La_inv,e)
  """
  print('e =',e)
  print('d =',d)
@@ -284,9 +279,9 @@ def rk4( Nz, N, omg, tht, nu, kap, U, t, z, dz, l0, k0, Phi ):
  print('dzP3 =',dzP3)
  """
 
- check_matrix(e,'e')
- check_matrix(d,'d')
- check_matrix(La_inv,'La_inv')
+ #check_matrix(e,'e')
+ #check_matrix(d,'d')
+ #check_matrix(L_inv,'L_inv')
  check_matrix(P3,'P3')
  check_matrix(P4,'P4')
 
@@ -298,7 +293,7 @@ def rk4( Nz, N, omg, tht, nu, kap, U, t, z, dz, l0, k0, Phi ):
  print('D4 =',D4)
  """
 
- Am = build_A( DI , D4 , k0 , l0 , P3 , P4 , uz , bz , tht , N*np.sin(tht)/omg , Nz , dz)
+ Am = build_A( DI , D4 , k0 , l0 , P3 , P4 , uz , bz , tht , N*np.sin(tht)/omg , Nz , dz , partial_z , dzP4 )
 
  check_matrix(Am,'Am')
  check_matrix(Phi,'Phi')
