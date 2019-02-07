@@ -81,13 +81,14 @@ def time_step( Nz, N, omg, tht, nu, kap, U, t, z, dz, l0, k0, Phin , dt, Nt):
   return Phin
 
 
-def adaptive_time_step( Nz, N, omg, tht, nu, kap, U, t, z, dz, l0, k0, Phin , dt, Nt):
+def adaptive_time_step( Nz, N, omg, tht, nu, kap, U, t, z, dz, l0, k0, Phin , dt, Nt ):
 
   [L_inv, partial_z, P4, dzP4] = make_stationary_matrices(dz,Nz,N*np.sin(tht)/omg,k0**2.+l0**2.,tht,k0)
 
-  time = t
+  t = []
+  time = 0.
 
-  while t <= 44700.:
+  while time < 44700.:
    #for n in range(0,Nt): # change to while loop!
    #print(n)
    #time = t[n]
@@ -101,7 +102,7 @@ def adaptive_time_step( Nz, N, omg, tht, nu, kap, U, t, z, dz, l0, k0, Phin , dt
 
    # Runge-Kutta, 4th order two half time steps: 
    dtb = dt/2.
-   timeb = time + dtb
+   time2 = time + dtb
    # step 1:
    k1b = rk4( Nz, N, omg, tht, nu, kap, U, time , z, dz, l0, k0, Phin , L_inv, partial_z, P4, dzP4 )
    k2b = rk4( Nz, N, omg, tht, nu, kap, U, time + dtb/2. , z, dz, l0, k0, Phin + k1b*dtb/2. , L_inv, partial_z, P4, dzP4 )
@@ -109,17 +110,17 @@ def adaptive_time_step( Nz, N, omg, tht, nu, kap, U, t, z, dz, l0, k0, Phin , dt
    k4b = rk4( Nz, N, omg, tht, nu, kap, U, time + dtb , z, dz, l0, k0, Phin + k3b*dtb , L_inv, partial_z, P4, dzP4 )
    Phinb = Phin + ( k1b + k2b*2. + k3b*2. + k4b )*dtb/6.; 
    # step 2: 
-   k1b = rk4( Nz, N, omg, tht, nu, kap, U, timeb , z, dz, l0, k0, Phinb , L_inv, partial_z, P4, dzP4 )
-   k2b = rk4( Nz, N, omg, tht, nu, kap, U, timeb + dtb/2. , z, dz, l0, k0, Phinb + k1b*dtb/2. , L_inv, partial_z, P4, dzP4 )
-   k3b = rk4( Nz, N, omg, tht, nu, kap, U, timeb + dtb/2. , z, dz, l0, k0, Phinb + k2b*dtb/2. , L_inv, partial_z, P4, dzP4 )
-   k4b = rk4( Nz, N, omg, tht, nu, kap, U, timeb + dtb , z, dz, l0, k0, Phinb + k3b*dtb , L_inv, partial_z, P4, dzP4 )
+   k1b2 = rk4( Nz, N, omg, tht, nu, kap, U, time2 , z, dz, l0, k0, Phinb , L_inv, partial_z, P4, dzP4 )
+   k2b2 = rk4( Nz, N, omg, tht, nu, kap, U, time2 + dtb/2. , z, dz, l0, k0, Phinb + k1b*dtb/2. , L_inv, partial_z, P4, dzP4 )
+   k3b2 = rk4( Nz, N, omg, tht, nu, kap, U, time2 + dtb/2. , z, dz, l0, k0, Phinb + k2b*dtb/2. , L_inv, partial_z, P4, dzP4 )
+   k4b2 = rk4( Nz, N, omg, tht, nu, kap, U, time2 + dtb , z, dz, l0, k0, Phinb + k3b*dtb , L_inv, partial_z, P4, dzP4 )
    Phinb = Phinb + ( k1b + k2b*2. + k3b*2. + k4b )*dtb/6.; 
 
-   eps = np.amax(abs(Phina-Phinb))/15.
+   trunc_err = np.amax(abs(Phina-Phinb))/15.
    
-   if eps <= 1e-6: # small truncation error: grow time step
+   if trunc_err <= 1e-10: # small truncation error: grow time step
      dt = dt*2.
-   if eps > 1e-3: # large truncation error: shrink time step
+   if trunc_err > 1e-7: # large truncation error: shrink time step
      dt = dt/2.
 
    # Runge-Kutta, 4th order appropriate time step: 
