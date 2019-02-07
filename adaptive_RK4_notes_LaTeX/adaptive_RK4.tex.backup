@@ -1,0 +1,48 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{textcomp}
+\usepackage{amsmath}
+\usepackage{amssymb} 
+\usepackage[margin=1in]{geometry}
+\usepackage{mathtools}
+\usepackage{graphicx}
+\usepackage{epstopdf}
+\usepackage{pdfpages}
+\graphicspath{ {figures/} }
+% \usepackage{caption}
+% \usepackage{multirow}
+% \usepackage{mwe}
+% \usepackage{subfig}
+% \usepackage{caption}
+% \usepackage{float}
+% \usepackage{cite}
+\newcommand\myeq{\stackrel{\mathclap{\normalfont\mbox{\scriptsize{def}}}}{=}}
+
+\title{Adaptive Runge-Kutta methods}
+\author{Bryan Kaiser}
+%\date{October 2016}
+
+\begin{document}
+
+\maketitle
+
+Advance two exact solutions from $t$ to $t+2\Delta{t}$. Advance one by taking one time step of magnitude 
+$2\Delta{t}$ (called $\mathbf{x}_1$) 
+and 
+the other by taking two time steps of $\Delta{t}$ (called $\mathbf{x}_2$), such that:
+\begin{flalign*}
+ \mathbf{x}(t+2\Delta{t}) &= \mathbf{x}_1+(2\Delta{t})^5\mathbf{c}+\mathcal{O}(\Delta{t}^6) \\
+ \mathbf{x}(t+2\Delta{t}) &= \mathbf{x}_2+2(\Delta{t})^5\mathbf{c}+\mathcal{O}(\Delta{t}^6)
+\end{flalign*}
+where the value $\mathbf{c}$ remains constant over the step and $\mathcal{O}(\Delta{t}^6)$ represents 
+the sixth and higher order terms. The difference between the two equations is an indicator 
+of the truncation error:
+\begin{equation*}
+ \mathbf{x}_2-\mathbf{x}_1=(2\Delta{t})^5\mathbf{c}-2(\Delta{t})^5\mathbf{c}=\text{truncation error}
+\end{equation*}
+\begin{equation*}
+ \mathbf{x}_2-\mathbf{x}_1=\big(32(\Delta{t})^5-2(\Delta{t})^5\big)\mathbf{c}
+\end{equation*}
+
+
+\end{document}
