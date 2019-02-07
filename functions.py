@@ -59,7 +59,7 @@ def time_step( Nz, N, omg, tht, nu, kap, U, t, z, dz, l0, k0, Phin , dt, Nt):
    # Runge-Kutta, 4th order: 
    k1 = rk4( Nz, N, omg, tht, nu, kap, U, time , z, dz, l0, k0, Phin , L_inv, partial_z, P4, dzP4 )
    k2 = rk4( Nz, N, omg, tht, nu, kap, U, time + dt/2. , z, dz, l0, k0, Phin + k1*dt/2. , L_inv, partial_z, P4, dzP4 )
-   k3 = rk4( Nz, N, omg, tht, nu, kap, U, time + dt/2. , z, dz, l0, k0, Phin + k1*dt/2. , L_inv, partial_z, P4, dzP4 )
+   k3 = rk4( Nz, N, omg, tht, nu, kap, U, time + dt/2. , z, dz, l0, k0, Phin + k2*dt/2. , L_inv, partial_z, P4, dzP4 )
    k4 = rk4( Nz, N, omg, tht, nu, kap, U, time + dt , z, dz, l0, k0, Phin + k3*dt , L_inv, partial_z, P4, dzP4 )
    #k1 =  rk4( alph, beta, omg, time, Phin )
    #k2 =  rk4( alph, beta, omg, time + dt/2., Phin + k1*(dt/2.)  )
@@ -67,6 +67,71 @@ def time_step( Nz, N, omg, tht, nu, kap, U, t, z, dz, l0, k0, Phin , dt, Nt):
    #k4 =  rk4( alph, beta, omg, time + dt, Phin  + k3*dt )
 
    Phin = Phin + ( k1 + k2*2. + k3*2. + k4 )*dt/6.; 
+
+
+   print('time =', time/44700.)
+
+   if np.any(np.isnan(Phin)) == True:
+    print('NaN detected')
+    return
+   if np.any(np.isinf(Phin)) == True:
+    print('Inf detected')
+    return
+  
+  return Phin
+
+
+def adaptive_time_step( Nz, N, omg, tht, nu, kap, U, t, z, dz, l0, k0, Phin , dt, Nt):
+
+  [L_inv, partial_z, P4, dzP4] = make_stationary_matrices(dz,Nz,N*np.sin(tht)/omg,k0**2.+l0**2.,tht,k0)
+
+  time = t
+
+  while t <= 44700.:
+   #for n in range(0,Nt): # change to while loop!
+   #print(n)
+   #time = t[n]
+
+   # Runge-Kutta, 4th order full time step: 
+   k1a = rk4( Nz, N, omg, tht, nu, kap, U, time , z, dz, l0, k0, Phin , L_inv, partial_z, P4, dzP4 )
+   k2a = rk4( Nz, N, omg, tht, nu, kap, U, time + dt/2. , z, dz, l0, k0, Phin + k1a*dt/2. , L_inv, partial_z, P4, dzP4 )
+   k3a = rk4( Nz, N, omg, tht, nu, kap, U, time + dt/2. , z, dz, l0, k0, Phin + k2a*dt/2. , L_inv, partial_z, P4, dzP4 )
+   k4a = rk4( Nz, N, omg, tht, nu, kap, U, time + dt , z, dz, l0, k0, Phin + k3a*dt , L_inv, partial_z, P4, dzP4 )
+   Phina = Phin + ( k1a + k2a*2. + k3a*2. + k4a )*dt/6.; 
+
+   # Runge-Kutta, 4th order two half time steps: 
+   dtb = dt/2.
+   timeb = time + dtb
+   # step 1:
+   k1b = rk4( Nz, N, omg, tht, nu, kap, U, time , z, dz, l0, k0, Phin , L_inv, partial_z, P4, dzP4 )
+   k2b = rk4( Nz, N, omg, tht, nu, kap, U, time + dtb/2. , z, dz, l0, k0, Phin + k1b*dtb/2. , L_inv, partial_z, P4, dzP4 )
+   k3b = rk4( Nz, N, omg, tht, nu, kap, U, time + dtb/2. , z, dz, l0, k0, Phin + k2b*dtb/2. , L_inv, partial_z, P4, dzP4 )
+   k4b = rk4( Nz, N, omg, tht, nu, kap, U, time + dtb , z, dz, l0, k0, Phin + k3b*dtb , L_inv, partial_z, P4, dzP4 )
+   Phinb = Phin + ( k1b + k2b*2. + k3b*2. + k4b )*dtb/6.; 
+   # step 2: 
+   k1b = rk4( Nz, N, omg, tht, nu, kap, U, timeb , z, dz, l0, k0, Phinb , L_inv, partial_z, P4, dzP4 )
+   k2b = rk4( Nz, N, omg, tht, nu, kap, U, timeb + dtb/2. , z, dz, l0, k0, Phinb + k1b*dtb/2. , L_inv, partial_z, P4, dzP4 )
+   k3b = rk4( Nz, N, omg, tht, nu, kap, U, timeb + dtb/2. , z, dz, l0, k0, Phinb + k2b*dtb/2. , L_inv, partial_z, P4, dzP4 )
+   k4b = rk4( Nz, N, omg, tht, nu, kap, U, timeb + dtb , z, dz, l0, k0, Phinb + k3b*dtb , L_inv, partial_z, P4, dzP4 )
+   Phinb = Phinb + ( k1b + k2b*2. + k3b*2. + k4b )*dtb/6.; 
+
+   eps = np.amax(abs(Phina-Phinb))/15.
+   
+   if eps <= 1e-6: # small truncation error: grow time step
+     dt = dt*2.
+   if eps > 1e-3: # large truncation error: shrink time step
+     dt = dt/2.
+
+   # Runge-Kutta, 4th order appropriate time step: 
+   k1 = rk4( Nz, N, omg, tht, nu, kap, U, time , z, dz, l0, k0, Phin , L_inv, partial_z, P4, dzP4 )
+   k2 = rk4( Nz, N, omg, tht, nu, kap, U, time + dt/2. , z, dz, l0, k0, Phin + k1*dt/2. , L_inv, partial_z, P4, dzP4 )
+   k3 = rk4( Nz, N, omg, tht, nu, kap, U, time + dt/2. , z, dz, l0, k0, Phin + k2*dt/2. , L_inv, partial_z, P4, dzP4 )
+   k4 = rk4( Nz, N, omg, tht, nu, kap, U, time + dt , z, dz, l0, k0, Phin + k3*dt , L_inv, partial_z, P4, dzP4 )
+   Phin = Phin + ( k1 + k2*2. + k3*2. + k4 )*dt/6.; 
+
+   time = time + dt
+   
+   print('dt = ', dt)
    print('time =', time/44700.)
 
    if np.any(np.isnan(Phin)) == True:
