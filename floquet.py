@@ -65,7 +65,7 @@ print('l = ', l0)
 
 
 # time series:
-Nt = int(T*10) 
+Nt = int(T) 
 t = np.linspace( 0. , T*1. , num=Nt , endpoint=True , dtype=float) #[0.] 
 dt = t[1]-t[0]
 print('CFL =', U*dt/dz)
@@ -75,7 +75,7 @@ print('CFLx =', U*dt*np.sqrt(k0**2.+l0**2.))
 # time advancement:
 Phi0 = np.eye(int(4*Nz),int(4*Nz),0,dtype=complex) # initial condition (prinicipal fundamental solution matrix)
 start_time = datetime.now()
-Phin = time_step( Nz, N, omg, tht, nu, kap, U, t, z, dz, l0, k0, Phi0 , dt, 100)
+Phin = adaptive_time_step( Nz, N, omg, tht, nu, kap, U, t, z, dz, l0, k0, Phi0 , dt, Nt)
 time_elapsed = datetime.now() - start_time
 print('Time elapsed (hh:mm:ss.ms) {}'.format(time_elapsed))
 
