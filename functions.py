@@ -13,6 +13,8 @@ from scipy.fftpack import fft, fftshift
 import matplotlib.patches as mpatches
 from matplotlib.colors import colorConverter as cc
 from datetime import datetime
+import numpy.distutils.system_info as sysinfo
+sysinfo.get_info('atlas')
 
 # =============================================================================    
 # functions
@@ -141,7 +143,7 @@ def adaptive_time_step( Nz, N, omg, tht, nu, kap, U, z, dz, l0, k0, Phin , dt, s
    #  dt = dt*2.
    #if trunc_err > 1e-2: # large truncation error: shrink time step
    #  dt = dt/2.
-   if trunc_err <= 5e-4: # small truncation error: grow time step
+   if trunc_err <= 1e-5: # small truncation error: grow time step
      dt = dt*2.
    if trunc_err > 1e-1: # large truncation error: shrink time step
      dt = dt/2.
@@ -416,6 +418,10 @@ def rk4( Nz, N, omg, tht, nu, kap, U, t, z, dz, l0, k0, Phi , L_inv, partial_z, 
 
  #check_matrix(Am,'Am')
  #check_matrix(Phi,'Phi')
+
+ # to use ATLAS BLAS library, both arguments in np.dot should be C-ordered. Check with:
+ #print(Am.flags)
+ #print(Phi.flags)
 
  # Runge-Kutta coefficients
  start_time_4 = datetime.now()
