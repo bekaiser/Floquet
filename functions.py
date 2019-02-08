@@ -48,16 +48,14 @@ def ordered_prod( alpha, beta, omg, t , dt):
  return P0
 
 
-def time_step( Nz, N, omg, tht, nu, kap, U, t, z, dz, l0, k0, Phin , dt, Nt):
+def time_step( Nz, N, omg, tht, nu, kap, U, z, dz, l0, k0, Phin , dt, stop_time ):
 
   [L_inv, partial_z, P4, dzP4] = make_stationary_matrices(dz,Nz,N*np.sin(tht)/omg,k0**2.+l0**2.,tht,k0)
 
-  t = []
-  time = -dt
+  time = 0.
   count = 0
 
-  while time < 1.: #44700.:
-   time = time + dt
+  while time < stop_time: #44700.: # add round here
 
    # Runge-Kutta, 4th order: 
    k1 = rk4( Nz, N, omg, tht, nu, kap, U, time , z, dz, l0, k0, Phin , L_inv, partial_z, P4, dzP4 )
@@ -67,7 +65,9 @@ def time_step( Nz, N, omg, tht, nu, kap, U, t, z, dz, l0, k0, Phin , dt, Nt):
 
    Phin = Phin + ( k1 + k2*2. + k3*2. + k4 )*dt/6.; 
 
-   print('time step = ',n+1)
+   time = time + dt
+   count = count + 1
+   print('time step = ',count)
    print('dt = ', dt)
    print('time =', time/44700.)
 
@@ -77,20 +77,20 @@ def time_step( Nz, N, omg, tht, nu, kap, U, t, z, dz, l0, k0, Phin , dt, Nt):
    if np.any(np.isinf(Phin)) == True:
     print('Inf detected')
     return
-  
+
   return Phin
 
 
-def adaptive_time_step( Nz, N, omg, tht, nu, kap, U, t, z, dz, l0, k0, Phin , dt, Nt ):
+def adaptive_time_step( Nz, N, omg, tht, nu, kap, U, z, dz, l0, k0, Phin , dt, stop_time ):
 
   [L_inv, partial_z, P4, dzP4] = make_stationary_matrices(dz,Nz,N*np.sin(tht)/omg,k0**2.+l0**2.,tht,k0)
 
-  t = []
-  time = -dt
+  time = 0.
   count = 0
 
-  while time < 1.: #44700.:
-   time = time + dt
+  # need to add a final time step option, so that it doesn't leap over the stop time
+  # add a function that says if dt+time > 1, shrink dt
+  while time < stop_time: #44700.:
 
    # Runge-Kutta, 4th order full time step: 
    k1a = rk4( Nz, N, omg, tht, nu, kap, U, time , z, dz, l0, k0, Phin , L_inv, partial_z, P4, dzP4 )
@@ -116,10 +116,15 @@ def adaptive_time_step( Nz, N, omg, tht, nu, kap, U, t, z, dz, l0, k0, Phin , dt
    Phinb = Phinb + ( k1b + k2b*2. + k3b*2. + k4b )*dtb/6.; 
 
    trunc_err = np.amax(abs(Phina-Phinb))/15.
-   
-   if trunc_err <= 1e-10: # small truncation error: grow time step
+  
+   # works well:
+   #if trunc_err <= 1e-6: # small truncation error: grow time step
+   #  dt = dt*2.
+   #if trunc_err > 1e-2: # large truncation error: shrink time step
+   #  dt = dt/2.
+   if trunc_err <= 1e-5: # small truncation error: grow time step
      dt = dt*2.
-   if trunc_err > 1e-7: # large truncation error: shrink time step
+   if trunc_err > 1e-1: # large truncation error: shrink time step
      dt = dt/2.
 
    # Runge-Kutta, 4th order appropriate time step: 
@@ -129,6 +134,7 @@ def adaptive_time_step( Nz, N, omg, tht, nu, kap, U, t, z, dz, l0, k0, Phin , dt
    k4 = rk4( Nz, N, omg, tht, nu, kap, U, time + dt , z, dz, l0, k0, Phin + k3*dt , L_inv, partial_z, P4, dzP4 )
    Phin = Phin + ( k1 + k2*2. + k3*2. + k4 )*dt/6.; 
 
+   time = time + dt # add function here! if this exceeds 1, don't go there...
    count = count + 1
    print('time step = ',count)
    print('dt = ', dt)
