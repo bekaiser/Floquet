@@ -53,8 +53,8 @@ print('ReS = ', ReS)
 print('C = ',tht/thtc)
 
 # grid:
-H = dRe*40.
-Nz = 10 #int(H*10)
+H = dRe*20.
+Nz = 100 #int(H*10)
 z = np.linspace((H/Nz)/2. , H, num=Nz) # m 
 dz = z[1]-z[0] # m
 print('dz = ', dz)
@@ -78,7 +78,7 @@ print('CFLx =', U*dt*np.sqrt(k0**2.+l0**2.))
 # time advancement:
 Phi0 = np.eye(int(4*Nz),int(4*Nz),0,dtype=complex) # initial condition (prinicipal fundamental solution matrix)
 start_time = datetime.now()
-Phin = adaptive_time_step( Nz, N, omg, tht, nu, kap, U, z, dz, l0, k0, Phi0 , dt, 10. )
+Phin = adaptive_time_step( Nz, N, omg, tht, nu, kap, U, z, dz, l0, k0, Phi0 , dt, T )
 time_elapsed = datetime.now() - start_time
 print('Time elapsed (hh:mm:ss.ms) {}'.format(time_elapsed))
 

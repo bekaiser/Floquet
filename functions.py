@@ -59,6 +59,7 @@ def time_step( Nz, N, omg, tht, nu, kap, U, z, dz, l0, k0, Phin , dt, stop_time 
   [L_inv, partial_z, P4, dzP4] = make_stationary_matrices(dz,Nz,N*np.sin(tht)/omg,k0**2.+l0**2.,tht,k0)
   diff1 = make_diff(dz,Nz,k0,l0,Re)
   diff2 = make_diff(dz,Nz,k0,l0,Re*Pr)
+  A = np.zeros([4*Nz,4*Nz],dtype=complex)
 
   time = 0.
   count = 0
@@ -68,10 +69,10 @@ def time_step( Nz, N, omg, tht, nu, kap, U, z, dz, l0, k0, Phin , dt, stop_time 
    # Runge-Kutta, 4th order: 
    # (could save on memory by eliminating k1,k2,...)
    #start_time_kcoeffs = datetime.now()
-   k1 = rk4( Nz, N, omg, tht, nu, kap, U, time , z, dz, l0, k0, Phin , L_inv, partial_z, P4, dzP4, diff1, diff2 )
-   k2 = rk4( Nz, N, omg, tht, nu, kap, U, time + dt/2. , z, dz, l0, k0, Phin + k1*dt/2. , L_inv, partial_z, P4, dzP4, diff1, diff2 )
-   k3 = rk4( Nz, N, omg, tht, nu, kap, U, time + dt/2. , z, dz, l0, k0, Phin + k2*dt/2. , L_inv, partial_z, P4, dzP4, diff1, diff2 )
-   k4 = rk4( Nz, N, omg, tht, nu, kap, U, time + dt , z, dz, l0, k0, Phin + k3*dt , L_inv, partial_z, P4, dzP4, diff1, diff2 )
+   k1 = rk4( Nz, N, omg, tht, nu, kap, U, time , z, dz, l0, k0, Phin , L_inv, partial_z, P4, dzP4, diff1, diff2, A )
+   k2 = rk4( Nz, N, omg, tht, nu, kap, U, time + dt/2. , z, dz, l0, k0, Phin + k1*dt/2. , L_inv, partial_z, P4, dzP4, diff1, diff2, A )
+   k3 = rk4( Nz, N, omg, tht, nu, kap, U, time + dt/2. , z, dz, l0, k0, Phin + k2*dt/2. , L_inv, partial_z, P4, dzP4, diff1, diff2, A )
+   k4 = rk4( Nz, N, omg, tht, nu, kap, U, time + dt , z, dz, l0, k0, Phin + k3*dt , L_inv, partial_z, P4, dzP4, diff1, diff2, A )
    #time_elapsed = datetime.now() - start_time_kcoeffs
    #print('k coeff time elapsed (hh:mm:ss.ms) {}'.format(time_elapsed))
 
@@ -105,6 +106,7 @@ def adaptive_time_step( Nz, N, omg, tht, nu, kap, U, z, dz, l0, k0, Phin , dt, s
   [L_inv, partial_z, P4, dzP4] = make_stationary_matrices(dz,Nz,N*np.sin(tht)/omg,k0**2.+l0**2.,tht,k0)
   diff1 = make_diff(dz,Nz,k0,l0,Re)
   diff2 = make_diff(dz,Nz,k0,l0,Re*Pr)
+  A = np.zeros([4*Nz,4*Nz],dtype=complex)
 
   time = 0.
   count = 0
@@ -114,26 +116,26 @@ def adaptive_time_step( Nz, N, omg, tht, nu, kap, U, z, dz, l0, k0, Phin , dt, s
   while time < stop_time: #44700.:
 
    # Runge-Kutta, 4th order full time step: 
-   k1a = rk4( Nz, N, omg, tht, nu, kap, U, time , z, dz, l0, k0, Phin , L_inv, partial_z, P4, dzP4, diff1, diff2 )
-   k2a = rk4( Nz, N, omg, tht, nu, kap, U, time + dt/2. , z, dz, l0, k0, Phin + k1a*dt/2. , L_inv, partial_z, P4, dzP4, diff1, diff2 )
-   k3a = rk4( Nz, N, omg, tht, nu, kap, U, time + dt/2. , z, dz, l0, k0, Phin + k2a*dt/2. , L_inv, partial_z, P4, dzP4, diff1, diff2 )
-   k4a = rk4( Nz, N, omg, tht, nu, kap, U, time + dt , z, dz, l0, k0, Phin + k3a*dt , L_inv, partial_z, P4, dzP4, diff1, diff2 )
+   k1a = rk4( Nz, N, omg, tht, nu, kap, U, time , z, dz, l0, k0, Phin , L_inv, partial_z, P4, dzP4, diff1, diff2, A )
+   k2a = rk4( Nz, N, omg, tht, nu, kap, U, time + dt/2. , z, dz, l0, k0, Phin + k1a*dt/2. , L_inv, partial_z, P4, dzP4, diff1, diff2, A )
+   k3a = rk4( Nz, N, omg, tht, nu, kap, U, time + dt/2. , z, dz, l0, k0, Phin + k2a*dt/2. , L_inv, partial_z, P4, dzP4, diff1, diff2, A )
+   k4a = rk4( Nz, N, omg, tht, nu, kap, U, time + dt , z, dz, l0, k0, Phin + k3a*dt , L_inv, partial_z, P4, dzP4, diff1, diff2, A )
    Phina = Phin + ( k1a + k2a*2. + k3a*2. + k4a )*dt/6.; 
 
    # Runge-Kutta, 4th order two half time steps: 
    dtb = dt/2.
    time2 = time + dtb
    # step 1:
-   k1b = rk4( Nz, N, omg, tht, nu, kap, U, time , z, dz, l0, k0, Phin , L_inv, partial_z, P4, dzP4, diff1, diff2 )
-   k2b = rk4( Nz, N, omg, tht, nu, kap, U, time + dtb/2. , z, dz, l0, k0, Phin + k1b*dtb/2. , L_inv, partial_z, P4, dzP4, diff1, diff2 )
-   k3b = rk4( Nz, N, omg, tht, nu, kap, U, time + dtb/2. , z, dz, l0, k0, Phin + k2b*dtb/2. , L_inv, partial_z, P4, dzP4, diff1, diff2 )
-   k4b = rk4( Nz, N, omg, tht, nu, kap, U, time + dtb , z, dz, l0, k0, Phin + k3b*dtb , L_inv, partial_z, P4, dzP4, diff1, diff2 )
+   k1b = rk4( Nz, N, omg, tht, nu, kap, U, time , z, dz, l0, k0, Phin , L_inv, partial_z, P4, dzP4, diff1, diff2, A )
+   k2b = rk4( Nz, N, omg, tht, nu, kap, U, time + dtb/2. , z, dz, l0, k0, Phin + k1b*dtb/2. , L_inv, partial_z, P4, dzP4, diff1, diff2, A )
+   k3b = rk4( Nz, N, omg, tht, nu, kap, U, time + dtb/2. , z, dz, l0, k0, Phin + k2b*dtb/2. , L_inv, partial_z, P4, dzP4, diff1, diff2, A )
+   k4b = rk4( Nz, N, omg, tht, nu, kap, U, time + dtb , z, dz, l0, k0, Phin + k3b*dtb , L_inv, partial_z, P4, dzP4, diff1, diff2, A )
    Phinb = Phin + ( k1b + k2b*2. + k3b*2. + k4b )*dtb/6.; 
    # step 2: 
-   k1b2 = rk4( Nz, N, omg, tht, nu, kap, U, time2 , z, dz, l0, k0, Phinb , L_inv, partial_z, P4, dzP4, diff1, diff2 )
-   k2b2 = rk4( Nz, N, omg, tht, nu, kap, U, time2 + dtb/2. , z, dz, l0, k0, Phinb + k1b*dtb/2. , L_inv, partial_z, P4, dzP4, diff1, diff2 )
-   k3b2 = rk4( Nz, N, omg, tht, nu, kap, U, time2 + dtb/2. , z, dz, l0, k0, Phinb + k2b*dtb/2. , L_inv, partial_z, P4, dzP4, diff1, diff2 )
-   k4b2 = rk4( Nz, N, omg, tht, nu, kap, U, time2 + dtb , z, dz, l0, k0, Phinb + k3b*dtb , L_inv, partial_z, P4, dzP4, diff1, diff2 )
+   k1b2 = rk4( Nz, N, omg, tht, nu, kap, U, time2 , z, dz, l0, k0, Phinb , L_inv, partial_z, P4, dzP4, diff1, diff2, A )
+   k2b2 = rk4( Nz, N, omg, tht, nu, kap, U, time2 + dtb/2. , z, dz, l0, k0, Phinb + k1b*dtb/2. , L_inv, partial_z, P4, dzP4, diff1, diff2, A )
+   k3b2 = rk4( Nz, N, omg, tht, nu, kap, U, time2 + dtb/2. , z, dz, l0, k0, Phinb + k2b*dtb/2. , L_inv, partial_z, P4, dzP4, diff1, diff2, A )
+   k4b2 = rk4( Nz, N, omg, tht, nu, kap, U, time2 + dtb , z, dz, l0, k0, Phinb + k3b*dtb , L_inv, partial_z, P4, dzP4, diff1, diff2, A )
    Phinb = Phinb + ( k1b + k2b*2. + k3b*2. + k4b )*dtb/6.; 
 
    trunc_err = np.amax(abs(Phina-Phinb))/15.
@@ -149,10 +151,10 @@ def adaptive_time_step( Nz, N, omg, tht, nu, kap, U, z, dz, l0, k0, Phin , dt, s
      dt = dt/2.
 
    # Runge-Kutta, 4th order appropriate time step: 
-   k1 = rk4( Nz, N, omg, tht, nu, kap, U, time , z, dz, l0, k0, Phin , L_inv, partial_z, P4, dzP4, diff1, diff2 )
-   k2 = rk4( Nz, N, omg, tht, nu, kap, U, time + dt/2. , z, dz, l0, k0, Phin + k1*dt/2. , L_inv, partial_z, P4, dzP4, diff1, diff2 )
-   k3 = rk4( Nz, N, omg, tht, nu, kap, U, time + dt/2. , z, dz, l0, k0, Phin + k2*dt/2. , L_inv, partial_z, P4, dzP4, diff1, diff2 )
-   k4 = rk4( Nz, N, omg, tht, nu, kap, U, time + dt , z, dz, l0, k0, Phin + k3*dt , L_inv, partial_z, P4, dzP4, diff1, diff2 )
+   k1 = rk4( Nz, N, omg, tht, nu, kap, U, time , z, dz, l0, k0, Phin , L_inv, partial_z, P4, dzP4, diff1, diff2, A )
+   k2 = rk4( Nz, N, omg, tht, nu, kap, U, time + dt/2. , z, dz, l0, k0, Phin + k1*dt/2. , L_inv, partial_z, P4, dzP4, diff1, diff2, A )
+   k3 = rk4( Nz, N, omg, tht, nu, kap, U, time + dt/2. , z, dz, l0, k0, Phin + k2*dt/2. , L_inv, partial_z, P4, dzP4, diff1, diff2, A )
+   k4 = rk4( Nz, N, omg, tht, nu, kap, U, time + dt , z, dz, l0, k0, Phin + k3*dt , L_inv, partial_z, P4, dzP4, diff1, diff2, A )
    Phin = Phin + ( k1 + k2*2. + k3*2. + k4 )*dt/6.; 
 
    time = time + dt # add function here! if this exceeds 1, don't go there...
@@ -331,6 +333,34 @@ def make_transient_matrices(dz,Nz,U,k,Re,Pr,Uz,La_inv):
  return DI, D4, P3
 """
 
+def fast_A( DI , D4 , k0 , l0 , P3 , P4 , uz , bz , tht , C , Nz , dz , partial_z , dzP4 , A ): 
+
+ # row 1:
+ A[0:Nz,0:Nz] = DI
+ # A12 = zeros
+ A[0:Nz,int(2*Nz):int(3*Nz)] = make_A13(Nz,uz,k0,P3)
+ A[0:Nz,int(3*Nz):int(4*Nz)] = make_A14(Nz,k0,P4,C)
+ 
+ # row 2:
+ # A21 = zeros
+ A[Nz:int(2*Nz),Nz:int(2*Nz)] = DI
+ A[Nz:int(2*Nz),int(2*Nz):int(3*Nz)] = 1j*l0*P3 
+ A[Nz:int(2*Nz),int(3*Nz):int(4*Nz)] = 1j*l0*P4
+ 
+ # row 3:
+ # A31 = zeros
+ # A32 = zeros
+ A[int(2*Nz):int(3*Nz),int(2*Nz):int(3*Nz)] = DI - np.dot(partial_z,P3)
+ A[int(2*Nz):int(3*Nz),int(3*Nz):int(4*Nz)] = make_A34(Nz,C,tht,dzP4)
+
+ # row 4:
+ A[int(3*Nz):int(4*Nz),0:Nz] = np.eye(Nz,Nz,0,dtype=complex)
+ # A42 = zeros
+ A[int(3*Nz):int(4*Nz),int(2*Nz):int(3*Nz)] = make_A43(Nz,bz,tht)
+ A[int(3*Nz):int(4*Nz),int(3*Nz):int(4*Nz)] = D4
+
+ return A
+
 def build_A( DI , D4 , k0 , l0 , P3 , P4 , uz , bz , tht , C , Nz , dz , partial_z , dzP4 ): 
 
  #partial_z = make_partial_z(dz,Nz)
@@ -368,7 +398,7 @@ def build_A( DI , D4 , k0 , l0 , P3 , P4 , uz , bz , tht , C , Nz , dz , partial
  
  return Am 
 
-def rk4( Nz, N, omg, tht, nu, kap, U, t, z, dz, l0, k0, Phi , L_inv, partial_z, P4, dzP4, diff1, diff2 ):
+def rk4( Nz, N, omg, tht, nu, kap, U, t, z, dz, l0, k0, Phi , L_inv, partial_z, P4, dzP4, diff1, diff2 , A ):
  
  Lbl = U/omg
  Re = omg*Lbl**2./nu
@@ -412,7 +442,8 @@ def rk4( Nz, N, omg, tht, nu, kap, U, t, z, dz, l0, k0, Phi , L_inv, partial_z, 
  """
 
  start_time_3 = datetime.now()
- Am = build_A( DI , D4 , k0 , l0 , P3 , P4 , uz , bz , tht , N*np.sin(tht)/omg , Nz , dz , partial_z , dzP4 )
+ #Am = build_A( DI , D4 , k0 , l0 , P3 , P4 , uz , bz , tht , N*np.sin(tht)/omg , Nz , dz , partial_z , dzP4 )
+ Am = fast_A( DI , D4 , k0 , l0 , P3 , P4 , uz , bz , tht , N*np.sin(tht)/omg , Nz , dz , partial_z , dzP4 , A*0. )
  time_elapsed = datetime.now() - start_time_3
  print('build A time elapsed (hh:mm:ss.ms) {}'.format(time_elapsed))
 
