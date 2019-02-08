@@ -52,23 +52,23 @@ def time_step( Nz, N, omg, tht, nu, kap, U, t, z, dz, l0, k0, Phin , dt, Nt):
 
   [L_inv, partial_z, P4, dzP4] = make_stationary_matrices(dz,Nz,N*np.sin(tht)/omg,k0**2.+l0**2.,tht,k0)
 
-  for n in range(0,Nt):
-   #print(n)
-   time = t[n]
+  t = []
+  time = -dt
+  count = 0
+
+  while time < 1.: #44700.:
+   time = time + dt
 
    # Runge-Kutta, 4th order: 
    k1 = rk4( Nz, N, omg, tht, nu, kap, U, time , z, dz, l0, k0, Phin , L_inv, partial_z, P4, dzP4 )
    k2 = rk4( Nz, N, omg, tht, nu, kap, U, time + dt/2. , z, dz, l0, k0, Phin + k1*dt/2. , L_inv, partial_z, P4, dzP4 )
    k3 = rk4( Nz, N, omg, tht, nu, kap, U, time + dt/2. , z, dz, l0, k0, Phin + k2*dt/2. , L_inv, partial_z, P4, dzP4 )
    k4 = rk4( Nz, N, omg, tht, nu, kap, U, time + dt , z, dz, l0, k0, Phin + k3*dt , L_inv, partial_z, P4, dzP4 )
-   #k1 =  rk4( alph, beta, omg, time, Phin )
-   #k2 =  rk4( alph, beta, omg, time + dt/2., Phin + k1*(dt/2.)  )
-   #k3 =  rk4( alph, beta, omg, time + dt/2., Phin + k2*(dt/2.)  )
-   #k4 =  rk4( alph, beta, omg, time + dt, Phin  + k3*dt )
 
    Phin = Phin + ( k1 + k2*2. + k3*2. + k4 )*dt/6.; 
 
-
+   print('time step = ',n+1)
+   print('dt = ', dt)
    print('time =', time/44700.)
 
    if np.any(np.isnan(Phin)) == True:
@@ -86,12 +86,11 @@ def adaptive_time_step( Nz, N, omg, tht, nu, kap, U, t, z, dz, l0, k0, Phin , dt
   [L_inv, partial_z, P4, dzP4] = make_stationary_matrices(dz,Nz,N*np.sin(tht)/omg,k0**2.+l0**2.,tht,k0)
 
   t = []
-  time = 0.
+  time = -dt
+  count = 0
 
-  while time < 44700.:
-   #for n in range(0,Nt): # change to while loop!
-   #print(n)
-   #time = t[n]
+  while time < 1.: #44700.:
+   time = time + dt
 
    # Runge-Kutta, 4th order full time step: 
    k1a = rk4( Nz, N, omg, tht, nu, kap, U, time , z, dz, l0, k0, Phin , L_inv, partial_z, P4, dzP4 )
@@ -130,8 +129,8 @@ def adaptive_time_step( Nz, N, omg, tht, nu, kap, U, t, z, dz, l0, k0, Phin , dt
    k4 = rk4( Nz, N, omg, tht, nu, kap, U, time + dt , z, dz, l0, k0, Phin + k3*dt , L_inv, partial_z, P4, dzP4 )
    Phin = Phin + ( k1 + k2*2. + k3*2. + k4 )*dt/6.; 
 
-   time = time + dt
-   
+   count = count + 1
+   print('time step = ',count)
    print('dt = ', dt)
    print('time =', time/44700.)
 

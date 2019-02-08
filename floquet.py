@@ -51,7 +51,7 @@ print('C = ',tht/thtc)
 
 # grid:
 H = dRe*40.
-Nz = 1000 #int(H*10)
+Nz = 10 #int(H*10)
 z = np.linspace((H/Nz)/2. , H, num=Nz) # m 
 dz = z[1]-z[0] # m
 print('dz = ', dz)
@@ -65,7 +65,7 @@ print('l = ', l0)
 
 
 # time series:
-Nt = int(T) 
+Nt = int(T*100) 
 t = np.linspace( 0. , T*1. , num=Nt , endpoint=True , dtype=float) #[0.] 
 dt = t[1]-t[0]
 print('CFL =', U*dt/dz)
@@ -118,3 +118,5 @@ dset = f2.create_dataset('Pr', data=Pr, dtype='f8')
 dset = f2.create_dataset('omg', data=omg, dtype='f8')
 print('\nfile written!\n')
 
+print(eigvalr)
+print(eigvali)
