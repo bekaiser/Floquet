@@ -443,7 +443,7 @@ def rk4( Nz, N, omg, tht, nu, kap, U, t, z, dz, l0, k0, Phi , L_inv, partial_z, 
 
  start_time_3 = datetime.now()
  #Am = build_A( DI , D4 , k0 , l0 , P3 , P4 , uz , bz , tht , N*np.sin(tht)/omg , Nz , dz , partial_z , dzP4 )
- Am = fast_A( DI , D4 , k0 , l0 , P3 , P4 , uz , bz , tht , N*np.sin(tht)/omg , Nz , dz , partial_z , dzP4 , A*0. )
+ Am = fast_A( DI , D4 , k0 , l0 , P3 , P4 , uz , bz , tht , N*np.sin(tht)/omg , Nz , dz , partial_z , dzP4 , A*(0.+0.j) )
  time_elapsed = datetime.now() - start_time_3
  print('build A time elapsed (hh:mm:ss.ms) {}'.format(time_elapsed))
 
