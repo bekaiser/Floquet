@@ -45,10 +45,57 @@ def rk4_test( alpha, beta, omg, t, P ):
  return krk
 
 
-def ordered_prod( alpha, beta, omg, t , dt):
+def ordered_prod_test( alpha, beta, omg, t , dt):
  P0 = np.exp([[-alpha,-np.exp(1j*omg*t)],[0.,-beta]]*np.ones([2,2])*dt)
  return P0
 
+
+def op_time_step( Nz, N, omg, tht, nu, kap, U, z, dz, l0, k0, Phin , dt, stop_time ):
+
+  Lbl = U/omg
+  Re = omg*Lbl**2./nu
+  Pr = nu/kap
+
+  [L_inv, partial_z, P4, dzP4] = make_stationary_matrices(dz,Nz,N*np.sin(tht)/omg,k0**2.+l0**2.,tht,k0)
+  diff1 = make_diff(dz,Nz,k0,l0,Re)
+  diff2 = make_diff(dz,Nz,k0,l0,Re*Pr)
+  A = np.zeros([4*Nz,4*Nz],dtype=complex)
+
+  time = 0.
+  count = 0
+
+  while time < stop_time: #44700.: # add round here
+
+   Phin = np.dot(ordered_prod( Nz, N, omg, tht, nu, kap, U, time, z, dz, l0, k0, Phin , L_inv, partial_z, P4, dzP4, diff1, diff2 , A , dt ),Phin)
+   # Runge-Kutta, 4th order: 
+   # (could save on memory by eliminating k1,k2,...)
+   #start_time_kcoeffs = datetime.now()
+   #k1 = rk4( Nz, N, omg, tht, nu, kap, U, time , z, dz, l0, k0, Phin , L_inv, partial_z, P4, dzP4, diff1, diff2, A )
+   #k2 = rk4( Nz, N, omg, tht, nu, kap, U, time + dt/2. , z, dz, l0, k0, Phin + k1*dt/2. , L_inv, partial_z, P4, dzP4, diff1, diff2, A )
+   #k3 = rk4( Nz, N, omg, tht, nu, kap, U, time + dt/2. , z, dz, l0, k0, Phin + k2*dt/2. , L_inv, partial_z, P4, dzP4, diff1, diff2, A )
+   #k4 = rk4( Nz, N, omg, tht, nu, kap, U, time + dt , z, dz, l0, k0, Phin + k3*dt , L_inv, partial_z, P4, dzP4, diff1, diff2, A )
+   #time_elapsed = datetime.now() - start_time_kcoeffs
+   #print('k coeff time elapsed (hh:mm:ss.ms) {}'.format(time_elapsed))
+
+   #start_time_Phi_update = datetime.now()
+   #Phin = Phin + ( k1 + k2*2. + k3*2. + k4 )*dt/6.; 
+   #time_elapsed = datetime.now() - start_time_Phi_update
+   #print('Phi update time elapsed (hh:mm:ss.ms) {}'.format(time_elapsed))
+
+   time = time + dt
+   count = count + 1
+   print('time step = ',count)
+   print('dt = ', dt)
+   print('time =', time/44700.)
+
+   if np.any(np.isnan(Phin)) == True:
+    print('NaN detected')
+    return
+   if np.any(np.isinf(Phin)) == True:
+    print('Inf detected')
+    return
+
+  return Phin
 
 def time_step( Nz, N, omg, tht, nu, kap, U, z, dz, l0, k0, Phin , dt, stop_time ):
 
@@ -398,6 +445,21 @@ def build_A( DI , D4 , k0 , l0 , P3 , P4 , uz , bz , tht , C , Nz , dz , partial
  
  return Am 
 
+def ordered_prod( Nz, N, omg, tht, nu, kap, U, t, z, dz, l0, k0, Phi , L_inv, partial_z, P4, dzP4, diff1, diff2 , A , dt):
+ Lbl = U/omg
+ Re = omg*Lbl**2./nu
+ Pr = nu/kap
+
+ ( b, u, bz, uz ) = xforcing_nonrotating_solution( U, N, omg, tht, nu, kap, t, z )
+
+ P3 = np.dot(L_inv,make_d(k0,uz,Nz))
+ DI = make_D(Nz,U,k0,diff1) 
+ D4 = make_D(Nz,U,k0,diff2) 
+ Am = fast_A( DI , D4 , k0 , l0 , P3 , P4 , uz , bz , tht , N*np.sin(tht)/omg , Nz , dz , partial_z , dzP4 , A*(0.+0.j) )
+ 
+ return np.exp(np.multiply(Am,np.ones(np.shape(Am))*dt))
+
+
 def rk4( Nz, N, omg, tht, nu, kap, U, t, z, dz, l0, k0, Phi , L_inv, partial_z, P4, dzP4, diff1, diff2 , A ):
  
  Lbl = U/omg
@@ -463,11 +525,6 @@ def rk4( Nz, N, omg, tht, nu, kap, U, t, z, dz, l0, k0, Phi , L_inv, partial_z, 
  check_matrix(krk,'krk')
 
  return krk
-
-
-def ordered_prod( alpha, beta, omg, t , dt):
- P0 = np.exp([[-alpha,-np.exp(1j*omg*t)],[0.,-beta]]*np.ones([2,2])*dt)
- return P0
 
 
 def steady_nonrotating_solution( N, omg, tht, nu, kap, t, z ):

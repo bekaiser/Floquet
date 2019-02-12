@@ -62,7 +62,7 @@ for m in range(0,np.shape(M)[0]):
   k4 =  rk4_test( alph, beta, omg, time + dt, Phin  + k3*dt )
   Phin = Phin + ( k1 + k2*2. + k3*2. + k4 )*dt/6.; # now at t[n+1]
 
-  PhinOP = ordered_prod( alph, beta, omg, time , dt)*PhinOP # clearly the better way to go!
+  PhinOP = ordered_prod_test( alph, beta, omg, time , dt)*PhinOP # clearly the better way to go!
   
 
  # analytical solution:

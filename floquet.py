@@ -14,7 +14,7 @@ from scipy import signal
 from scipy.fftpack import fft, fftshift
 import matplotlib.patches as mpatches
 from matplotlib.colors import colorConverter as cc
-from functions import make_Lap_inv, steady_nonrotating_solution, xforcing_nonrotating_solution, make_d, make_e, make_Lap_inv, make_partial_z, make_D, make_A13, make_A14, make_A34, make_A43, check_matrix, rk4, ordered_prod, time_step, adaptive_time_step
+from functions import make_Lap_inv, steady_nonrotating_solution, xforcing_nonrotating_solution, make_d, make_e, make_Lap_inv, make_partial_z, make_D, make_A13, make_A14, make_A34, make_A43, check_matrix, rk4, ordered_prod, time_step, adaptive_time_step, op_time_step
 from datetime import datetime 
 import numpy.distutils.system_info as sysinfo
 sysinfo.get_info('atlas')
@@ -54,7 +54,7 @@ print('C = ',tht/thtc)
 
 # grid:
 H = dRe*20.
-Nz = 100 #int(H*10)
+Nz = 10 #int(H*10)
 z = np.linspace((H/Nz)/2. , H, num=Nz) # m 
 dz = z[1]-z[0] # m
 print('dz = ', dz)
@@ -78,7 +78,7 @@ print('CFLx =', U*dt*np.sqrt(k0**2.+l0**2.))
 # time advancement:
 Phi0 = np.eye(int(4*Nz),int(4*Nz),0,dtype=complex) # initial condition (prinicipal fundamental solution matrix)
 start_time = datetime.now()
-Phin = adaptive_time_step( Nz, N, omg, tht, nu, kap, U, z, dz, l0, k0, Phi0 , dt, T )
+Phin = time_step( Nz, N, omg, tht, nu, kap, U, z, dz, l0, k0, Phi0 , dt, 0.01 )
 time_elapsed = datetime.now() - start_time
 print('Time elapsed (hh:mm:ss.ms) {}'.format(time_elapsed))
 
@@ -95,6 +95,9 @@ eigvecr = np.real(eigvec)
 eigveci = np.imag(eigvec)
 #print(eigval)
 #print(eigvec)
+
+#print(eigvalr)
+#print(eigvali)
 
 print(type(Pr))
 print(type(C))
@@ -123,3 +126,6 @@ print('\nfile written!\n')
 
 print(eigvalr)
 print(eigvali)
+print(np.shape(eigvalr))
+
+
