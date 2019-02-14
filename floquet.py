@@ -78,7 +78,7 @@ print('CFLx =', U*dt*np.sqrt(k0**2.+l0**2.))
 # time advancement:
 Phi0 = np.eye(int(4*Nz),int(4*Nz),0,dtype=complex) # initial condition (prinicipal fundamental solution matrix)
 start_time = datetime.now()
-Phin = time_step( Nz, N, omg, tht, nu, kap, U, z, dz, l0, k0, Phi0 , dt, 0.01 )
+Phin = time_step( Nz, N, omg, tht, nu, kap, U, z, dz, l0, k0, Phi0 , dt, dt )
 time_elapsed = datetime.now() - start_time
 print('Time elapsed (hh:mm:ss.ms) {}'.format(time_elapsed))
 

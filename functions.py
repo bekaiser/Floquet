@@ -66,21 +66,7 @@ def op_time_step( Nz, N, omg, tht, nu, kap, U, z, dz, l0, k0, Phin , dt, stop_ti
 
   while time < stop_time: #44700.: # add round here
 
-   Phin = np.dot(ordered_prod( Nz, N, omg, tht, nu, kap, U, time, z, dz, l0, k0, Phin , L_inv, partial_z, P4, dzP4, diff1, diff2 , A , dt ),Phin)
-   # Runge-Kutta, 4th order: 
-   # (could save on memory by eliminating k1,k2,...)
-   #start_time_kcoeffs = datetime.now()
-   #k1 = rk4( Nz, N, omg, tht, nu, kap, U, time , z, dz, l0, k0, Phin , L_inv, partial_z, P4, dzP4, diff1, diff2, A )
-   #k2 = rk4( Nz, N, omg, tht, nu, kap, U, time + dt/2. , z, dz, l0, k0, Phin + k1*dt/2. , L_inv, partial_z, P4, dzP4, diff1, diff2, A )
-   #k3 = rk4( Nz, N, omg, tht, nu, kap, U, time + dt/2. , z, dz, l0, k0, Phin + k2*dt/2. , L_inv, partial_z, P4, dzP4, diff1, diff2, A )
-   #k4 = rk4( Nz, N, omg, tht, nu, kap, U, time + dt , z, dz, l0, k0, Phin + k3*dt , L_inv, partial_z, P4, dzP4, diff1, diff2, A )
-   #time_elapsed = datetime.now() - start_time_kcoeffs
-   #print('k coeff time elapsed (hh:mm:ss.ms) {}'.format(time_elapsed))
-
-   #start_time_Phi_update = datetime.now()
-   #Phin = Phin + ( k1 + k2*2. + k3*2. + k4 )*dt/6.; 
-   #time_elapsed = datetime.now() - start_time_Phi_update
-   #print('Phi update time elapsed (hh:mm:ss.ms) {}'.format(time_elapsed))
+   Phin = np.multiply(ordered_prod( Nz, N, omg, tht, nu, kap, U, time, z, dz, l0, k0, Phin , L_inv, partial_z, P4, dzP4, diff1, diff2 , A , dt ),Phin)
 
    time = time + dt
    count = count + 1
@@ -446,9 +432,9 @@ def build_A( DI , D4 , k0 , l0 , P3 , P4 , uz , bz , tht , C , Nz , dz , partial
  return Am 
 
 def ordered_prod( Nz, N, omg, tht, nu, kap, U, t, z, dz, l0, k0, Phi , L_inv, partial_z, P4, dzP4, diff1, diff2 , A , dt):
- Lbl = U/omg
- Re = omg*Lbl**2./nu
- Pr = nu/kap
+ #Lbl = U/omg
+ #Re = omg*Lbl**2./nu
+ #Pr = nu/kap
 
  ( b, u, bz, uz ) = xforcing_nonrotating_solution( U, N, omg, tht, nu, kap, t, z )
 

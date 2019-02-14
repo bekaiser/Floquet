@@ -19,7 +19,7 @@ from matplotlib.colors import colorConverter as cc
 
 from functions import make_Lap_inv, steady_nonrotating_solution, xforcing_nonrotating_solution, make_d, make_e, make_Lap_inv, make_partial_z, make_DI, make_D4, make_A13, make_A14, make_A34, make_A43, check_matrix, rk4, ordered_prod, time_step, build_A_test
 
-figure_path = "./floquet/figures/"
+figure_path = "../figures/"
 
 
 

@@ -20,8 +20,8 @@ import numpy.distutils.system_info as sysinfo
 sysinfo.get_info('atlas')
 
 
-figure_path = "./figures/"
-stat_path = "./"
+figure_path = "../figures/"
+stat_path = "../"
 
 
 # =============================================================================
