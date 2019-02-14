@@ -1,6 +1,6 @@
 # Floquet analysis of an oscillating boundary layer flow
 # Bryan Kaiser
-# 2/5/19
+# 2/14/19
 
 import h5py
 import numpy as np
@@ -20,7 +20,7 @@ import numpy.distutils.system_info as sysinfo
 sysinfo.get_info('atlas')
 
 
-figure_path = "/home/bryan/data/floquet/figures/"
+figure_path = "./figures/"
 stat_path = "./"
 
 
@@ -78,7 +78,7 @@ print('CFLx =', U*dt*np.sqrt(k0**2.+l0**2.))
 # time advancement:
 Phi0 = np.eye(int(4*Nz),int(4*Nz),0,dtype=complex) # initial condition (prinicipal fundamental solution matrix)
 start_time = datetime.now()
-Phin = time_step( Nz, N, omg, tht, nu, kap, U, z, dz, l0, k0, Phi0 , dt, dt )
+Phin = op_time_step( Nz, N, omg, tht, nu, kap, U, z, dz, l0, k0, Phi0 , dt, dt )
 time_elapsed = datetime.now() - start_time
 print('Time elapsed (hh:mm:ss.ms) {}'.format(time_elapsed))
 
