@@ -118,7 +118,7 @@ def time_step( Nz, N, omg, tht, nu, kap, U, z, dz, l0, k0, Phin , dt, stop_time 
    time = time + dt
    count = count + 1
    print('time step = ',count)
-   print('dt = ', dt)
+   #print('dt = ', dt)
    print('time =', time/44700.)
 
    if np.any(np.isnan(Phin)) == True:
@@ -401,7 +401,7 @@ def build_A( DI , D4 , k0 , l0 , P3 , P4 , uz , bz , tht , C , Nz , dz , partial
  #dzP3 = np.dot(partial_z,P3)
  #dzP4 = np.dot(partial_z,P4)
 
- start_time_1 = datetime.now()
+ #start_time_1 = datetime.now()
  A11 = DI
  A12 = np.zeros([Nz,Nz],dtype=complex) 
  A13 = make_A13(Nz,uz,k0,P3) 
@@ -419,16 +419,16 @@ def build_A( DI , D4 , k0 , l0 , P3 , P4 , uz , bz , tht , C , Nz , dz , partial
  A43 = make_A43(Nz,bz,tht) 
  A44 = D4
  time_elapsed = datetime.now() - start_time_1
- print('make A chunks time elapsed (hh:mm:ss.ms) {}'.format(time_elapsed))
+ #print('make A chunks time elapsed (hh:mm:ss.ms) {}'.format(time_elapsed))
 
- start_time_2 = datetime.now()
+ #start_time_2 = datetime.now()
  A1 = np.concatenate((A11,A12,A13,A14),axis=1)
  A2 = np.concatenate((A21,A22,A23,A24),axis=1)
  A3 = np.concatenate((A31,A32,A33,A34),axis=1)
  A4 = np.concatenate((A41,A42,A43,A44),axis=1)
  Am = np.concatenate((A1,A2,A3,A4),axis=0)
- time_elapsed = datetime.now() - start_time_2
- print('concatenate A time elapsed (hh:mm:ss.ms) {}'.format(time_elapsed))
+ #time_elapsed = datetime.now() - start_time_2
+ #print('concatenate A time elapsed (hh:mm:ss.ms) {}'.format(time_elapsed))
  
  return Am 
 
@@ -461,25 +461,21 @@ def rk4( Nz, N, omg, tht, nu, kap, U, t, z, dz, l0, k0, Phi , L_inv, partial_z, 
  DI = make_D(Nz,U,k0,diff1) #make_DI(dz,Nz,U,k0,l0,Re)
  D4 = make_D(Nz,U,k0,diff2) #make_D4(dz,Nz,U,k0,l0,Re,Pr)
 
- start_time_3 = datetime.now()
+ #start_time_3 = datetime.now()
  #Am = build_A( DI , D4 , k0 , l0 , P3 , P4 , uz , bz , tht , N*np.sin(tht)/omg , Nz , dz , partial_z , dzP4 )
  Am = fast_A( DI , D4 , k0 , l0 , P3 , P4 , uz , bz , tht , N*np.sin(tht)/omg , Nz , dz , partial_z , dzP4 , A*(0.+0.j) )
- time_elapsed = datetime.now() - start_time_3
- print('build A time elapsed (hh:mm:ss.ms) {}'.format(time_elapsed))
-
- #check_matrix(Am,'Am')
- #check_matrix(Phi,'Phi')
+ #time_elapsed = datetime.now() - start_time_3
+ #print('build A time elapsed (hh:mm:ss.ms) {}'.format(time_elapsed))
 
  # to use ATLAS BLAS library, both arguments in np.dot should be C-ordered. Check with:
  #print(Am.flags)
  #print(Phi.flags)
 
  # Runge-Kutta coefficients
- start_time_4 = datetime.now()
- krk = np.dot(Am,Phi) # multiply, not dot! <--------------------------------------------------------------------- CHECK
- # if changed from np.dot to np.multiply, the result is the ordered product solution (why is this? the answer doesn't depend on Nz, or dt). 
- time_elapsed = datetime.now() - start_time_4
- print('A dot Phi time elapsed (hh:mm:ss.ms) {}'.format(time_elapsed))
+ #start_time_4 = datetime.now()
+ krk = np.dot(Am,Phi) 
+ #time_elapsed = datetime.now() - start_time_4
+ #print('A dot Phi time elapsed (hh:mm:ss.ms) {}'.format(time_elapsed))
  
  check_matrix(krk,'krk')
 
