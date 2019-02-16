@@ -49,6 +49,7 @@ for m in range(0,np.shape(M)[0]):
  PhinOP = np.eye(int(2),int(2),0,dtype=complex)
  Tf = t[0]
 
+
  # time advancement:
  for n in range(0,2):
   print(n)
@@ -63,7 +64,9 @@ for m in range(0,np.shape(M)[0]):
   Phin = Phin + ( k1 + k2*2. + k3*2. + k4 )*dt/6.; # now at t[n+1]
 
   PhinOP = ordered_prod_test( alph, beta, omg, time , dt)*PhinOP # clearly the better way to go!
-  # note that * here is element by element multiplication
+  # (note that * here is element by element multiplication)
+  #PhinOP = np.dot(ordered_prod_test( alph, beta, omg, time , dt),PhinOP)
+  
   
 
  # analytical solution:

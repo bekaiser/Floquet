@@ -41,7 +41,7 @@ def rk4_test( alpha, beta, omg, t, P ):
  A0 = [[-alpha,-np.exp(1j*omg*t)],[0.,-beta]]
  # Runge-Kutta coefficients
  krk = np.dot(A0,P) 
- #check_matrix(krk,'krk')
+ krk = np.multiply(A0,P) # <----------------------------------------------------------------CHECK
  return krk
 
 
@@ -64,9 +64,12 @@ def op_time_step( Nz, N, omg, tht, nu, kap, U, z, dz, l0, k0, Phin , dt, stop_ti
   time = 0.
   count = 0
 
-  while time < stop_time: #44700.: # add round here
+  while time < stop_time: # add round here
 
    Phin = np.multiply(ordered_prod( Nz, N, omg, tht, nu, kap, U, time, z, dz, l0, k0, Phin , L_inv, partial_z, P4, dzP4, diff1, diff2 , A , dt ),Phin)
+   #Phin = np.dot(ordered_prod( Nz, N, omg, tht, nu, kap, U, time, z, dz, l0, k0, Phin , L_inv, partial_z, P4, dzP4, diff1, diff2 , A , dt ),Phin)
+   # SHOULD BE DOT?
+   # no, should be only multiplied by phi0 at the end!
 
    time = time + dt
    count = count + 1
@@ -80,7 +83,8 @@ def op_time_step( Nz, N, omg, tht, nu, kap, U, z, dz, l0, k0, Phin , dt, stop_ti
    if np.any(np.isinf(Phin)) == True:
     print('Inf detected')
     return
-
+ 
+  print('ordered product, final time = ', time)
   return Phin
 
 def time_step( Nz, N, omg, tht, nu, kap, U, z, dz, l0, k0, Phin , dt, stop_time ):
@@ -97,10 +101,10 @@ def time_step( Nz, N, omg, tht, nu, kap, U, z, dz, l0, k0, Phin , dt, stop_time 
   time = 0.
   count = 0
 
-  while time < stop_time: #44700.: # add round here
+  while time < stop_time: # add round here
 
    # Runge-Kutta, 4th order: 
-   # (could save on memory by eliminating k1,k2,...)
+
    #start_time_kcoeffs = datetime.now()
    k1 = rk4( Nz, N, omg, tht, nu, kap, U, time , z, dz, l0, k0, Phin , L_inv, partial_z, P4, dzP4, diff1, diff2, A )
    k2 = rk4( Nz, N, omg, tht, nu, kap, U, time + dt/2. , z, dz, l0, k0, Phin + k1*dt/2. , L_inv, partial_z, P4, dzP4, diff1, diff2, A )
@@ -127,6 +131,7 @@ def time_step( Nz, N, omg, tht, nu, kap, U, z, dz, l0, k0, Phin , dt, stop_time 
     print('Inf detected')
     return
 
+  print('RK4 method, final time = ', time)
   return Phin
 
 
@@ -145,8 +150,7 @@ def adaptive_time_step( Nz, N, omg, tht, nu, kap, U, z, dz, l0, k0, Phin , dt, s
   count = 0
 
   # need to add a final time step option, so that it doesn't leap over the stop time
-  # add a function that says if dt+time > 1, shrink dt
-  while time < stop_time: #44700.:
+  while time < stop_time: 
 
    # Runge-Kutta, 4th order full time step: 
    k1a = rk4( Nz, N, omg, tht, nu, kap, U, time , z, dz, l0, k0, Phin , L_inv, partial_z, P4, dzP4, diff1, diff2, A )
@@ -432,9 +436,6 @@ def build_A( DI , D4 , k0 , l0 , P3 , P4 , uz , bz , tht , C , Nz , dz , partial
  return Am 
 
 def ordered_prod( Nz, N, omg, tht, nu, kap, U, t, z, dz, l0, k0, Phi , L_inv, partial_z, P4, dzP4, diff1, diff2 , A , dt):
- #Lbl = U/omg
- #Re = omg*Lbl**2./nu
- #Pr = nu/kap
 
  ( b, u, bz, uz ) = xforcing_nonrotating_solution( U, N, omg, tht, nu, kap, t, z )
 
@@ -443,6 +444,8 @@ def ordered_prod( Nz, N, omg, tht, nu, kap, U, t, z, dz, l0, k0, Phi , L_inv, pa
  D4 = make_D(Nz,U,k0,diff2) 
  Am = fast_A( DI , D4 , k0 , l0 , P3 , P4 , uz , bz , tht , N*np.sin(tht)/omg , Nz , dz , partial_z , dzP4 , A*(0.+0.j) )
  
+ #np.exp(np.multiply(Am,np.ones(np.shape(Am))*dt)) =
+ # = np.exp(np.dot(Am,np.eye(np.shape(Am)[0],np.shape(Am)[1],0,dtype=complex)*dt)) 
  return np.exp(np.multiply(Am,np.ones(np.shape(Am))*dt))
 
 
@@ -451,43 +454,15 @@ def rk4( Nz, N, omg, tht, nu, kap, U, t, z, dz, l0, k0, Phi , L_inv, partial_z, 
  Lbl = U/omg
  Re = omg*Lbl**2./nu
  Pr = nu/kap
- #print(t[n])
 
  # Phillips (1970) / Wunsch (1970) steady non-rotating solution
  #( b0, u0, bz0, uz0 ) = steady_nonrotating_solution( N, omg, tht, nu, kap, [t[n]], z )
  # non-rotating oscillating solution, Baidulov (2010):
  ( b, u, bz, uz ) = xforcing_nonrotating_solution( U, N, omg, tht, nu, kap, t, z ) 
 
- # pressure matrices:
- #d = make_d(k0,uz,Nz)
- #e = make_e(dz,Nz,N*np.sin(tht)/omg,tht,k0)
- #La_inv = make_Lap_inv(dz,Nz,l0**2.+k0**2.)
  P3 = np.dot(L_inv,make_d(k0,uz,Nz))
- #P4 = np.dot(La_inv,e)
- """
- print('e =',e)
- print('d =',d)
- print('La_inv =',La_inv)
- print('partial_z =',partial_z)
- print('P3 =',P3)
- print('P4 =',P4)
- print('dzP4 =',dzP4)
- print('dzP3 =',dzP3)
- """
-
- #check_matrix(e,'e')
- #check_matrix(d,'d')
- #check_matrix(L_inv,'L_inv')
- #check_matrix(P3,'P3')
- #check_matrix(P4,'P4')
-
- # advective-diffusive matrices:
  DI = make_D(Nz,U,k0,diff1) #make_DI(dz,Nz,U,k0,l0,Re)
  D4 = make_D(Nz,U,k0,diff2) #make_D4(dz,Nz,U,k0,l0,Re,Pr)
- """
- print('DI =',DI)
- print('D4 =',D4)
- """
 
  start_time_3 = datetime.now()
  #Am = build_A( DI , D4 , k0 , l0 , P3 , P4 , uz , bz , tht , N*np.sin(tht)/omg , Nz , dz , partial_z , dzP4 )
@@ -504,7 +479,8 @@ def rk4( Nz, N, omg, tht, nu, kap, U, t, z, dz, l0, k0, Phi , L_inv, partial_z, 
 
  # Runge-Kutta coefficients
  start_time_4 = datetime.now()
- krk = np.dot(Am,Phi) 
+ krk = np.dot(Am,Phi) # multiply, not dot! <--------------------------------------------------------------------- CHECK
+ # if changed from np.dot to np.multiply, the result is the ordered product solution
  time_elapsed = datetime.now() - start_time_4
  print('A dot Phi time elapsed (hh:mm:ss.ms) {}'.format(time_elapsed))
  
