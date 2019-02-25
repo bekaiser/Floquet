@@ -53,11 +53,19 @@ ReS = np.sqrt(2.*Re)
 print('ReS = ', ReS)
 print('C = ',tht/thtc)
 
-# grid:
 H = dRe*20.
-Nz = 10 #int(H*10)
-z = np.linspace((H/Nz)/2. , H, num=Nz) # m 
-dz = z[1]-z[0] # m
+Nz = 10 
+grid_flag = 0
+if grid_flag == 0: # uniform grid:
+ z = np.linspace((H/Nz)/2. , H, num=Nz) # m 
+ dz = z[1]-z[0] # m
+if grid_flag != 0: # half period cosine grid
+ z = -np.cos(((np.linspace(1., 2.*Nz, num=int(2*Nz)))*2.-1.)/(4.*Nz)*np.pi)*H/2.+H/2.
+ dz = z[1:Nz] - z[0:Nz-1]
+ # add variable dz stencils <-----------------------------------------------------------------!
+
+print(H)
+#print(z[0],z[1],z[2])
 print('dz = ', dz)
 
 # non-dimensional perturbation wavenumbers, non-dimensionalized by L=U/omega:
@@ -79,8 +87,8 @@ print('CFLx =', U*dt*np.sqrt(k0**2.+l0**2.))
 # time advancement:
 Phi0 = np.eye(int(4*Nz),int(4*Nz),0,dtype=complex) # initial condition (prinicipal fundamental solution matrix)
 start_time = datetime.now()
-Phin = op_time_step( Nz, N, omg, tht, nu, kap, U, z, dz, l0, k0, Phi0 , dt, 100. )
-#Phin = time_step( Nz, N, omg, tht, nu, kap, U, z, dz, l0, k0, Phi0 , dt, 100. )
+#Phin = op_time_step( Nz, N, omg, tht, nu, kap, U, z, dz, l0, k0, Phi0 , dt, 100. ) 
+Phin = time_step( Nz, N, omg, tht, nu, kap, U, z, dz, l0, k0, Phi0 , dt, 100. )
 time_elapsed = datetime.now() - start_time
 print('Total time elapsed (hh:mm:ss.ms) {}'.format(time_elapsed))
 
