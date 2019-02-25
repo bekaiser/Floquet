@@ -18,39 +18,10 @@ import numpy.distutils.system_info as sysinfo
 sysinfo.get_info('atlas')
 
 # =============================================================================    
-# functions
-
-
-def make_Lap_inv(dz,Nz,K2):
- # inverse of the Laplacian 
- # 2nd order accurate truncation
- diagNz = np.zeros([Nz], dtype=complex)
- diagNzm1 = np.zeros([Nz-1], dtype=complex)
- for j in range(0,Nz):
-  diagNz[j] = - K2 - 2./(dz**2.)
- for j in range(0,Nz-1):
-  diagNzm1[j] = 1./(dz**2.)
- La = np.diag(diagNzm1,k=1) + np.diag(diagNz,k=0) + np.diag(diagNzm1,k=-1)
- # now add upper and lower BCs:
- La[0,0:4] = [ -K2 + 2./(dz**2.), -5./(dz**2.), 4./(dz**2.), -1./(dz**2.) ] # lower (wall) BC
- La[Nz-1,Nz-4:Nz] = [ -1./(dz**2.), 4./(dz**2.), -5./(dz**2.), -K2 + 2./(dz**2.) ] # upper (far field) BC
- La_inv = np.linalg.inv(La)
- return La_inv
-
-
-def rk4_test( alpha, beta, omg, t, P ):
- A0 = [[-alpha,-np.exp(1j*omg*t)],[0.,-beta]]
- # Runge-Kutta coefficients
- krk = np.dot(A0,P) 
- return krk
-
-
-def ordered_prod_test( alpha, beta, omg, t , dt):
- P0 = np.exp([[-alpha,-np.exp(1j*omg*t)],[0.,-beta]]*np.ones([2,2])*dt)
- return P0
-
+# time-step functions
 
 def op_time_step( Nz, N, omg, tht, nu, kap, U, z, dz, l0, k0, Phin , dt, stop_time ):
+  # ordered product time stepper
 
   Lbl = U/omg
   Re = omg*Lbl**2./nu
@@ -84,7 +55,9 @@ def op_time_step( Nz, N, omg, tht, nu, kap, U, z, dz, l0, k0, Phin , dt, stop_ti
   print('ordered product, final time = ', time)
   return Phin
 
+
 def time_step( Nz, N, omg, tht, nu, kap, U, z, dz, l0, k0, Phin , dt, stop_time ):
+  # uniform step 4th-order Runge-Kutta time stepper
 
   Lbl = U/omg
   Re = omg*Lbl**2./nu
@@ -133,6 +106,7 @@ def time_step( Nz, N, omg, tht, nu, kap, U, z, dz, l0, k0, Phin , dt, stop_time 
 
 
 def adaptive_time_step( Nz, N, omg, tht, nu, kap, U, z, dz, l0, k0, Phin , dt, stop_time ):
+  # adaptive step 4th-order Runge-Kutta time stepper
 
   Lbl = U/omg
   Re = omg*Lbl**2./nu
@@ -207,6 +181,40 @@ def adaptive_time_step( Nz, N, omg, tht, nu, kap, U, z, dz, l0, k0, Phin , dt, s
   return Phin
 
 
+def ordered_prod_test( alpha, beta, omg, t , dt):
+ # ordered product time stepping test (for the analytical solution case)
+ P0 = np.exp([[-alpha,-np.exp(1j*omg*t)],[0.,-beta]]*np.ones([2,2])*dt)
+ return P0
+
+
+def rk4_test( alpha, beta, omg, t, P ):
+ # Runge-Kutta coefficients for 4th-order time stepping test (for the analytical solution case)
+ A0 = [[-alpha,-np.exp(1j*omg*t)],[0.,-beta]]
+ krk = np.dot(A0,P) # Runge-Kutta coefficients
+ return krk
+
+
+
+# =============================================================================    
+# uniform grid derivative functions for constructing the propogator, A
+
+def make_Lap_inv(dz,Nz,K2): 
+ # inverse of the Laplacian 
+ # 2nd order accurate truncation
+ diagNz = np.zeros([Nz], dtype=complex)
+ diagNzm1 = np.zeros([Nz-1], dtype=complex)
+ for j in range(0,Nz):
+  diagNz[j] = - K2 - 2./(dz**2.)
+ for j in range(0,Nz-1):
+  diagNzm1[j] = 1./(dz**2.)
+ La = np.diag(diagNzm1,k=1) + np.diag(diagNz,k=0) + np.diag(diagNzm1,k=-1)
+ # now add upper and lower BCs:
+ La[0,0:4] = [ -K2 + 2./(dz**2.), -5./(dz**2.), 4./(dz**2.), -1./(dz**2.) ] # lower (wall) BC
+ La[Nz-1,Nz-4:Nz] = [ -1./(dz**2.), 4./(dz**2.), -5./(dz**2.), -K2 + 2./(dz**2.) ] # upper (far field) BC
+ La_inv = np.linalg.inv(La)
+ return La_inv
+
+
 def make_e(dz,Nz,C,tht,k0):
  # note: this matrix is time-independent (see .pdf document)
  # 2nd order accurate truncation
@@ -235,6 +243,105 @@ def make_partial_z(dz,Nz):
  pz[0,0:3] = [ -3./(2.*dz), 2./dz, -1./(2.*dz) ] # lower (wall) BC
  pz[Nz-1,Nz-3:Nz] = [ 1./(2.*dz), -2./dz, 3./(2.*dz) ] # upper (far field) BC
  return pz
+
+
+def make_diff(dz,Nz,k0,l0,Re):
+ # 2nd order accurate truncation
+ K2 = k0**2.+l0**2.
+ diagNz = np.zeros([Nz], dtype=complex)
+ diagNzm1 = np.zeros([Nz-1], dtype=complex)
+ for j in range(0,Nz):
+  diagNz[j] = - (K2 + 2./(dz**2.))/Re
+ for j in range(0,Nz-1):
+  diagNzm1[j] = 1./(Re*dz**2.)
+ diff =  np.diag(diagNzm1,k=1) + np.diag(diagNz,k=0) + np.diag(diagNzm1,k=-1)
+ # now add upper and lower BCs:
+ diff[0,0:4] = [ (2./(dz**2.)-K2)/Re, -5./(Re*dz**2.), 4./(Re*dz**2.), -1./(Re*dz**2.) ]  # lower (wall) BC
+ diff[Nz-1,Nz-4:Nz] = [ -1./(Re*dz**2.), 4./(Re*dz**2.), -5./(Re*dz**2.), (2./(dz**2.)-K2)/Re ]  # upper (far field) BC
+ return diff
+
+
+def make_D(Nz,U,k0,diff):
+ D = np.eye(Nz,Nz,0,dtype=complex)*1j*k0*U + diff
+ return D
+
+
+# =============================================================================    
+# cosine grid derivative functions for constructing the propogator, A
+
+"""
+def make_Lap_inv(dz,Nz,K2): 
+ # inverse of the Laplacian 
+ # 2nd order accurate truncation
+ diagNz = np.zeros([Nz], dtype=complex)
+ diagNzm1 = np.zeros([Nz-1], dtype=complex)
+ for j in range(0,Nz):
+  diagNz[j] = - K2 - 2./(dz**2.)
+ for j in range(0,Nz-1):
+  diagNzm1[j] = 1./(dz**2.)
+ La = np.diag(diagNzm1,k=1) + np.diag(diagNz,k=0) + np.diag(diagNzm1,k=-1)
+ # now add upper and lower BCs:
+ La[0,0:4] = [ -K2 + 2./(dz**2.), -5./(dz**2.), 4./(dz**2.), -1./(dz**2.) ] # lower (wall) BC
+ La[Nz-1,Nz-4:Nz] = [ -1./(dz**2.), 4./(dz**2.), -5./(dz**2.), -K2 + 2./(dz**2.) ] # upper (far field) BC
+ La_inv = np.linalg.inv(La)
+ return La_inv
+
+
+def make_e(dz,Nz,C,tht,k0):
+ # note: this matrix is time-independent (see .pdf document)
+ # 2nd order accurate truncation
+ cottht = np.cos(tht)/np.sin(tht)
+ diagNz = np.zeros([Nz], dtype=complex)
+ diagNzm1 = np.zeros([Nz-1], dtype=complex)
+ for j in range(0,Nz):
+  diagNz[j] = - 1j*k0*C**2.
+ for j in range(0,Nz-1):
+  diagNzm1[j] = cottht*C**2./(2.*dz)
+ e = np.diag(diagNzm1,1) + np.diag(diagNz,0) - np.diag(diagNzm1,-1) # tridiagonal
+ # now add upper and lower BCs:
+ e[0,0:3] = [ -C**2.*( 1j*k0 + 3.*cottht/(2.*dz) ), 2.*C**2.*cottht/dz, -C**2.*cottht/(2.*dz) ] # lower (wall) BC
+ e[Nz-1,Nz-3:Nz] = [ C**2.*cottht/(2.*dz), -2.*C**2.*cottht/dz, C**2.*( -1j*k0 + 3.*cottht/(2.*dz) ) ] # upper (far field) BC
+ return e
+
+
+def make_partial_z(dz,Nz):
+ # first-order derivative matrix 
+ # 2nd order accurate truncation
+ diagNzm1 = np.zeros([Nz-1], dtype=complex)
+ for j in range(0,Nz-1):
+  diagNzm1[j] = 1./(2.*dz)
+ pz = np.diag(diagNzm1,k=1) - np.diag(diagNzm1,k=-1)
+ # now add upper and lower BCs:
+ pz[0,0:3] = [ -3./(2.*dz), 2./dz, -1./(2.*dz) ] # lower (wall) BC
+ pz[Nz-1,Nz-3:Nz] = [ 1./(2.*dz), -2./dz, 3./(2.*dz) ] # upper (far field) BC
+ return pz
+
+
+def make_diff(dz,Nz,k0,l0,Re):
+ # 2nd order accurate truncation
+ K2 = k0**2.+l0**2.
+ diagNz = np.zeros([Nz], dtype=complex)
+ diagNzm1 = np.zeros([Nz-1], dtype=complex)
+ for j in range(0,Nz):
+  diagNz[j] = - (K2 + 2./(dz**2.))/Re
+ for j in range(0,Nz-1):
+  diagNzm1[j] = 1./(Re*dz**2.)
+ diff =  np.diag(diagNzm1,k=1) + np.diag(diagNz,k=0) + np.diag(diagNzm1,k=-1)
+ # now add upper and lower BCs:
+ diff[0,0:4] = [ (2./(dz**2.)-K2)/Re, -5./(Re*dz**2.), 4./(Re*dz**2.), -1./(Re*dz**2.) ]  # lower (wall) BC
+ diff[Nz-1,Nz-4:Nz] = [ -1./(Re*dz**2.), 4./(Re*dz**2.), -5./(Re*dz**2.), (2./(dz**2.)-K2)/Re ]  # upper (far field) BC
+ return diff
+
+
+def make_D(Nz,U,k0,diff):
+ D = np.eye(Nz,Nz,0,dtype=complex)*1j*k0*U + diff
+ return D
+
+"""
+
+
+# =============================================================================    
+# other functions for constructing the propogator, A
 
 
 def make_stationary_matrices(dz,Nz,C,K2,tht,k0):
@@ -279,60 +386,6 @@ def make_A14(Nz,k0,P4,C):
  A14 = 1j*k0*P4 + np.eye(Nz,Nz,0,dtype=complex)*C**2.
  return A14
 
-"""
-def make_D4(dz,Nz,U,k0,l0,Re,Pr):
- # 2nd order accurate truncation
- K2 = k0**2.+l0**2.
- diagNz = np.zeros([Nz], dtype=complex)
- diagNzm1 = np.zeros([Nz-1], dtype=complex)
- for j in range(0,Nz):
-  diagNz[j] = - (K2 + 2./(dz**2.))/(Re*Pr)
- for j in range(0,Nz-1):
-  diagNzm1[j] = 1./((Re*Pr)*dz**2.)
- D =  np.diag(diagNzm1,k=1) + np.diag(diagNz,k=0) + np.diag(diagNzm1,k=-1) 
- # now add upper and lower BCs:
- D[0,0:4] = [ (2./(dz**2.)-K2)/(Re*Pr), -5./((Re*Pr)*dz**2.), 4./((Re*Pr)*dz**2.), -1./((Re*Pr)*dz**2.) ]  # lower (wall) BC
- D[Nz-1,Nz-4:Nz] = [ -1./((Re*Pr)*dz**2.), 4./((Re*Pr)*dz**2.), -5./((Re*Pr)*dz**2.), (2./(dz**2.)-K2)/(Re*Pr) ]  # upper (far field) BC
- D4 = np.eye(Nz,Nz,0,dtype=complex)*1j*k0*U + D
- return D4
-"""
-
-def make_diff(dz,Nz,k0,l0,Re):
- # 2nd order accurate truncation
- K2 = k0**2.+l0**2.
- diagNz = np.zeros([Nz], dtype=complex)
- diagNzm1 = np.zeros([Nz-1], dtype=complex)
- for j in range(0,Nz):
-  diagNz[j] = - (K2 + 2./(dz**2.))/Re
- for j in range(0,Nz-1):
-  diagNzm1[j] = 1./(Re*dz**2.)
- diff =  np.diag(diagNzm1,k=1) + np.diag(diagNz,k=0) + np.diag(diagNzm1,k=-1)
- # now add upper and lower BCs:
- diff[0,0:4] = [ (2./(dz**2.)-K2)/Re, -5./(Re*dz**2.), 4./(Re*dz**2.), -1./(Re*dz**2.) ]  # lower (wall) BC
- diff[Nz-1,Nz-4:Nz] = [ -1./(Re*dz**2.), 4./(Re*dz**2.), -5./(Re*dz**2.), (2./(dz**2.)-K2)/Re ]  # upper (far field) BC
- return diff
-
-def make_D(Nz,U,k0,diff):
- D = np.eye(Nz,Nz,0,dtype=complex)*1j*k0*U + diff
- return D
-
-"""
-def make_DI(dz,Nz,U,k0,l0,Re):
- # 2nd order accurate truncation
- K2 = k0**2.+l0**2.
- diagNz = np.zeros([Nz], dtype=complex)
- diagNzm1 = np.zeros([Nz-1], dtype=complex)
- for j in range(0,Nz):
-  diagNz[j] = - (K2 + 2./(dz**2.))/Re
- for j in range(0,Nz-1):
-  diagNzm1[j] = 1./(Re*dz**2.)
- D =  np.diag(diagNzm1,k=1) + np.diag(diagNz,k=0) + np.diag(diagNzm1,k=-1) 
- # now add upper and lower BCs:
- D[0,0:4] = [ (2./(dz**2.)-K2)/Re, -5./(Re*dz**2.), 4./(Re*dz**2.), -1./(Re*dz**2.) ]  # lower (wall) BC
- D[Nz-1,Nz-4:Nz] = [ -1./(Re*dz**2.), 4./(Re*dz**2.), -5./(Re*dz**2.), (2./(dz**2.)-K2)/Re ]  # upper (far field) BC
- DI = np.eye(Nz,Nz,0,dtype=complex)*1j*k0*U + D
- return DI
-"""
 
 def make_d(k0,Uz,Nz):
  # Uz needs to be a vector length Nz, input U[:,nt[itime]]
@@ -342,30 +395,6 @@ def make_d(k0,Uz,Nz):
  d = np.diag(diagNz,k=0) 
  return d
 
-"""
-def make_transient_matrices(dz,Nz,U,k,Re,Pr,Uz,La_inv):
- DI = make_DI(dz,Nz,U,k,Re)
- D4 = make_D4(dz,Nz,U,k,Re,Pr)
- q = make_q(k,Uz)
- P3 = np.dot(La_inv,q)
- if np.any(np.isnan(DI)):
-  print('NaN detected in DI')
- if np.any(np.isinf(DI)):
-  print('Inf detected in DI')
- if np.any(np.isnan(D4)):
-  print('NaN detected in D4')
- if np.any(np.isinf(D4)):
-  print('Inf detected in D4')
- if np.any(np.isnan(q)):
-  print('NaN detected in q')
- if np.any(np.isinf(q)):
-  print('Inf detected in q')
- if np.any(np.isnan(P3)):
-  print('NaN detected in P3')
- if np.any(np.isinf(P3)):
-  print('Inf detected in P3')
- return DI, D4, P3
-"""
 
 def fast_A( DI , D4 , k0 , l0 , P3 , P4 , uz , bz , tht , C , Nz , dz , partial_z , dzP4 , A ): 
 
@@ -432,6 +461,7 @@ def build_A( DI , D4 , k0 , l0 , P3 , P4 , uz , bz , tht , C , Nz , dz , partial
  
  return Am 
 
+
 def ordered_prod( Nz, N, omg, tht, nu, kap, U, t, z, dz, l0, k0, Phi , L_inv, partial_z, P4, dzP4, diff1, diff2 , A , dt):
 
  ( b, u, bz, uz ) = xforcing_nonrotating_solution( U, N, omg, tht, nu, kap, t, z )
@@ -447,7 +477,8 @@ def ordered_prod( Nz, N, omg, tht, nu, kap, U, t, z, dz, l0, k0, Phi , L_inv, pa
 
 
 def rk4( Nz, N, omg, tht, nu, kap, U, t, z, dz, l0, k0, Phi , L_inv, partial_z, P4, dzP4, diff1, diff2 , A ):
- 
+ # 4th-order Runge-Kutta functions 
+
  Lbl = U/omg
  Re = omg*Lbl**2./nu
  Pr = nu/kap
@@ -480,6 +511,10 @@ def rk4( Nz, N, omg, tht, nu, kap, U, t, z, dz, l0, k0, Phi , L_inv, partial_z, 
  check_matrix(krk,'krk')
 
  return krk
+
+
+# =============================================================================    
+# analytical functions for constructing the shear and stratification
 
 
 def steady_nonrotating_solution( N, omg, tht, nu, kap, t, z ):
@@ -624,71 +659,6 @@ def steady_rotating_solution( f, N, omg, tht, nu, kap, t, z ):
  return b0, u0, v0
 
 
-def contour_bounds_2d( self ):
- # self is an array.
- # This function finds the absolute maximum and returns it. 
- cb = 0. # contour bound (such that 0 will be the center of the colorbar)
- if abs(np.amin(self)) > abs(np.amax(self)):
-    cb = abs(np.amin(self))
- if abs(np.amax(self)) > abs(np.amin(self)):
-    cb = abs(np.amax(self))
- return cb
-
-
-def zplot( z, H, self, name1, name2 ):
- 
- fig = plt.figure() #figsize=(8,4))
- plotname = figure_path + name1 #'/u0_nonrotating.png'
- CP=plt.plot(self,z/H,'b'); 
- plt.xlabel(name2); #plt.legend(loc=4); 
- plt.ylabel('z/H')
- plt.savefig(plotname,format="png"); 
- plt.close(fig)
- 
- return
-
-
-def logzplot( z, H, self, name1, name2 ):
- 
- fig = plt.figure() #figsize=(8,4))
- plotname = figure_path + name1 #'/u0_nonrotating.png'
- CP=plt.semilogy(self,z/H,'b'); 
- plt.xlabel(name2); #plt.legend(loc=4); 
- plt.ylabel('z/H')
- plt.savefig(plotname,format="png"); 
- plt.close(fig)
- 
- return
-
-
-def contour_plots( T0, Z0, u0, H, Nc, cmap1, name1, name2 ):
-
- #u0cb = contour_bounds_2d( u0 )
- #ctrs = np.linspace(-u0cb,u0cb,num=Nc)
- ctrs = np.linspace(np.amin(u0),np.amax(u0),num=Nc)
-
- fig = plt.figure(figsize=(8,4))
- plotname = figure_path + name1 #'/u0.png'
- CP=plt.contourf(T0,Z0,u0,ctrs,cmap=cmap1); 
- plt.xlabel('t/T'); #plt.legend(loc=4); 
- plt.ylabel('z')
- fig.colorbar(CP)
- plt.savefig(plotname,format="png"); 
- plt.close(fig)
-
- fig = plt.figure(figsize=(8,4))
- plotname = figure_path + name2 #'/u0_zoom.png'
- CP=plt.contourf(T0,Z0,u0,ctrs,cmap=cmap1); 
- plt.xlabel('t/T'); #plt.legend(loc=4); 
- plt.ylabel('z')
- fig.colorbar(CP)
- plt.axis([0.,1.,0.,H/500.])
- plt.savefig(plotname,format="png"); 
- plt.close(fig)
-
- return
-
-
 def xforcing_rotating_solution( U, f, N, omg, tht, nu, kap, t, z ):
 
  Nt = np.shape(t)[0]
@@ -804,3 +774,135 @@ def xforcing_rotating_solution( U, f, N, omg, tht, nu, kap, t, z ):
  return b, u, v
 
 
+# =============================================================================    
+# plot functions
+
+
+def contour_bounds_2d( self ):
+ # self is an array.
+ # This function finds the absolute maximum and returns it. 
+ cb = 0. # contour bound (such that 0 will be the center of the colorbar)
+ if abs(np.amin(self)) > abs(np.amax(self)):
+    cb = abs(np.amin(self))
+ if abs(np.amax(self)) > abs(np.amin(self)):
+    cb = abs(np.amax(self))
+ return cb
+
+
+def zplot( z, H, self, name1, name2 ):
+ 
+ fig = plt.figure() #figsize=(8,4))
+ plotname = figure_path + name1 #'/u0_nonrotating.png'
+ CP=plt.plot(self,z/H,'b'); 
+ plt.xlabel(name2); #plt.legend(loc=4); 
+ plt.ylabel('z/H')
+ plt.savefig(plotname,format="png"); 
+ plt.close(fig)
+ 
+ return
+
+
+def logzplot( z, H, self, name1, name2 ):
+ 
+ fig = plt.figure() #figsize=(8,4))
+ plotname = figure_path + name1 #'/u0_nonrotating.png'
+ CP=plt.semilogy(self,z/H,'b'); 
+ plt.xlabel(name2); #plt.legend(loc=4); 
+ plt.ylabel('z/H')
+ plt.savefig(plotname,format="png"); 
+ plt.close(fig)
+ 
+ return
+
+
+def contour_plots( T0, Z0, u0, H, Nc, cmap1, name1, name2 ):
+
+ #u0cb = contour_bounds_2d( u0 )
+ #ctrs = np.linspace(-u0cb,u0cb,num=Nc)
+ ctrs = np.linspace(np.amin(u0),np.amax(u0),num=Nc)
+
+ fig = plt.figure(figsize=(8,4))
+ plotname = figure_path + name1 #'/u0.png'
+ CP=plt.contourf(T0,Z0,u0,ctrs,cmap=cmap1); 
+ plt.xlabel('t/T'); #plt.legend(loc=4); 
+ plt.ylabel('z')
+ fig.colorbar(CP)
+ plt.savefig(plotname,format="png"); 
+ plt.close(fig)
+
+ fig = plt.figure(figsize=(8,4))
+ plotname = figure_path + name2 #'/u0_zoom.png'
+ CP=plt.contourf(T0,Z0,u0,ctrs,cmap=cmap1); 
+ plt.xlabel('t/T'); #plt.legend(loc=4); 
+ plt.ylabel('z')
+ fig.colorbar(CP)
+ plt.axis([0.,1.,0.,H/500.])
+ plt.savefig(plotname,format="png"); 
+ plt.close(fig)
+
+ return
+
+
+
+
+
+"""
+def make_D4(dz,Nz,U,k0,l0,Re,Pr):
+ # 2nd order accurate truncation
+ K2 = k0**2.+l0**2.
+ diagNz = np.zeros([Nz], dtype=complex)
+ diagNzm1 = np.zeros([Nz-1], dtype=complex)
+ for j in range(0,Nz):
+  diagNz[j] = - (K2 + 2./(dz**2.))/(Re*Pr)
+ for j in range(0,Nz-1):
+  diagNzm1[j] = 1./((Re*Pr)*dz**2.)
+ D =  np.diag(diagNzm1,k=1) + np.diag(diagNz,k=0) + np.diag(diagNzm1,k=-1) 
+ # now add upper and lower BCs:
+ D[0,0:4] = [ (2./(dz**2.)-K2)/(Re*Pr), -5./((Re*Pr)*dz**2.), 4./((Re*Pr)*dz**2.), -1./((Re*Pr)*dz**2.) ]  # lower (wall) BC
+ D[Nz-1,Nz-4:Nz] = [ -1./((Re*Pr)*dz**2.), 4./((Re*Pr)*dz**2.), -5./((Re*Pr)*dz**2.), (2./(dz**2.)-K2)/(Re*Pr) ]  # upper (far field) BC
+ D4 = np.eye(Nz,Nz,0,dtype=complex)*1j*k0*U + D
+ return D4
+"""
+
+"""
+def make_DI(dz,Nz,U,k0,l0,Re):
+ # 2nd order accurate truncation
+ K2 = k0**2.+l0**2.
+ diagNz = np.zeros([Nz], dtype=complex)
+ diagNzm1 = np.zeros([Nz-1], dtype=complex)
+ for j in range(0,Nz):
+  diagNz[j] = - (K2 + 2./(dz**2.))/Re
+ for j in range(0,Nz-1):
+  diagNzm1[j] = 1./(Re*dz**2.)
+ D =  np.diag(diagNzm1,k=1) + np.diag(diagNz,k=0) + np.diag(diagNzm1,k=-1) 
+ # now add upper and lower BCs:
+ D[0,0:4] = [ (2./(dz**2.)-K2)/Re, -5./(Re*dz**2.), 4./(Re*dz**2.), -1./(Re*dz**2.) ]  # lower (wall) BC
+ D[Nz-1,Nz-4:Nz] = [ -1./(Re*dz**2.), 4./(Re*dz**2.), -5./(Re*dz**2.), (2./(dz**2.)-K2)/Re ]  # upper (far field) BC
+ DI = np.eye(Nz,Nz,0,dtype=complex)*1j*k0*U + D
+ return DI
+"""
+
+"""
+def make_transient_matrices(dz,Nz,U,k,Re,Pr,Uz,La_inv):
+ DI = make_DI(dz,Nz,U,k,Re)
+ D4 = make_D4(dz,Nz,U,k,Re,Pr)
+ q = make_q(k,Uz)
+ P3 = np.dot(La_inv,q)
+ if np.any(np.isnan(DI)):
+  print('NaN detected in DI')
+ if np.any(np.isinf(DI)):
+  print('Inf detected in DI')
+ if np.any(np.isnan(D4)):
+  print('NaN detected in D4')
+ if np.any(np.isinf(D4)):
+  print('Inf detected in D4')
+ if np.any(np.isnan(q)):
+  print('NaN detected in q')
+ if np.any(np.isinf(q)):
+  print('Inf detected in q')
+ if np.any(np.isnan(P3)):
+  print('NaN detected in P3')
+ if np.any(np.isinf(P3)):
+  print('Inf detected in P3')
+ return DI, D4, P3
+"""
