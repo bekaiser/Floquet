@@ -1,6 +1,10 @@
-# Floquet analysis of an oscillating boundary layer flow
+# Floquet analysis of a stratified Boussinesq flow
 # Bryan Kaiser
-# 2/14/19
+# 
+
+# plot the RMS velocity
+
+# the base flow is periodic: both the periodic base and the fluctuation have an adiabatic lower BC.
 
 import h5py
 import numpy as np
@@ -15,7 +19,7 @@ from scipy import signal
 from scipy.fftpack import fft, fftshift
 import matplotlib.patches as mpatches
 from matplotlib.colors import colorConverter as cc
-from functions import make_Lap_inv, steady_nonrotating_solution, xforcing_nonrotating_solution, make_d, make_e, make_Lap_inv, make_partial_z, make_D, make_A13, make_A14, make_A34, make_A43, check_matrix, rk4, ordered_prod, time_step, adaptive_time_step, op_time_step
+import functions as fn
 from datetime import datetime 
 import numpy.distutils.system_info as sysinfo
 sysinfo.get_info('atlas')
@@ -28,67 +32,65 @@ stat_path = "./"
 # =============================================================================
 
 
-# fluid properties:
+# non-dimensional perturbation wavenumbers, non-dimensionalized by L=U/omega:
+k0=2.*np.pi 
+l0=2.*np.pi
+
+Nz = 10 # number of grid points
+H = 10. # non-dimensional domain height
+grid = 'cosine'
+#grid = 'uniform'
+
 nu = 2.0e-6 # m^2/s, kinematic viscosity
 Pr = 1. # Prandtl number
 kap = nu/Pr # m^2/s, thermometric diffusivity
-print('Pr = ',Pr)
-
-# flow characteristics:
 T = 44700.0 # s, M2 tide period
 omg = 2.0*np.pi/T # rads/s
 #f = 1e-4 # 1/s, inertial frequency
 N = 1e-3 # 1/s, buoyancy frequency
+C = 1./4.
 U = 0.00592797 # m/s, oscillation velocity amplitude
-# U = [0.00592797, 0.01185594, 0.02371189, 0.05927972, 0.11855945] corresponds to 
-# ReS = U*np.sqrt(2./(nu*omg)) =
-# [500.,1000.,2000.,5000.,10000.]
+"""
+ U = [0.00592797, 0.01185594, 0.02371189, 0.05927972, 0.11855945] corresponds to 
+ ReS = U*np.sqrt(2./(nu*omg)) =
+ [500.,1000.,2000.,5000.,10000.]
+"""
+
 L = U/omg # m, excursion length
 thtc= ma.asin(omg/N) # radians    
-C = 1./4.
 tht = C*thtc # radians, sets C = 1/4
 Re = omg*L**2./nu # Reynolds number
 dRe = np.sqrt(2.*nu/omg) # Stokes' 2nd problem BL thickness
 ReS = np.sqrt(2.*Re)
+
+if grid == 'uniform': 
+ z = np.linspace((H/Nz)/2. , H, num=Nz) # non-dimensional
+
+if grid == 'cosine': 
+ z = -np.cos(((np.linspace(1., 2.*Nz, num=int(2*Nz)))*2.-1.)/(4.*Nz)*np.pi)*H+H
+ z = z[0:Nz] # half cosine grid
+
 print('ReS = ', ReS)
 print('C = ',tht/thtc)
-
-H = dRe*20.
-Nz = 10 
-grid_flag = 0
-if grid_flag == 0: # uniform grid:
- z = np.linspace((H/Nz)/2. , H, num=Nz) # m 
- dz = z[1]-z[0] # m
-if grid_flag != 0: # half period cosine grid
- z = -np.cos(((np.linspace(1., 2.*Nz, num=int(2*Nz)))*2.-1.)/(4.*Nz)*np.pi)*H/2.+H/2.
- dz = z[1:Nz] - z[0:Nz-1]
- # add variable dz stencils <-----------------------------------------------------------------!
-
-print(H)
-#print(z[0],z[1],z[2])
-print('dz = ', dz)
-
-# non-dimensional perturbation wavenumbers, non-dimensionalized by L=U/omega:
-k0=2.*np.pi 
-l0=2.*np.pi
-# [2pi,128pi,256pi,1024pi,2048pi]
+print('Pr = ',Pr)
+print('H =', H)
 print('k = ', k0)
 print('l = ', l0)
 
+params = {'nu': nu, 'kap': kap, 'Pr': Pr, 'omg': omg, 'L':L, 'U': U, 'N':N, 'tht':tht, 'Re':Re, 'C':C, 'H':H, 'Nz':Nz, 'k0':k0, 'l0':l0}
 
 # time series:
 Nt = int(T*100) 
 t = np.linspace( 0. , T*1. , num=Nt , endpoint=True , dtype=float) #[0.] 
 dt = t[1]-t[0]
-print('CFL =', U*dt/dz)
-print('CFLx =', U*dt*np.sqrt(k0**2.+l0**2.))
-
+#print('CFL =', U*dt/dz)
+#print('CFLx =', U*dt*np.sqrt(k0**2.+l0**2.))
 
 # time advancement:
 Phi0 = np.eye(int(4*Nz),int(4*Nz),0,dtype=complex) # initial condition (prinicipal fundamental solution matrix)
 start_time = datetime.now()
-#Phin = op_time_step( Nz, N, omg, tht, nu, kap, U, z, dz, l0, k0, Phi0 , dt, 100. ) 
-Phin = time_step( Nz, N, omg, tht, nu, kap, U, z, dz, l0, k0, Phi0 , dt, 100. )
+#Phin = op_time_step( Nz, N, omg, tht, nu, kap, U, z, l0, k0, Phi0 , dt, 100. ) 
+Phin = fn.rk4_time_step( params, z, Phi0 , dt/T, 1. )
 time_elapsed = datetime.now() - start_time
 print('Total time elapsed (hh:mm:ss.ms) {}'.format(time_elapsed))
 
@@ -97,7 +99,6 @@ eigval,eigvec = np.linalg.eig(Phin) # eigenvals, eigenvecs | eigenvals = floquet
 """
 # checks w,v decomposition:
 print('Should be zero =',np.dot((Phin-np.eye(int(2),int(2),0,dtype=complex)*w[0]),v[:,0])) # C*v_k=lambda*I*v_k
-print('Should be zero =',np.dot((Phin-np.eye(int(2),int(2),0,dtype=complex)*w[1]),v[:,1]))
 """
 eigvalr = np.real(eigval)
 eigvali = np.imag(eigval)

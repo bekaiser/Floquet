@@ -17,69 +17,30 @@ from datetime import datetime
 import numpy.distutils.system_info as sysinfo
 sysinfo.get_info('atlas')
 
+
+# remove dz from RK4
+
+
 # =============================================================================    
-# time-step functions
+# time-steppers
 
-def op_time_step( Nz, N, omg, tht, nu, kap, U, z, dz, l0, k0, Phin , dt, stop_time ):
-  # ordered product time stepper
 
-  Lbl = U/omg
-  Re = omg*Lbl**2./nu
-  Pr = nu/kap
+def rk4_time_step( params , z , Phin , dt, stop_time ):
+  # uniform time step 4th-order Runge-Kutta time stepper
 
-  [L_inv, partial_z, P4, dzP4] = make_stationary_matrices(dz,Nz,N*np.sin(tht)/omg,k0**2.+l0**2.,tht,k0)
-  diff1 = make_diff(dz,Nz,k0,l0,Re)
-  diff2 = make_diff(dz,Nz,k0,l0,Re*Pr)
-  A = np.zeros([4*Nz,4*Nz],dtype=complex)
+  stat_mat = make_stationary_matrices( z, params['H'] , params['C'] , params['tht'] , params['k0'] , params['l0'] )
+  A = np.zeros([int(4*params['Nz']),int(4*params['Nz'])],dtype=complex)
 
   time = 0.
   count = 0
 
   while time < stop_time: # add round here
-
-   Phin = np.dot(ordered_prod( Nz, N, omg, tht, nu, kap, U, time, z, dz, l0, k0, Phin , L_inv, partial_z, P4, dzP4, diff1, diff2 , A , dt ),Phin)
-
-   time = time + dt
-   count = count + 1
-   print('time step = ',count)
-   print('dt = ', dt)
-   print('time =', time/44700.)
-
-   if np.any(np.isnan(Phin)) == True:
-    print('NaN detected')
-    return
-   if np.any(np.isinf(Phin)) == True:
-    print('Inf detected')
-    return
- 
-  print('ordered product, final time = ', time)
-  return Phin
-
-
-def time_step( Nz, N, omg, tht, nu, kap, U, z, dz, l0, k0, Phin , dt, stop_time ):
-  # uniform step 4th-order Runge-Kutta time stepper
-
-  Lbl = U/omg
-  Re = omg*Lbl**2./nu
-  Pr = nu/kap
-
-  [L_inv, partial_z, P4, dzP4] = make_stationary_matrices(dz,Nz,N*np.sin(tht)/omg,k0**2.+l0**2.,tht,k0)
-  diff1 = make_diff(dz,Nz,k0,l0,Re)
-  diff2 = make_diff(dz,Nz,k0,l0,Re*Pr)
-  A = np.zeros([4*Nz,4*Nz],dtype=complex)
-
-  time = 0.
-  count = 0
-
-  while time < stop_time: # add round here
-
-   # Runge-Kutta, 4th order: 
 
    #start_time_kcoeffs = datetime.now()
-   k1 = rk4( Nz, N, omg, tht, nu, kap, U, time , z, dz, l0, k0, Phin , L_inv, partial_z, P4, dzP4, diff1, diff2, A )
-   k2 = rk4( Nz, N, omg, tht, nu, kap, U, time + dt/2. , z, dz, l0, k0, Phin + k1*dt/2. , L_inv, partial_z, P4, dzP4, diff1, diff2, A )
-   k3 = rk4( Nz, N, omg, tht, nu, kap, U, time + dt/2. , z, dz, l0, k0, Phin + k2*dt/2. , L_inv, partial_z, P4, dzP4, diff1, diff2, A )
-   k4 = rk4( Nz, N, omg, tht, nu, kap, U, time + dt , z, dz, l0, k0, Phin + k3*dt , L_inv, partial_z, P4, dzP4, diff1, diff2, A )
+   k1 = rk4( params , stat_mat , z, A , time , Phin )
+   k2 = rk4( params , stat_mat , z, A , time + dt/2. , Phin + k1*dt/2. )
+   k3 = rk4( params , stat_mat , z, A , time + dt/2. , Phin + k2*dt/2. )
+   k4 = rk4( params , stat_mat , z, A , time + dt , Phin + k3*dt )
    #time_elapsed = datetime.now() - start_time_kcoeffs
    #print('k coeff time elapsed (hh:mm:ss.ms) {}'.format(time_elapsed))
 
@@ -88,11 +49,11 @@ def time_step( Nz, N, omg, tht, nu, kap, U, z, dz, l0, k0, Phin , dt, stop_time 
    #time_elapsed = datetime.now() - start_time_Phi_update
    #print('Phi update time elapsed (hh:mm:ss.ms) {}'.format(time_elapsed))
 
-   time = time + dt
+   time = time + dt # non-dimensional time
    count = count + 1
    print('time step = ',count)
-   #print('dt = ', dt)
-   print('time =', time/44700.)
+   print('time =', time)
+   print('||Phi||_inf = ',np.amax(abs(Phin)))
 
    if np.any(np.isnan(Phin)) == True:
     print('NaN detected')
@@ -105,252 +66,213 @@ def time_step( Nz, N, omg, tht, nu, kap, U, z, dz, l0, k0, Phin , dt, stop_time 
   return Phin
 
 
-def adaptive_time_step( Nz, N, omg, tht, nu, kap, U, z, dz, l0, k0, Phin , dt, stop_time ):
-  # adaptive step 4th-order Runge-Kutta time stepper
-
-  Lbl = U/omg
-  Re = omg*Lbl**2./nu
-  Pr = nu/kap
-
-  [L_inv, partial_z, P4, dzP4] = make_stationary_matrices(dz,Nz,N*np.sin(tht)/omg,k0**2.+l0**2.,tht,k0)
-  diff1 = make_diff(dz,Nz,k0,l0,Re)
-  diff2 = make_diff(dz,Nz,k0,l0,Re*Pr)
-  A = np.zeros([4*Nz,4*Nz],dtype=complex)
-
-  time = 0.
-  count = 0
-
-  # need to add a final time step option, so that it doesn't leap over the stop time
-  while time < stop_time: 
-
-   # Runge-Kutta, 4th order full time step: 
-   k1a = rk4( Nz, N, omg, tht, nu, kap, U, time , z, dz, l0, k0, Phin , L_inv, partial_z, P4, dzP4, diff1, diff2, A )
-   k2a = rk4( Nz, N, omg, tht, nu, kap, U, time + dt/2. , z, dz, l0, k0, Phin + k1a*dt/2. , L_inv, partial_z, P4, dzP4, diff1, diff2, A )
-   k3a = rk4( Nz, N, omg, tht, nu, kap, U, time + dt/2. , z, dz, l0, k0, Phin + k2a*dt/2. , L_inv, partial_z, P4, dzP4, diff1, diff2, A )
-   k4a = rk4( Nz, N, omg, tht, nu, kap, U, time + dt , z, dz, l0, k0, Phin + k3a*dt , L_inv, partial_z, P4, dzP4, diff1, diff2, A )
-   Phina = Phin + ( k1a + k2a*2. + k3a*2. + k4a )*dt/6.; 
-
-   # Runge-Kutta, 4th order two half time steps: 
-   dtb = dt/2.
-   time2 = time + dtb
-   # step 1:
-   k1b = rk4( Nz, N, omg, tht, nu, kap, U, time , z, dz, l0, k0, Phin , L_inv, partial_z, P4, dzP4, diff1, diff2, A )
-   k2b = rk4( Nz, N, omg, tht, nu, kap, U, time + dtb/2. , z, dz, l0, k0, Phin + k1b*dtb/2. , L_inv, partial_z, P4, dzP4, diff1, diff2, A )
-   k3b = rk4( Nz, N, omg, tht, nu, kap, U, time + dtb/2. , z, dz, l0, k0, Phin + k2b*dtb/2. , L_inv, partial_z, P4, dzP4, diff1, diff2, A )
-   k4b = rk4( Nz, N, omg, tht, nu, kap, U, time + dtb , z, dz, l0, k0, Phin + k3b*dtb , L_inv, partial_z, P4, dzP4, diff1, diff2, A )
-   Phinb = Phin + ( k1b + k2b*2. + k3b*2. + k4b )*dtb/6.; 
-   # step 2: 
-   k1b2 = rk4( Nz, N, omg, tht, nu, kap, U, time2 , z, dz, l0, k0, Phinb , L_inv, partial_z, P4, dzP4, diff1, diff2, A )
-   k2b2 = rk4( Nz, N, omg, tht, nu, kap, U, time2 + dtb/2. , z, dz, l0, k0, Phinb + k1b*dtb/2. , L_inv, partial_z, P4, dzP4, diff1, diff2, A )
-   k3b2 = rk4( Nz, N, omg, tht, nu, kap, U, time2 + dtb/2. , z, dz, l0, k0, Phinb + k2b*dtb/2. , L_inv, partial_z, P4, dzP4, diff1, diff2, A )
-   k4b2 = rk4( Nz, N, omg, tht, nu, kap, U, time2 + dtb , z, dz, l0, k0, Phinb + k3b*dtb , L_inv, partial_z, P4, dzP4, diff1, diff2, A )
-   Phinb = Phinb + ( k1b + k2b*2. + k3b*2. + k4b )*dtb/6.; 
-
-   trunc_err = np.amax(abs(Phina-Phinb))/15.
-  
-   # works well:
-   #if trunc_err <= 1e-6: # small truncation error: grow time step
-   #  dt = dt*2.
-   #if trunc_err > 1e-2: # large truncation error: shrink time step
-   #  dt = dt/2.
-   if trunc_err <= 1e-5: # small truncation error: grow time step
-     dt = dt*2.
-   if trunc_err > 1e-1: # large truncation error: shrink time step
-     dt = dt/2.
-
-   # Runge-Kutta, 4th order appropriate time step: 
-   k1 = rk4( Nz, N, omg, tht, nu, kap, U, time , z, dz, l0, k0, Phin , L_inv, partial_z, P4, dzP4, diff1, diff2, A )
-   k2 = rk4( Nz, N, omg, tht, nu, kap, U, time + dt/2. , z, dz, l0, k0, Phin + k1*dt/2. , L_inv, partial_z, P4, dzP4, diff1, diff2, A )
-   k3 = rk4( Nz, N, omg, tht, nu, kap, U, time + dt/2. , z, dz, l0, k0, Phin + k2*dt/2. , L_inv, partial_z, P4, dzP4, diff1, diff2, A )
-   k4 = rk4( Nz, N, omg, tht, nu, kap, U, time + dt , z, dz, l0, k0, Phin + k3*dt , L_inv, partial_z, P4, dzP4, diff1, diff2, A )
-   Phin = Phin + ( k1 + k2*2. + k3*2. + k4 )*dt/6.; 
-
-   time = time + dt # add function here! if this exceeds 1, don't go there...
-   count = count + 1
-   print('time step = ',count)
-   print('dt = ', dt)
-   print('time/period =', time/44700.)
-
-   if np.any(np.isnan(Phin)) == True:
-    print('NaN detected')
-    return
-   if np.any(np.isinf(Phin)) == True:
-    print('Inf detected')
-    return
-  
-  return Phin
+def make_stationary_matrices( z , H , C , tht , k0 , l0 ): 
+ L_inv = make_Lap_inv( z , H , k0**2.+l0**2. ) # inverse of the Laplacian
+ P4 = np.dot( L_inv , make_e( z , H , C , tht , k0 ) )
+ dzP4 = np.dot( partial_z( z , H , 'neumann' , 'neumann' ) , P4 ) # buoyancy BCs
+ pz3 = partial_z( z , H , 'dirchlet' , 'neumann' ) # BCs on wall-normal velocity, 1st derivative
+ stat_mat = { 'L_inv':L_inv, 'pz3':pz3, 'P4':P4, 'dzP4':dzP4 } 
+ return stat_mat
 
 
-def ordered_prod_test( alpha, beta, omg, t , dt):
- # ordered product time stepping test (for the analytical solution case)
- P0 = np.exp([[-alpha,-np.exp(1j*omg*t)],[0.,-beta]]*np.ones([2,2])*dt)
- return P0
+def rk4( params , stat_mat , z, A , time , Phin ):
+ # 4th-order Runge-Kutta functions 
 
+ # non-dimensionalize the base periodic flow:
+ ( b, u, bz, uz ) = xforcing_nonrotating_solution( params['U'], params['N'], params['omg'], params['tht'], params['nu'], params['kap'], time, z ) 
+ u = u / params['U']
+ uz = uz / params['omg']
+ bz = bz / ( params['N']**2. * np.sin(params['tht']) )
 
-def rk4_test( alpha, beta, omg, t, P ):
- # Runge-Kutta coefficients for 4th-order time stepping test (for the analytical solution case)
- A0 = [[-alpha,-np.exp(1j*omg*t)],[0.,-beta]]
- krk = np.dot(A0,P) # Runge-Kutta coefficients
+ #start_time_3 = datetime.now()
+ A = fast_A( params , stat_mat , u , uz , bz , z , A*(0.+0.j) )
+ #time_elapsed = datetime.now() - start_time_3
+ #print('build A time elapsed (hh:mm:ss.ms) {}'.format(time_elapsed))
+
+ # to use ATLAS BLAS library, both arguments in np.dot should be C-ordered. Check with:
+ #print(Am.flags)
+ #print(Phi.flags)
+
+ # Runge-Kutta coefficients
+ #start_time_4 = datetime.now()
+ krk = np.dot(A,Phin) 
+ #time_elapsed = datetime.now() - start_time_4
+ #print('A dot Phi time elapsed (hh:mm:ss.ms) {}'.format(time_elapsed))
+ 
+ check_matrix(krk,'krk')
+
  return krk
 
 
+def fast_A( params , stat_mat , u , uz , bz , z , A ):
+ # build the propogator matrix "A"
+ 
+ P3 = np.dot( stat_mat['L_inv'] , make_d( params['k0'] , uz , params['Nz'] ) )
+ DI = make_diff_velocity( z , params['H'] , params['k0'] , params['l0'] , params['Re'] , u ) # the advective u must be the time varying component (!)
+ D4 = make_diff_buoyancy( z , params['H'] , params['k0'] , params['l0'] , params['Re']*params['Pr'] , u ) 
+ Nz = int(params['Nz'])
 
-# =============================================================================    
-# uniform grid derivative functions for constructing the propogator, A
+ # row 1:
+ A[0:Nz,0:Nz] = DI
+ # A12 = zeros
+ A[0:Nz,int(2*Nz):int(3*Nz)] = make_A13( Nz , uz , params['k0'] , P3 )
+ A[0:Nz,int(3*Nz):int(4*Nz)] = make_A14( Nz , params['k0'] , stat_mat['P4'] , params['C'] )
+ 
+ # row 2:
+ # A21 = zeros
+ A[Nz:int(2*Nz),Nz:int(2*Nz)] = DI
+ A[Nz:int(2*Nz),int(2*Nz):int(3*Nz)] = 1j * params['l0'] * P3 
+ A[Nz:int(2*Nz),int(3*Nz):int(4*Nz)] = 1j * params['l0'] * stat_mat['P4']
+ 
+ # row 3:
+ # A31 = zeros
+ # A32 = zeros
+ A[int(2*Nz):int(3*Nz),int(2*Nz):int(3*Nz)] = DI - np.dot( stat_mat['pz3'] , P3 ) 
+ A[int(2*Nz):int(3*Nz),int(3*Nz):int(4*Nz)] = make_A34( Nz , params['C'] , params['tht'] , stat_mat['dzP4'] )
 
-def make_Lap_inv(dz,Nz,K2): 
- # inverse of the Laplacian 
- # 2nd order accurate truncation
- diagNz = np.zeros([Nz], dtype=complex)
- diagNzm1 = np.zeros([Nz-1], dtype=complex)
- for j in range(0,Nz):
-  diagNz[j] = - K2 - 2./(dz**2.)
- for j in range(0,Nz-1):
-  diagNzm1[j] = 1./(dz**2.)
- La = np.diag(diagNzm1,k=1) + np.diag(diagNz,k=0) + np.diag(diagNzm1,k=-1)
- # now add upper and lower BCs:
- La[0,0:4] = [ -K2 + 2./(dz**2.), -5./(dz**2.), 4./(dz**2.), -1./(dz**2.) ] # lower (wall) BC
- La[Nz-1,Nz-4:Nz] = [ -1./(dz**2.), 4./(dz**2.), -5./(dz**2.), -K2 + 2./(dz**2.) ] # upper (far field) BC
+ # row 4:
+ A[int(3*Nz):int(4*Nz),0:Nz] = np.eye(Nz,Nz,0,dtype=complex)
+ # A42 = zeros
+ A[int(3*Nz):int(4*Nz),int(2*Nz):int(3*Nz)] = make_A43( Nz , bz , params['tht'] )
+ A[int(3*Nz):int(4*Nz),int(3*Nz):int(4*Nz)] = D4
+
+ return A
+
+
+def make_diff_velocity( z , H , k0 , l0 , Re , u ):
+ # diff = U*i*k - 1/Re*K^2 + 1/Re*dzz 
+ Nz = np.shape(z)[0]
+ K2 = k0**2.+l0**2.
+ diff = partial_zz( z , H , 'dirchlet' , 'neumann' )/Re + np.eye(Nz,Nz,0,dtype=complex)*1j*k0*u - np.eye(Nz,Nz,0,dtype=complex)*K2/Re
+ return diff
+ 
+
+def make_diff_buoyancy( z , H , k0 , l0 , Re , U ):
+ Nz = np.shape(z)[0]
+ K2 = k0**2.+l0**2.
+ diff = partial_zz( z , H , 'neumann' , 'neumann' )/Re + np.eye(Nz,Nz,0,dtype=complex)*1j*k0*U - np.eye(Nz,Nz,0,dtype=complex)*K2/Re
+ return diff
+
+
+def make_Lap_inv( z , H , K2 ): 
+ # inverse of the Laplacian, 2nd order accurate truncation, BCs for pressure
+ Nz = np.shape(z)[0]
+ La = partial_zz( z , H , 'neumann' , 'neumann' ) - np.eye(Nz,Nz,0,dtype=complex)*K2
  La_inv = np.linalg.inv(La)
  return La_inv
 
 
-def make_e(dz,Nz,C,tht,k0):
+def make_e( z , H , C , tht , k0 ):
  # note: this matrix is time-independent (see .pdf document)
- # 2nd order accurate truncation
+ # e = C^2*cot(tht)*dz - C^2*i*k
  cottht = np.cos(tht)/np.sin(tht)
- diagNz = np.zeros([Nz], dtype=complex)
- diagNzm1 = np.zeros([Nz-1], dtype=complex)
- for j in range(0,Nz):
-  diagNz[j] = - 1j*k0*C**2.
- for j in range(0,Nz-1):
-  diagNzm1[j] = cottht*C**2./(2.*dz)
- e = np.diag(diagNzm1,1) + np.diag(diagNz,0) - np.diag(diagNzm1,-1) # tridiagonal
- # now add upper and lower BCs:
- e[0,0:3] = [ -C**2.*( 1j*k0 + 3.*cottht/(2.*dz) ), 2.*C**2.*cottht/dz, -C**2.*cottht/(2.*dz) ] # lower (wall) BC
- e[Nz-1,Nz-3:Nz] = [ C**2.*cottht/(2.*dz), -2.*C**2.*cottht/dz, C**2.*( -1j*k0 + 3.*cottht/(2.*dz) ) ] # upper (far field) BC
+ Nz = np.shape(z)[0]
+ # 2nd order accurate truncation, BCs on buoyancy
+ e = (C**2.) * cottht * partial_z( z , H , 'neumann' , 'neumann' ) - (C**2. * k0 * 1j) * np.eye(Nz,Nz,0,dtype=complex)
  return e
 
 
-def make_partial_z(dz,Nz):
- # first-order derivative matrix 
- # 2nd order accurate truncation
- diagNzm1 = np.zeros([Nz-1], dtype=complex)
- for j in range(0,Nz-1):
-  diagNzm1[j] = 1./(2.*dz)
- pz = np.diag(diagNzm1,k=1) - np.diag(diagNzm1,k=-1)
- # now add upper and lower BCs:
- pz[0,0:3] = [ -3./(2.*dz), 2./dz, -1./(2.*dz) ] # lower (wall) BC
- pz[Nz-1,Nz-3:Nz] = [ 1./(2.*dz), -2./dz, 3./(2.*dz) ] # upper (far field) BC
+def weights2( z0 , z1 , z2 , z3 , zj ):
+ # Lagrange polynomial weights for second derivative
+ l0 = 1./(z0-z1) * ( 1./(z0-z2) * (zj-z3)/(z0-z3) + 1./(z0-z3) * (zj-z2)/(z0-z2) ) + \
+      1./(z0-z2) * ( 1./(z0-z1) * (zj-z3)/(z0-z3) + 1./(z0-z3) * (zj-z1)/(z0-z1) ) + \
+      1./(z0-z3) * ( 1./(z0-z1) * (zj-z2)/(z0-z2) + 1./(z0-z2) * (zj-z1)/(z0-z1) )
+ l1 = 1./(z1-z0) * ( 1./(z1-z2) * (zj-z3)/(z1-z3) + 1./(z1-z3) * (zj-z2)/(z1-z2) ) + \
+      1./(z1-z2) * ( 1./(z1-z0) * (zj-z3)/(z1-z3) + 1./(z1-z3) * (zj-z0)/(z1-z0) ) + \
+      1./(z1-z3) * ( 1./(z1-z0) * (zj-z2)/(z1-z2) + 1./(z1-z2) * (zj-z0)/(z1-z0) )
+ l2 = 1./(z2-z0) * ( 1./(z2-z1) * (zj-z3)/(z2-z3) + 1./(z2-z3) * (zj-z1)/(z2-z1) ) + \
+      1./(z2-z1) * ( 1./(z2-z0) * (zj-z3)/(z2-z3) + 1./(z2-z3) * (zj-z0)/(z2-z0) ) + \
+      1./(z2-z3) * ( 1./(z2-z0) * (zj-z1)/(z2-z1) + 1./(z2-z1) * (zj-z0)/(z2-z0) )
+ l3 = 1./(z3-z0) * ( 1./(z3-z1) * (zj-z2)/(z3-z2) + 1./(z3-z2) * (zj-z1)/(z3-z1) ) + \
+      1./(z3-z1) * ( 1./(z3-z0) * (zj-z2)/(z3-z2) + 1./(z3-z2) * (zj-z0)/(z3-z0) ) + \
+      1./(z3-z2) * ( 1./(z3-z0) * (zj-z1)/(z3-z1) + 1./(z3-z1) * (zj-z0)/(z3-z0) )
+ return l0, l1, l2, l3
+
+
+def partial_zz( z , H , lower_BC_flag , upper_BC_flag ):
+ # second derivative, permiting non-uniform grids
+ Nz = np.shape(z)[0]
+
+ # 2nd order accurate (truncated 3rd order terms), variable grid
+ diagm1 = np.zeros([Nz-1],dtype=complex)
+ diag0 = np.zeros([Nz],dtype=complex)
+ diagp1 = np.zeros([Nz-1],dtype=complex)
+ for j in range(1,Nz-1):
+     denom = 1./2. * ( z[j+1] - z[j-1] ) * ( z[j+1] - z[j] ) * ( z[j] - z[j-1] )  
+     diagm1[j-1] = ( z[j+1] - z[j] ) / denom
+     diagp1[j] =   ( z[j] - z[j-1] ) / denom
+     diag0[j] =  - ( z[j+1] - z[j-1] ) / denom
+ pzz = np.diag(diagp1,k=1) + np.diag(diagm1,k=-1) + np.diag(diag0,k=0) 
+
+ # lower (wall) BC sets variable to zero at the wall
+ zj = z[0] # location of derivative for lower BC (first cell center)
+ l0, l1, l2, l3 = weights2( -z[0] , z[0] , z[1] , z[2] , zj )
+ if lower_BC_flag == 'dirchlet':
+   l1 = l1 - l0 # Dirchlet phi=0 at z=0 (sets phi_ghost = -phi_0)
+ if lower_BC_flag == 'neumann':
+   l1 = l1 + l0 # Neumann for dz(phi)=0 at z=0 (sets phi_ghost = phi_0)
+ pzz[0,0:3] = [ l1 , l2 , l3 ]
+
+ # upper (far field) BC
+ zj = z[Nz-1] # location of derivative for upper BC
+ l0, l1, l2, l3 = weights2( z[Nz-3] , z[Nz-2] , z[Nz-1] , H + (H-z[Nz-1]) , zj )
+ if upper_BC_flag == 'dirchlet':
+   l2 = l2 - l3 # Dirchlet phi=0 at z=H (sets phi_ghost = -phi_N)
+ if upper_BC_flag == 'neumann':
+   l2 = l3 + l2 # Neumann for dz(phi)=0 at z=H (sets phi_ghost = phi_N)
+ pzz[Nz-1,Nz-3:Nz] = [ l0 , l1 , l2 ]
+ return pzz
+
+
+def partial_z( z , H , lower_BC_flag , upper_BC_flag ):
+ # first-order derivative matrix, 2nd order accurate truncation
+ Nz = np.shape(z)[0]
+ 
+ # interior points, variable grid
+ diagm1 = np.zeros([Nz-1],dtype=complex)
+ diag0 = np.zeros([Nz],dtype=complex)
+ diagp1 = np.zeros([Nz-1],dtype=complex)
+ for j in range(1,Nz-1):
+   denom = ( ( z[j+1] - z[j] ) * ( z[j] - z[j-1] ) * ( ( z[j+1] - z[j] ) + ( z[j] - z[j-1] ) ) ) 
+   diagm1[j-1] = - ( z[j+1] - z[j] )**2. / denom
+   diagp1[j] =   ( z[j] - z[j-1] )**2. / denom
+   diag0[j] =  ( ( z[j+1] - z[j] )**2. - ( z[j] - z[j-1] )**2. ) / denom
+ pz = np.diag(diagp1,k=1) + np.diag(diagm1,k=-1) + np.diag(diag0,k=0) 
+
+ # lower BC
+ l0, l1, l2, l3 = weights( -z[0] , z[0] , z[1] , z[2] , z[0] )
+ if lower_BC_flag == 'dirchlet':
+   l1 = l1 - l0 # Dirchlet phi=0 at z=0 (sets phi_ghost = -phi_0)
+ if lower_BC_flag == 'neumann':
+   l1 = l1 + l0 # Neumann for dz(phi)=0 at z=0 (sets phi_ghost = phi_0)
+ pz[0,0:3] = [ l1 , l2 , l3 ]
+   
+ # upper (far field) BC
+ l0, l1, l2, l3 = weights( z[Nz-3] , z[Nz-2] , z[Nz-1] , H + (H-z[Nz-1]) , z[Nz-1] )
+ if upper_BC_flag == 'dirchlet':
+   l2 = l2 - l3 # Dirchlet phi=0 at z=H (sets phi_ghost = -phi_N)
+ if upper_BC_flag == 'neumann':
+   l2 = l3 + l2 # Neumann for dz(phi)=0 at z=H (sets phi_ghost = phi_N)
+ pz[Nz-1,Nz-3:Nz] = [ l0 , l1 , l2 ]
+ 
  return pz
 
 
-def make_diff(dz,Nz,k0,l0,Re):
- # 2nd order accurate truncation
- K2 = k0**2.+l0**2.
- diagNz = np.zeros([Nz], dtype=complex)
- diagNzm1 = np.zeros([Nz-1], dtype=complex)
- for j in range(0,Nz):
-  diagNz[j] = - (K2 + 2./(dz**2.))/Re
- for j in range(0,Nz-1):
-  diagNzm1[j] = 1./(Re*dz**2.)
- diff =  np.diag(diagNzm1,k=1) + np.diag(diagNz,k=0) + np.diag(diagNzm1,k=-1)
- # now add upper and lower BCs:
- diff[0,0:4] = [ (2./(dz**2.)-K2)/Re, -5./(Re*dz**2.), 4./(Re*dz**2.), -1./(Re*dz**2.) ]  # lower (wall) BC
- diff[Nz-1,Nz-4:Nz] = [ -1./(Re*dz**2.), 4./(Re*dz**2.), -5./(Re*dz**2.), (2./(dz**2.)-K2)/Re ]  # upper (far field) BC
- return diff
-
-
-def make_D(Nz,U,k0,diff):
- D = np.eye(Nz,Nz,0,dtype=complex)*1j*k0*U + diff
- return D
-
-
-# =============================================================================    
-# cosine grid derivative functions for constructing the propogator, A
-
-"""
-def make_Lap_inv(dz,Nz,K2): 
- # inverse of the Laplacian 
- # 2nd order accurate truncation
- diagNz = np.zeros([Nz], dtype=complex)
- diagNzm1 = np.zeros([Nz-1], dtype=complex)
- for j in range(0,Nz):
-  diagNz[j] = - K2 - 2./(dz**2.)
- for j in range(0,Nz-1):
-  diagNzm1[j] = 1./(dz**2.)
- La = np.diag(diagNzm1,k=1) + np.diag(diagNz,k=0) + np.diag(diagNzm1,k=-1)
- # now add upper and lower BCs:
- La[0,0:4] = [ -K2 + 2./(dz**2.), -5./(dz**2.), 4./(dz**2.), -1./(dz**2.) ] # lower (wall) BC
- La[Nz-1,Nz-4:Nz] = [ -1./(dz**2.), 4./(dz**2.), -5./(dz**2.), -K2 + 2./(dz**2.) ] # upper (far field) BC
- La_inv = np.linalg.inv(La)
- return La_inv
-
-
-def make_e(dz,Nz,C,tht,k0):
- # note: this matrix is time-independent (see .pdf document)
- # 2nd order accurate truncation
- cottht = np.cos(tht)/np.sin(tht)
- diagNz = np.zeros([Nz], dtype=complex)
- diagNzm1 = np.zeros([Nz-1], dtype=complex)
- for j in range(0,Nz):
-  diagNz[j] = - 1j*k0*C**2.
- for j in range(0,Nz-1):
-  diagNzm1[j] = cottht*C**2./(2.*dz)
- e = np.diag(diagNzm1,1) + np.diag(diagNz,0) - np.diag(diagNzm1,-1) # tridiagonal
- # now add upper and lower BCs:
- e[0,0:3] = [ -C**2.*( 1j*k0 + 3.*cottht/(2.*dz) ), 2.*C**2.*cottht/dz, -C**2.*cottht/(2.*dz) ] # lower (wall) BC
- e[Nz-1,Nz-3:Nz] = [ C**2.*cottht/(2.*dz), -2.*C**2.*cottht/dz, C**2.*( -1j*k0 + 3.*cottht/(2.*dz) ) ] # upper (far field) BC
- return e
-
-
-def make_partial_z(dz,Nz):
- # first-order derivative matrix 
- # 2nd order accurate truncation
- diagNzm1 = np.zeros([Nz-1], dtype=complex)
- for j in range(0,Nz-1):
-  diagNzm1[j] = 1./(2.*dz)
- pz = np.diag(diagNzm1,k=1) - np.diag(diagNzm1,k=-1)
- # now add upper and lower BCs:
- pz[0,0:3] = [ -3./(2.*dz), 2./dz, -1./(2.*dz) ] # lower (wall) BC
- pz[Nz-1,Nz-3:Nz] = [ 1./(2.*dz), -2./dz, 3./(2.*dz) ] # upper (far field) BC
- return pz
-
-
-def make_diff(dz,Nz,k0,l0,Re):
- # 2nd order accurate truncation
- K2 = k0**2.+l0**2.
- diagNz = np.zeros([Nz], dtype=complex)
- diagNzm1 = np.zeros([Nz-1], dtype=complex)
- for j in range(0,Nz):
-  diagNz[j] = - (K2 + 2./(dz**2.))/Re
- for j in range(0,Nz-1):
-  diagNzm1[j] = 1./(Re*dz**2.)
- diff =  np.diag(diagNzm1,k=1) + np.diag(diagNz,k=0) + np.diag(diagNzm1,k=-1)
- # now add upper and lower BCs:
- diff[0,0:4] = [ (2./(dz**2.)-K2)/Re, -5./(Re*dz**2.), 4./(Re*dz**2.), -1./(Re*dz**2.) ]  # lower (wall) BC
- diff[Nz-1,Nz-4:Nz] = [ -1./(Re*dz**2.), 4./(Re*dz**2.), -5./(Re*dz**2.), (2./(dz**2.)-K2)/Re ]  # upper (far field) BC
- return diff
-
-
-def make_D(Nz,U,k0,diff):
- D = np.eye(Nz,Nz,0,dtype=complex)*1j*k0*U + diff
- return D
-
-"""
-
-
-# =============================================================================    
-# other functions for constructing the propogator, A
-
-
-def make_stationary_matrices(dz,Nz,C,K2,tht,k0):
- L_inv = make_Lap_inv(dz,Nz,K2)
- partial_z = make_partial_z(dz,Nz)
- #e = make_e(dz,Nz,C,tht,k0)
- P4 = np.dot(L_inv,make_e(dz,Nz,C,tht,k0))
- dzP4 = np.dot(partial_z,P4)
- return L_inv, partial_z, P4, dzP4
+def weights( z0 , z1 , z2 , z3 , zj ):
+ # Lagrange polynomial weights for first derivative
+ l0 = 1./(z0-z1) * (zj-z2)/(z0-z2) * (zj-z3)/(z0-z3) + \
+      1./(z0-z2) * (zj-z1)/(z0-z1) * (zj-z3)/(z0-z3) + \
+      1./(z0-z3) * (zj-z1)/(z0-z1) * (zj-z2)/(z0-z2)
+ l1 = 1./(z1-z0) * (zj-z2)/(z1-z2) * (zj-z3)/(z1-z3) + \
+      1./(z1-z2) * (zj-z0)/(z1-z0) * (zj-z3)/(z1-z3) + \
+      1./(z1-z3) * (zj-z0)/(z1-z0) * (zj-z2)/(z1-z2)
+ l2 = 1./(z2-z0) * (zj-z1)/(z2-z1) * (zj-z3)/(z2-z3) + \
+      1./(z2-z1) * (zj-z0)/(z2-z0) * (zj-z3)/(z2-z3) + \
+      1./(z2-z3) * (zj-z0)/(z2-z0) * (zj-z1)/(z2-z1)
+ l3 = 1./(z3-z0) * (zj-z1)/(z3-z1) * (zj-z2)/(z3-z2) + \
+      1./(z3-z1) * (zj-z0)/(z3-z0) * (zj-z2)/(z3-z2) + \
+      1./(z3-z2) * (zj-z0)/(z3-z0) * (zj-z1)/(z3-z1)
+ return l0, l1, l2, l3
 
 
 def check_matrix(self,string):
@@ -371,7 +293,7 @@ def make_A43(Nz,Bz,tht):
 
 
 def make_A13(Nz,Uz,k,P3):
- diagNz = np.zeros([Nz], dtype=complex)
+ #diagNz = np.zeros([Nz], dtype=complex)
  A13 = np.diag(-Uz,k=0) + 1j*k*P3 
  return A13
 
@@ -396,125 +318,9 @@ def make_d(k0,Uz,Nz):
  return d
 
 
-def fast_A( DI , D4 , k0 , l0 , P3 , P4 , uz , bz , tht , C , Nz , dz , partial_z , dzP4 , A ): 
-
- # row 1:
- A[0:Nz,0:Nz] = DI
- # A12 = zeros
- A[0:Nz,int(2*Nz):int(3*Nz)] = make_A13(Nz,uz,k0,P3)
- A[0:Nz,int(3*Nz):int(4*Nz)] = make_A14(Nz,k0,P4,C)
- 
- # row 2:
- # A21 = zeros
- A[Nz:int(2*Nz),Nz:int(2*Nz)] = DI
- A[Nz:int(2*Nz),int(2*Nz):int(3*Nz)] = 1j*l0*P3 
- A[Nz:int(2*Nz),int(3*Nz):int(4*Nz)] = 1j*l0*P4
- 
- # row 3:
- # A31 = zeros
- # A32 = zeros
- A[int(2*Nz):int(3*Nz),int(2*Nz):int(3*Nz)] = DI - np.dot(partial_z,P3)
- A[int(2*Nz):int(3*Nz),int(3*Nz):int(4*Nz)] = make_A34(Nz,C,tht,dzP4)
-
- # row 4:
- A[int(3*Nz):int(4*Nz),0:Nz] = np.eye(Nz,Nz,0,dtype=complex)
- # A42 = zeros
- A[int(3*Nz):int(4*Nz),int(2*Nz):int(3*Nz)] = make_A43(Nz,bz,tht)
- A[int(3*Nz):int(4*Nz),int(3*Nz):int(4*Nz)] = D4
-
- return A
-
-def build_A( DI , D4 , k0 , l0 , P3 , P4 , uz , bz , tht , C , Nz , dz , partial_z , dzP4 ): 
-
- #partial_z = make_partial_z(dz,Nz)
- #dzP3 = np.dot(partial_z,P3)
- #dzP4 = np.dot(partial_z,P4)
-
- #start_time_1 = datetime.now()
- A11 = DI
- A12 = np.zeros([Nz,Nz],dtype=complex) 
- A13 = make_A13(Nz,uz,k0,P3) 
- A14 = make_A14(Nz,k0,P4,C) 
- A21 = np.zeros([Nz,Nz],dtype=complex)
- A22 = DI
- A23 = 1j*l0*P3
- A24 = 1j*l0*P4
- A31 = np.zeros([Nz,Nz],dtype=complex)
- A32 = np.zeros([Nz,Nz],dtype=complex)
- A33 = DI - np.dot(partial_z,P3) #dzP3
- A34 = make_A34(Nz,C,tht,dzP4)
- A41 = np.eye(Nz,Nz,0,dtype=complex)
- A42 = np.zeros([Nz,Nz],dtype=complex)
- A43 = make_A43(Nz,bz,tht) 
- A44 = D4
- time_elapsed = datetime.now() - start_time_1
- #print('make A chunks time elapsed (hh:mm:ss.ms) {}'.format(time_elapsed))
-
- #start_time_2 = datetime.now()
- A1 = np.concatenate((A11,A12,A13,A14),axis=1)
- A2 = np.concatenate((A21,A22,A23,A24),axis=1)
- A3 = np.concatenate((A31,A32,A33,A34),axis=1)
- A4 = np.concatenate((A41,A42,A43,A44),axis=1)
- Am = np.concatenate((A1,A2,A3,A4),axis=0)
- #time_elapsed = datetime.now() - start_time_2
- #print('concatenate A time elapsed (hh:mm:ss.ms) {}'.format(time_elapsed))
- 
- return Am 
-
-
-def ordered_prod( Nz, N, omg, tht, nu, kap, U, t, z, dz, l0, k0, Phi , L_inv, partial_z, P4, dzP4, diff1, diff2 , A , dt):
-
- ( b, u, bz, uz ) = xforcing_nonrotating_solution( U, N, omg, tht, nu, kap, t, z )
-
- P3 = np.dot(L_inv,make_d(k0,uz,Nz))
- DI = make_D(Nz,U,k0,diff1) 
- D4 = make_D(Nz,U,k0,diff2) 
- Am = fast_A( DI , D4 , k0 , l0 , P3 , P4 , uz , bz , tht , N*np.sin(tht)/omg , Nz , dz , partial_z , dzP4 , A*(0.+0.j) )
- 
- #np.exp(np.multiply(Am,np.ones(np.shape(Am))*dt)) =
- # = np.exp(np.dot(Am,np.eye(np.shape(Am)[0],np.shape(Am)[1],0,dtype=complex)*dt)) 
- return scipy.linalg.expm(np.multiply(Am,np.ones(np.shape(Am))*dt)) # matrix exponential 
-
-
-def rk4( Nz, N, omg, tht, nu, kap, U, t, z, dz, l0, k0, Phi , L_inv, partial_z, P4, dzP4, diff1, diff2 , A ):
- # 4th-order Runge-Kutta functions 
-
- Lbl = U/omg
- Re = omg*Lbl**2./nu
- Pr = nu/kap
-
- # Phillips (1970) / Wunsch (1970) steady non-rotating solution
- #( b0, u0, bz0, uz0 ) = steady_nonrotating_solution( N, omg, tht, nu, kap, [t[n]], z )
- # non-rotating oscillating solution, Baidulov (2010):
- ( b, u, bz, uz ) = xforcing_nonrotating_solution( U, N, omg, tht, nu, kap, t, z ) 
-
- P3 = np.dot(L_inv,make_d(k0,uz,Nz))
- DI = make_D(Nz,U,k0,diff1) #make_DI(dz,Nz,U,k0,l0,Re)
- D4 = make_D(Nz,U,k0,diff2) #make_D4(dz,Nz,U,k0,l0,Re,Pr)
-
- #start_time_3 = datetime.now()
- #Am = build_A( DI , D4 , k0 , l0 , P3 , P4 , uz , bz , tht , N*np.sin(tht)/omg , Nz , dz , partial_z , dzP4 )
- Am = fast_A( DI , D4 , k0 , l0 , P3 , P4 , uz , bz , tht , N*np.sin(tht)/omg , Nz , dz , partial_z , dzP4 , A*(0.+0.j) )
- #time_elapsed = datetime.now() - start_time_3
- #print('build A time elapsed (hh:mm:ss.ms) {}'.format(time_elapsed))
-
- # to use ATLAS BLAS library, both arguments in np.dot should be C-ordered. Check with:
- #print(Am.flags)
- #print(Phi.flags)
-
- # Runge-Kutta coefficients
- #start_time_4 = datetime.now()
- krk = np.dot(Am,Phi) 
- #time_elapsed = datetime.now() - start_time_4
- #print('A dot Phi time elapsed (hh:mm:ss.ms) {}'.format(time_elapsed))
- 
- check_matrix(krk,'krk')
-
- return krk
-
 
 # =============================================================================    
-# analytical functions for constructing the shear and stratification
+# analytical flow solutions for constructing the shear and stratification
 
 
 def steady_nonrotating_solution( N, omg, tht, nu, kap, t, z ):
@@ -843,66 +649,3 @@ def contour_plots( T0, Z0, u0, H, Nc, cmap1, name1, name2 ):
  return
 
 
-
-
-
-"""
-def make_D4(dz,Nz,U,k0,l0,Re,Pr):
- # 2nd order accurate truncation
- K2 = k0**2.+l0**2.
- diagNz = np.zeros([Nz], dtype=complex)
- diagNzm1 = np.zeros([Nz-1], dtype=complex)
- for j in range(0,Nz):
-  diagNz[j] = - (K2 + 2./(dz**2.))/(Re*Pr)
- for j in range(0,Nz-1):
-  diagNzm1[j] = 1./((Re*Pr)*dz**2.)
- D =  np.diag(diagNzm1,k=1) + np.diag(diagNz,k=0) + np.diag(diagNzm1,k=-1) 
- # now add upper and lower BCs:
- D[0,0:4] = [ (2./(dz**2.)-K2)/(Re*Pr), -5./((Re*Pr)*dz**2.), 4./((Re*Pr)*dz**2.), -1./((Re*Pr)*dz**2.) ]  # lower (wall) BC
- D[Nz-1,Nz-4:Nz] = [ -1./((Re*Pr)*dz**2.), 4./((Re*Pr)*dz**2.), -5./((Re*Pr)*dz**2.), (2./(dz**2.)-K2)/(Re*Pr) ]  # upper (far field) BC
- D4 = np.eye(Nz,Nz,0,dtype=complex)*1j*k0*U + D
- return D4
-"""
-
-"""
-def make_DI(dz,Nz,U,k0,l0,Re):
- # 2nd order accurate truncation
- K2 = k0**2.+l0**2.
- diagNz = np.zeros([Nz], dtype=complex)
- diagNzm1 = np.zeros([Nz-1], dtype=complex)
- for j in range(0,Nz):
-  diagNz[j] = - (K2 + 2./(dz**2.))/Re
- for j in range(0,Nz-1):
-  diagNzm1[j] = 1./(Re*dz**2.)
- D =  np.diag(diagNzm1,k=1) + np.diag(diagNz,k=0) + np.diag(diagNzm1,k=-1) 
- # now add upper and lower BCs:
- D[0,0:4] = [ (2./(dz**2.)-K2)/Re, -5./(Re*dz**2.), 4./(Re*dz**2.), -1./(Re*dz**2.) ]  # lower (wall) BC
- D[Nz-1,Nz-4:Nz] = [ -1./(Re*dz**2.), 4./(Re*dz**2.), -5./(Re*dz**2.), (2./(dz**2.)-K2)/Re ]  # upper (far field) BC
- DI = np.eye(Nz,Nz,0,dtype=complex)*1j*k0*U + D
- return DI
-"""
-
-"""
-def make_transient_matrices(dz,Nz,U,k,Re,Pr,Uz,La_inv):
- DI = make_DI(dz,Nz,U,k,Re)
- D4 = make_D4(dz,Nz,U,k,Re,Pr)
- q = make_q(k,Uz)
- P3 = np.dot(La_inv,q)
- if np.any(np.isnan(DI)):
-  print('NaN detected in DI')
- if np.any(np.isinf(DI)):
-  print('Inf detected in DI')
- if np.any(np.isnan(D4)):
-  print('NaN detected in D4')
- if np.any(np.isinf(D4)):
-  print('Inf detected in D4')
- if np.any(np.isnan(q)):
-  print('NaN detected in q')
- if np.any(np.isinf(q)):
-  print('Inf detected in q')
- if np.any(np.isnan(P3)):
-  print('NaN detected in P3')
- if np.any(np.isinf(P3)):
-  print('Inf detected in P3')
- return DI, D4, P3
-"""
