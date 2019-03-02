@@ -2,10 +2,6 @@
 # Bryan Kaiser
 # 
 
-# plot the RMS velocity
-
-# the base flow is periodic: both the periodic base and the fluctuation have an adiabatic lower BC.
-
 import h5py
 import numpy as np
 import math as ma
@@ -14,11 +10,11 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import scipy
 from scipy.linalg import expm
-from scipy.stats import chi2
-from scipy import signal
-from scipy.fftpack import fft, fftshift
-import matplotlib.patches as mpatches
-from matplotlib.colors import colorConverter as cc
+#from scipy.stats import chi2
+#from scipy import signal
+#from scipy.fftpack import fft, fftshift
+#import matplotlib.patches as mpatches
+#from matplotlib.colors import colorConverter as cc
 import functions as fn
 from datetime import datetime 
 import numpy.distutils.system_info as sysinfo
@@ -36,12 +32,12 @@ stat_path = "./"
 k0=2.*np.pi 
 l0=2.*np.pi
 
-Nz = 10 # number of grid points
-H = 10. # non-dimensional domain height
+Nz = 100 # number of grid points
+H = 20. # non-dimensional domain height
 grid = 'cosine'
 #grid = 'uniform'
 
-nu = 2.0e-6 # m^2/s, kinematic viscosity
+nu = 2.0e-2 # m^2/s, kinematic viscosity
 Pr = 1. # Prandtl number
 kap = nu/Pr # m^2/s, thermometric diffusivity
 T = 44700.0 # s, M2 tide period
@@ -49,7 +45,7 @@ omg = 2.0*np.pi/T # rads/s
 #f = 1e-4 # 1/s, inertial frequency
 N = 1e-3 # 1/s, buoyancy frequency
 C = 1./4.
-U = 0.00592797 # m/s, oscillation velocity amplitude
+U = 0.01 #0.00592797 # m/s, oscillation velocity amplitude
 """
  U = [0.00592797, 0.01185594, 0.02371189, 0.05927972, 0.11855945] corresponds to 
  ReS = U*np.sqrt(2./(nu*omg)) =
@@ -62,6 +58,7 @@ tht = C*thtc # radians, sets C = 1/4
 Re = omg*L**2./nu # Reynolds number
 dRe = np.sqrt(2.*nu/omg) # Stokes' 2nd problem BL thickness
 ReS = np.sqrt(2.*Re)
+print(dRe/H)
 
 if grid == 'uniform': 
  z = np.linspace((H/Nz)/2. , H, num=Nz) # non-dimensional
@@ -69,7 +66,9 @@ if grid == 'uniform':
 if grid == 'cosine': 
  z = -np.cos(((np.linspace(1., 2.*Nz, num=int(2*Nz)))*2.-1.)/(4.*Nz)*np.pi)*H+H
  z = z[0:Nz] # half cosine grid
+ dz = z[1:Nz]-z[0:Nz-1]
 
+print(np.amax(z),np.amin(z))
 print('ReS = ', ReS)
 print('C = ',tht/thtc)
 print('Pr = ',Pr)
@@ -77,20 +76,21 @@ print('H =', H)
 print('k = ', k0)
 print('l = ', l0)
 
-params = {'nu': nu, 'kap': kap, 'Pr': Pr, 'omg': omg, 'L':L, 'U': U, 'N':N, 'tht':tht, 'Re':Re, 'C':C, 'H':H, 'Nz':Nz, 'k0':k0, 'l0':l0}
+params = {'nu': nu, 'kap': kap, 'Pr': Pr, 'omg': omg, 'L':L, 'T': T, 'U': U, 'N':N, 'tht':tht, 'Re':Re, 'C':C, 'H':H, 'Nz':Nz, 'k0':k0, 'l0':l0}
 
 # time series:
-Nt = int(T*100) 
-t = np.linspace( 0. , T*1. , num=Nt , endpoint=True , dtype=float) #[0.] 
+Nt = 10000 
+t = np.linspace( 0. , T*1. , num=Nt , endpoint=True , dtype=float)/T #[0.] 
 dt = t[1]-t[0]
-#print('CFL =', U*dt/dz)
+print(dt,np.amin(dz))
+print('CFL =', dt/np.amin(dz))
 #print('CFLx =', U*dt*np.sqrt(k0**2.+l0**2.))
 
 # time advancement:
 Phi0 = np.eye(int(4*Nz),int(4*Nz),0,dtype=complex) # initial condition (prinicipal fundamental solution matrix)
 start_time = datetime.now()
 #Phin = op_time_step( Nz, N, omg, tht, nu, kap, U, z, l0, k0, Phi0 , dt, 100. ) 
-Phin = fn.rk4_time_step( params, z, Phi0 , dt/T, 1. )
+Phin = fn.rk4_time_step( params, z, Phi0 , dt, 1. )
 time_elapsed = datetime.now() - start_time
 print('Total time elapsed (hh:mm:ss.ms) {}'.format(time_elapsed))
 

@@ -8,11 +8,11 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import scipy
 from scipy.linalg import expm
-from scipy.stats import chi2
-from scipy import signal
-from scipy.fftpack import fft, fftshift
-import matplotlib.patches as mpatches
-from matplotlib.colors import colorConverter as cc
+#from scipy.stats import chi2
+#from scipy import signal
+#from scipy.fftpack import fft, fftshift
+#import matplotlib.patches as mpatches
+#from matplotlib.colors import colorConverter as cc
 from datetime import datetime
 import numpy.distutils.system_info as sysinfo
 sysinfo.get_info('atlas')
@@ -85,7 +85,7 @@ def rk4( params , stat_mat , z, A , time , Phin ):
  bz = bz / ( params['N']**2. * np.sin(params['tht']) )
 
  #start_time_3 = datetime.now()
- A = fast_A( params , stat_mat , u , uz , bz , z , A*(0.+0.j) )
+ A = fast_A( params , stat_mat , u/params['U'] , uz/params['omg'] , bz/(params['N']**2. * np.sin(params['tht'])) , z , A*(0.+0.j) )
  #time_elapsed = datetime.now() - start_time_3
  #print('build A time elapsed (hh:mm:ss.ms) {}'.format(time_elapsed))
 
