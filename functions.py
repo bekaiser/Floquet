@@ -28,10 +28,10 @@ sysinfo.get_info('atlas')
 def rk4_time_step( params , z , Phin , dt, stop_time ):
   # uniform time step 4th-order Runge-Kutta time stepper
 
-  stat_mat = make_stationary_matrices( z, params['H'] , params['C'] , params['tht'] , params['k0'] , params['l0'] )
+  stat_mat = make_stationary_matrices( z, params['H']/params['L'] , params['C'] , params['tht'] , params['k0'] , params['l0'] )
   A = np.zeros([int(4*params['Nz']),int(4*params['Nz'])],dtype=complex)
 
-  time = 0.
+  time = 0. # non-dimensional time
   count = 0
 
   while time < stop_time: # add round here
@@ -78,11 +78,11 @@ def make_stationary_matrices( z , H , C , tht , k0 , l0 ):
 def rk4( params , stat_mat , z, A , time , Phin ):
  # 4th-order Runge-Kutta functions 
 
- # non-dimensionalize the base periodic flow:
- ( b, u, bz, uz ) = xforcing_nonrotating_solution( params['U'], params['N'], params['omg'], params['tht'], params['nu'], params['kap'], time, z ) 
- u = u / params['U']
- uz = uz / params['omg']
- bz = bz / ( params['N']**2. * np.sin(params['tht']) )
+ # dimensional the base periodic flow:
+ ( b, u, bz, uz ) = xforcing_nonrotating_solution( params['U'], params['N'], params['omg'], params['tht'], params['nu'], params['kap'], time*params['T'], z*params['L'] ) 
+ #u = u / params['U']
+ #uz = uz / params['omg']
+ #bz = bz / ( params['N']**2. * np.sin(params['tht']) )
 
  #start_time_3 = datetime.now()
  A = fast_A( params , stat_mat , u/params['U'] , uz/params['omg'] , bz/(params['N']**2. * np.sin(params['tht'])) , z , A*(0.+0.j) )

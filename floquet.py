@@ -2,6 +2,8 @@
 # Bryan Kaiser
 # 
 
+# non-dimensionalize the U component!!!
+
 import h5py
 import numpy as np
 import math as ma
@@ -26,80 +28,68 @@ stat_path = "./"
 
 
 # =============================================================================
+# parameters 
 
-
-# non-dimensional perturbation wavenumbers, non-dimensionalized by L=U/omega:
-k0=2.*np.pi 
-l0=2.*np.pi
+k0=0. # streamwise non-dimensional perturbation wavenumbers
+l0=0. # spanwise non-dimensional perturbation wavenumbers
 
 Nz = 100 # number of grid points
-H = 20. # non-dimensional domain height
-grid = 'cosine'
-#grid = 'uniform'
+grid = 'cosine' # 'uniform'
 
-nu = 2.0e-2 # m^2/s, kinematic viscosity
+nu = 2.0e-6 # m^2/s, kinematic viscosity
 Pr = 1. # Prandtl number
 kap = nu/Pr # m^2/s, thermometric diffusivity
 T = 44700.0 # s, M2 tide period
 omg = 2.0*np.pi/T # rads/s
 #f = 1e-4 # 1/s, inertial frequency
 N = 1e-3 # 1/s, buoyancy frequency
-C = 1./4.
-U = 0.01 #0.00592797 # m/s, oscillation velocity amplitude
-"""
- U = [0.00592797, 0.01185594, 0.02371189, 0.05927972, 0.11855945] corresponds to 
- ReS = U*np.sqrt(2./(nu*omg)) =
- [500.,1000.,2000.,5000.,10000.]
-"""
-
-L = U/omg # m, excursion length
+C = 1./4. # N^2*sin(tht)/omg, slope ``criticality''
+U = 0.001 # m/s, oscillation velocity amplitude
+L = U/omg # m, excursion length (here we've assumed L>>H)
 thtc= ma.asin(omg/N) # radians    
-tht = C*thtc # radians, sets C = 1/4
+tht = C*thtc # radians
 Re = omg*L**2./nu # Reynolds number
-dRe = np.sqrt(2.*nu/omg) # Stokes' 2nd problem BL thickness
-ReS = np.sqrt(2.*Re)
-print(dRe/H)
+dS = np.sqrt(2.*nu/omg) # Stokes' 2nd problem BL thickness
+ReS = np.sqrt(2.*Re) # Stokes' 2nd problem Reynolds number
+H = L # non-dimensional domain height (L is the lengthscale)
 
+# non-dimensional grid 
 if grid == 'uniform': 
- z = np.linspace((H/Nz)/2. , H, num=Nz) # non-dimensional
-
+ z = np.linspace((H/Nz)/2. , H, num=Nz) / H 
 if grid == 'cosine': 
  z = -np.cos(((np.linspace(1., 2.*Nz, num=int(2*Nz)))*2.-1.)/(4.*Nz)*np.pi)*H+H
- z = z[0:Nz] # half cosine grid
+ z = z[0:Nz] / H # half cosine grid
  dz = z[1:Nz]-z[0:Nz-1]
 
-print(np.amax(z),np.amin(z))
+#print(np.amax(z),np.amin(z))
 print('ReS = ', ReS)
 print('C = ',tht/thtc)
 print('Pr = ',Pr)
-print('H =', H)
 print('k = ', k0)
 print('l = ', l0)
 
-params = {'nu': nu, 'kap': kap, 'Pr': Pr, 'omg': omg, 'L':L, 'T': T, 'U': U, 'N':N, 'tht':tht, 'Re':Re, 'C':C, 'H':H, 'Nz':Nz, 'k0':k0, 'l0':l0}
-
 # time series:
-Nt = 10000 
-t = np.linspace( 0. , T*1. , num=Nt , endpoint=True , dtype=float)/T #[0.] 
-dt = t[1]-t[0]
-print(dt,np.amin(dz))
-print('CFL =', dt/np.amin(dz))
-#print('CFLx =', U*dt*np.sqrt(k0**2.+l0**2.))
+CFL = 0.02
+dt = np.amin(dz)*CFL # non-dimensional time step
+
+print('dimensional dt = ',dt*T)
+
+params = {'nu': nu, 'kap': kap, 'Pr': Pr, 'omg': omg, 'L':L, 'T': T, 'U': U, 
+          'N':N, 'tht':tht, 'Re':Re, 'C':C, 'H':H, 'Nz':Nz, 'k0':k0, 'l0':l0,
+          'dS':dS, 'ReS':ReS, 'thtc':thtc, 'grid':grid, 'dz_min':(np.amin(dz)),
+          'dt':dt, 'CFL':(dt/np.amin(dz))}
+
 
 # time advancement:
 Phi0 = np.eye(int(4*Nz),int(4*Nz),0,dtype=complex) # initial condition (prinicipal fundamental solution matrix)
 start_time = datetime.now()
-#Phin = op_time_step( Nz, N, omg, tht, nu, kap, U, z, l0, k0, Phi0 , dt, 100. ) 
 Phin = fn.rk4_time_step( params, z, Phi0 , dt, 1. )
 time_elapsed = datetime.now() - start_time
 print('Total time elapsed (hh:mm:ss.ms) {}'.format(time_elapsed))
 
 # Floquet mode/multiplier solutions:
 eigval,eigvec = np.linalg.eig(Phin) # eigenvals, eigenvecs | eigenvals = floquet multipliers
-"""
-# checks w,v decomposition:
-print('Should be zero =',np.dot((Phin-np.eye(int(2),int(2),0,dtype=complex)*w[0]),v[:,0])) # C*v_k=lambda*I*v_k
-"""
+
 eigvalr = np.real(eigval)
 eigvali = np.imag(eigval)
 eigvecr = np.real(eigvec)
@@ -110,8 +100,8 @@ eigveci = np.imag(eigvec)
 #print(eigvalr)
 #print(eigvali)
 
-print(type(Pr))
-print(type(C))
+#print(type(Pr))
+#print(type(C))
 Prandtl = Pr
 
 # save results to .h5:
@@ -120,7 +110,7 @@ f2 = h5py.File(h5_filename, "w")
 dset = f2.create_dataset('ReS', data=ReS, dtype='f8')
 dset = f2.create_dataset('Prandtl', data=Prandtl, dtype='f8')
 dset = f2.create_dataset('C', data=C, dtype='f8')
-dset = f2.create_dataset('t', data=t, dtype='f8')
+dset = f2.create_dataset('dt', data=dt, dtype='f8')
 dset = f2.create_dataset('z', data=z, dtype='f8')
 dset = f2.create_dataset('k', data=k0, dtype='f8')
 dset = f2.create_dataset('l', data=l0, dtype='f8')
@@ -135,8 +125,58 @@ dset = f2.create_dataset('Pr', data=Pr, dtype='f8')
 dset = f2.create_dataset('omg', data=omg, dtype='f8')
 print('\nfile written!\n')
 
-print(eigvalr)
-print(eigvali)
-print(np.shape(eigvalr))
+#print(eigvalr)
+#print(eigvali)
+#print(np.shape(eigvalr))
+
+modulus = np.power( np.power(eigvalr,2.) + np.power(eigvali,2.) , 0.5 )
+eigvalr = np.sort(abs(eigvalr))
+eigvali = np.sort(abs(eigvali))
+modulus = np.sort(modulus)
+ 
+Neig = np.shape(eigvalr)[0]
+print(modulus[Neig-1])
+#print(eigvalr)
+print(eigvalr[Neig-1]) 
+print(eigvali[Neig-1])
+Nch = 200
+
+plotname = figure_path +'modulus.png' 
+fig = plt.figure(figsize=(8,5))
+plt.plot(np.arange(Nch,0,-1),modulus[Neig-Nch:Neig],'b')
+#plt.hist(y_test_pred_f, color = 'red', edgecolor = 'black',bins = binsize2, density = True, alpha = 0.2,label=r"prediction") # [:,0]
+#plt.hist(test_log10eps, color = 'blue', edgecolor = 'black', bins = binsize2, density = True, alpha = 0.25,label=r"data")
+plt.xlabel(r"$N$",fontsize=13)
+plt.ylabel(r"|$\lambda$|",fontsize=13)
+#plt.title(r"test data, $N_{profiles}=$%i" %(Nfiles2),fontsize=13)
+#plt.legend(loc=1)
+#plt.xlim([-12.5,-6.5]) 
+plt.savefig(plotname,format="png"); plt.close(fig);
+
+
+plotname = figure_path +'real_eigenvalues.png' 
+fig = plt.figure(figsize=(8,5))
+plt.plot(np.arange(Nch,0,-1),eigvalr[Neig-Nch:Neig],'b')
+#plt.hist(y_test_pred_f, color = 'red', edgecolor = 'black',bins = binsize2, density = True, alpha = 0.2,label=r"prediction") # [:,0]
+#plt.hist(test_log10eps, color = 'blue', edgecolor = 'black', bins = binsize2, density = True, alpha = 0.25,label=r"data")
+plt.xlabel(r"$N$",fontsize=13)
+plt.ylabel(r"|$\lambda$|",fontsize=13)
+#plt.title(r"test data, $N_{profiles}=$%i" %(Nfiles2),fontsize=13)
+#plt.legend(loc=1)
+#plt.xlim([-12.5,-6.5]) 
+plt.savefig(plotname,format="png"); plt.close(fig);
+
+plotname = figure_path +'imag_eigenvalues.png' 
+fig = plt.figure(figsize=(8,5))
+plt.plot(np.arange(Nch,0,-1),eigvali[Neig-Nch:Neig],'b')
+#plt.hist(y_test_pred_f, color = 'red', edgecolor = 'black',bins = binsize2, density = True, alpha = 0.2,label=r"prediction") # [:,0]
+#plt.hist(test_log10eps, color = 'blue', edgecolor = 'black', bins = binsize2, density = True, alpha = 0.25,label=r"data")
+plt.xlabel(r"$N$",fontsize=13)
+plt.ylabel(r"|$\lambda$|",fontsize=13)
+#plt.title(r"test data, $N_{profiles}=$%i" %(Nfiles2),fontsize=13)
+#plt.legend(loc=1)
+#plt.xlim([-12.5,-6.5]) 
+plt.savefig(plotname,format="png"); plt.close(fig);
+
 
 
