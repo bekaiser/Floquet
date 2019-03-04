@@ -33,8 +33,8 @@ stat_path = "./"
 k0=0. # streamwise non-dimensional perturbation wavenumbers
 l0=0. # spanwise non-dimensional perturbation wavenumbers
 
-Nz = 100 # number of grid points
-grid = 'cosine' # 'uniform'
+Nz = 200 # number of grid points
+grid_flag = 'cosine' # 'uniform'
 
 nu = 2.0e-6 # m^2/s, kinematic viscosity
 Pr = 1. # Prandtl number
@@ -44,7 +44,7 @@ omg = 2.0*np.pi/T # rads/s
 #f = 1e-4 # 1/s, inertial frequency
 N = 1e-3 # 1/s, buoyancy frequency
 C = 1./4. # N^2*sin(tht)/omg, slope ``criticality''
-U = 0.001 # m/s, oscillation velocity amplitude
+U = 0.01 # m/s, oscillation velocity amplitude
 L = U/omg # m, excursion length (here we've assumed L>>H)
 thtc= ma.asin(omg/N) # radians    
 tht = C*thtc # radians
@@ -52,14 +52,8 @@ Re = omg*L**2./nu # Reynolds number
 dS = np.sqrt(2.*nu/omg) # Stokes' 2nd problem BL thickness
 ReS = np.sqrt(2.*Re) # Stokes' 2nd problem Reynolds number
 H = L # non-dimensional domain height (L is the lengthscale)
+z,dz = fn.grid_choice( grid_flag , Nz , H )
 
-# non-dimensional grid 
-if grid == 'uniform': 
- z = np.linspace((H/Nz)/2. , H, num=Nz) / H 
-if grid == 'cosine': 
- z = -np.cos(((np.linspace(1., 2.*Nz, num=int(2*Nz)))*2.-1.)/(4.*Nz)*np.pi)*H+H
- z = z[0:Nz] / H # half cosine grid
- dz = z[1:Nz]-z[0:Nz-1]
 
 #print(np.amax(z),np.amin(z))
 print('ReS = ', ReS)
@@ -73,11 +67,12 @@ CFL = 0.02
 dt = np.amin(dz)*CFL # non-dimensional time step
 
 print('dimensional dt = ',dt*T)
+print('approx number of time steps = ',1./dt)
 
 params = {'nu': nu, 'kap': kap, 'Pr': Pr, 'omg': omg, 'L':L, 'T': T, 'U': U, 
           'N':N, 'tht':tht, 'Re':Re, 'C':C, 'H':H, 'Nz':Nz, 'k0':k0, 'l0':l0,
-          'dS':dS, 'ReS':ReS, 'thtc':thtc, 'grid':grid, 'dz_min':(np.amin(dz)),
-          'dt':dt, 'CFL':(dt/np.amin(dz))}
+          'dS':dS, 'ReS':ReS, 'thtc':thtc, 'grid':grid_flag, 
+          'dz_min':(np.amin(dz)),'dt':dt, 'CFL':(dt/np.amin(dz))}
 
 
 # time advancement:

@@ -8,21 +8,26 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import scipy
 from scipy.linalg import expm
-#from scipy.stats import chi2
-#from scipy import signal
-#from scipy.fftpack import fft, fftshift
-#import matplotlib.patches as mpatches
-#from matplotlib.colors import colorConverter as cc
 from datetime import datetime
 import numpy.distutils.system_info as sysinfo
 sysinfo.get_info('atlas')
 
+figure_path = "./figures/"
+u_path = "u/"
+uz_path = "uz/"
+bz_path = "bz/"
+paths = {'figure_path':figure_path , 'u_path':u_path , 'uz_path':uz_path , 'bz_path':bz_path}
 
-# remove dz from RK4
 
-
-# =============================================================================    
-# time-steppers
+def grid_choice( grid_flag , Nz , H ):
+ # non-dimensional grid 
+ if grid_flag == 'uniform': 
+   z = np.linspace((H/Nz)/2. , H, num=Nz) / H 
+ if grid_flag == 'cosine': # half cosine grid
+   z = -np.cos(((np.linspace(1., 2.*Nz, num=int(2*Nz)))*2.-1.)/(4.*Nz)*np.pi)*H+H
+   z = z[0:Nz] / H 
+   dz = z[1:Nz]-z[0:Nz-1]
+ return z,dz
 
 
 def rk4_time_step( params , z , Phin , dt, stop_time ):
@@ -33,37 +38,50 @@ def rk4_time_step( params , z , Phin , dt, stop_time ):
 
   time = 0. # non-dimensional time
   count = 0
-
+  output_period = 10
+  output_count = 0
+  
   while time < stop_time: # add round here
 
-   #start_time_kcoeffs = datetime.now()
-   k1 = rk4( params , stat_mat , z, A , time , Phin )
-   k2 = rk4( params , stat_mat , z, A , time + dt/2. , Phin + k1*dt/2. )
-   k3 = rk4( params , stat_mat , z, A , time + dt/2. , Phin + k2*dt/2. )
-   k4 = rk4( params , stat_mat , z, A , time + dt , Phin + k3*dt )
-   #time_elapsed = datetime.now() - start_time_kcoeffs
-   #print('k coeff time elapsed (hh:mm:ss.ms) {}'.format(time_elapsed))
+    #start_time_kcoeffs = datetime.now()
+    k1 = rk4( params , stat_mat , z, A , time , Phin , count , 0 )
+    k2 = rk4( params , stat_mat , z, A , time + dt/2. , Phin + k1*dt/2. , count , 0 )
+    k3 = rk4( params , stat_mat , z, A , time + dt/2. , Phin + k2*dt/2. , count , 0 )
+    k4 = rk4( params , stat_mat , z, A , time + dt , Phin + k3*dt , count , 1 )
+    #time_elapsed = datetime.now() - start_time_kcoeffs
+    #print('k coeff time elapsed (hh:mm:ss.ms) {}'.format(time_elapsed))
 
-   #start_time_Phi_update = datetime.now()
-   Phin = Phin + ( k1 + k2*2. + k3*2. + k4 )*dt/6.; 
-   #time_elapsed = datetime.now() - start_time_Phi_update
-   #print('Phi update time elapsed (hh:mm:ss.ms) {}'.format(time_elapsed))
+    #start_time_Phi_update = datetime.now()
+    Phin = Phin + ( k1 + k2*2. + k3*2. + k4 )*dt/6.; 
+    #time_elapsed = datetime.now() - start_time_Phi_update
+    #print('Phi update time elapsed (hh:mm:ss.ms) {}'.format(time_elapsed))
 
-   time = time + dt # non-dimensional time
-   count = count + 1
-   print('time step = ',count)
-   print('time =', time)
-   print('||Phi||_inf = ',np.amax(abs(Phin)))
+    output_count = perturb_monitor( time , count , output_count , output_period , Phin , params )
+    time = time + dt # non-dimensional time
+    count = count + 1
 
-   if np.any(np.isnan(Phin)) == True:
-    print('NaN detected')
-    return
-   if np.any(np.isinf(Phin)) == True:
-    print('Inf detected')
-    return
+    if np.any(np.isnan(Phin)) == True:
+      print('NaN detected')
+      return
+    if np.any(np.isinf(Phin)) == True:
+      print('Inf detected')
+      return
 
   print('RK4 method, final time = ', time)
   return Phin
+
+
+def perturb_monitor( time , count , output_count , output_period , Phin , params ):
+  if count == output_count: # show time step every outfreq steps
+    print('time step = ',count)
+    print('time =', time)
+    #print("||Phi||_inf = ",np.amax(abs(Phin)))
+    print("||u'||_inf = ",np.amax(abs(Phin[0:params['Nz'],:])))
+    print("||v'||_inf = ",np.amax(abs(Phin[params['Nz']:int(2*params['Nz']),:])))
+    print("||w'||_inf = ",np.amax(abs(Phin[int(2*params['Nz']):int(3*params['Nz']),:])))
+    print("||b'||_inf = ",np.amax(abs(Phin[int(3*params['Nz']):int(4*params['Nz']),:])))
+    output_count = output_count + output_period
+  return output_count
 
 
 def make_stationary_matrices( z , H , C , tht , k0 , l0 ): 
@@ -75,7 +93,7 @@ def make_stationary_matrices( z , H , C , tht , k0 , l0 ):
  return stat_mat
 
 
-def rk4( params , stat_mat , z, A , time , Phin ):
+def rk4( params , stat_mat , z, A , time , Phin , count , plot_flag ):
  # 4th-order Runge-Kutta functions 
 
  # dimensional the base periodic flow:
@@ -83,6 +101,8 @@ def rk4( params , stat_mat , z, A , time , Phin ):
  #u = u / params['U']
  #uz = uz / params['omg']
  #bz = bz / ( params['N']**2. * np.sin(params['tht']) )
+ 
+ base_flow_plots(  u , uz , bz , z , time , count , paths , params , plot_flag )
 
  #start_time_3 = datetime.now()
  A = fast_A( params , stat_mat , u/params['U'] , uz/params['omg'] , bz/(params['N']**2. * np.sin(params['tht'])) , z , A*(0.+0.j) )
@@ -102,6 +122,96 @@ def rk4( params , stat_mat , z, A , time , Phin ):
  check_matrix(krk,'krk')
 
  return krk
+
+
+def base_flow_plots(  u , uz , bz , z , time , count , paths , params , plot_flag ):
+
+ freq = np.floor( (1./params['dt'])/2000. )
+
+ if plot_flag == 1:
+   
+   if np.floor(count/freq) == count/freq:
+   
+     plotname = paths['figure_path'] + paths['u_path'] +'%i.png' %(count)
+     fig = plt.figure(figsize=(16,4.25))
+     plt.subplot(131)
+     plt.plot(u / params['U'] ,z,'b')
+     plt.xlabel(r"u/U",fontsize=13)
+     plt.ylabel(r"z/L",fontsize=13)
+     plt.xlim([-3.,3.]) 
+     plt.grid()
+     plt.title(r"t/T = %.4f, step = %i" %(time,count),fontsize=13)
+     plt.subplot(132)
+     plt.plot(u / params['U'] ,z,'b')
+     plt.xlabel(r"u/U",fontsize=13)
+     plt.ylabel(r"z/L",fontsize=13)
+     plt.axis([-3.,3.,-0.001,0.03]) 
+     plt.grid()
+     plt.title(r"t/T = %.4f, step = %i" %(time,count),fontsize=13)
+     plt.subplot(133)
+     plt.semilogy(u / params['U'] ,z,'b')
+     plt.xlabel(r"u/U",fontsize=13)
+     plt.ylabel(r"z/L",fontsize=13)
+     plt.axis([-3.,3.,0.,0.03]) 
+     plt.grid()
+     plt.title(r"t/T = %.4f, step = %i" %(time,count),fontsize=13)
+     plt.savefig(plotname,format="png"); plt.close(fig);
+
+     plotname = paths['figure_path'] + paths['uz_path'] +'%i.png' %(count)
+     fig = plt.figure(figsize=(16,4.25))
+     plt.subplot(131)
+     plt.plot(uz / params['omg'] ,z,'b')
+     plt.xlabel(r"$u_z/\omega$",fontsize=13)
+     plt.ylabel(r"$z/L$",fontsize=13)
+     plt.xlim([-500.,500.]) 
+     plt.grid()
+     plt.title(r"t/T = %.4f, step = %i" %(time,count),fontsize=13)
+     plt.subplot(132)
+     plt.plot(uz / params['omg'] ,z,'b')
+     plt.xlabel(r"$u_z/\omega$",fontsize=13)
+     plt.ylabel(r"$z/L$",fontsize=13)
+     plt.axis([-500.,500.,-0.001,0.03]) 
+     plt.grid()
+     plt.title(r"t/T = %.4f, step = %i" %(time,count),fontsize=13)
+     plt.subplot(133)
+     plt.semilogy(uz / params['omg'] ,z,'b')
+     plt.xlabel(r"$u_z/\omega$",fontsize=13)
+     plt.ylabel(r"$z/L$",fontsize=13)
+     plt.axis([-500.,500.,0.,0.03]) 
+     plt.grid()
+     plt.title(r"t/T = %.4f, step = %i" %(time,count),fontsize=13)
+     plt.savefig(plotname,format="png"); plt.close(fig);
+
+     plotname = paths['figure_path'] + paths['bz_path'] +'%i.png' %(count)
+     fig = plt.figure(figsize=(16,4.25))
+     plt.subplot(131)
+     plt.plot(bz / (params['N']**2. * np.sin(params['tht'])),z,'b')
+     plt.xlabel(r"$b_z/N^2\sin\theta$",fontsize=13)
+     plt.ylabel(r"$z/L$",fontsize=13)
+     plt.xlim([-200.,200.]) 
+     plt.grid()
+     plt.title(r"t/T = %.4f, step = %i" %(time,count),fontsize=13)
+     plt.subplot(132)
+     plt.plot(bz / (params['N']**2. * np.sin(params['tht']))  ,z,'b')
+     plt.xlabel(r"$b_z/N^2\sin\theta$",fontsize=13)
+     plt.ylabel(r"$z/L$",fontsize=13)
+     plt.axis([-200.,200.,-0.001,0.03]) 
+     plt.grid()
+     plt.title(r"t/T = %.4f, step = %i" %(time,count),fontsize=13)
+     plt.subplot(133)
+     plt.semilogy(bz / (params['N']**2. * np.sin(params['tht']))  ,z,'b')
+     plt.xlabel(r"$b_z/N^2\sin\theta$",fontsize=13)
+     plt.ylabel(r"$z/L$",fontsize=13)
+     plt.axis([-200.,200.,0.,0.03]) 
+     plt.grid()
+     plt.title(r"t/T = %.4f, step = %i" %(time,count),fontsize=13)
+     plt.savefig(plotname,format="png"); plt.close(fig);
+
+ else:
+   
+   return 
+
+ return
 
 
 def fast_A( params , stat_mat , u , uz , bz , z , A ):
