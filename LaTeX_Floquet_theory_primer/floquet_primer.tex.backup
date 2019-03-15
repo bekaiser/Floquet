@@ -17,12 +17,8 @@
 % \usepackage{caption}
 % \usepackage{float}
 % \usepackage{cite}
-\usepackage[round]{natbib}
-%\usepackage[round]{biblatex}
-\bibliographystyle{plainnat}
 
-
-\title{Floquet Theory Basics \& Code Verification}
+\title{Floquet Theory Basics}
 \author{Bryan Kaiser}
 %\date{October 2016}
 
@@ -214,24 +210,22 @@ the Floquet modes.
 Integration of Equation \ref{eq:matrix_equation} for the fundamental solution matrix 
 over one 
 period 
-\begin{equation}
+\begin{equation*}
  \int_0^T\frac{1}{\boldsymbol{\Phi}^*}\mathrm{d\boldsymbol{\Phi}^*}
  =\log(\boldsymbol{\Phi}^*(t))\Big|_0^T=\log(\boldsymbol{\Phi}^*(T))
  =\int_0^T\mathbf{A}(t)\hspace{0.5mm}\mathrm{dt}
-\end{equation}
+\end{equation*}
 yields
-\begin{equation}
+\begin{equation*}
  \boldsymbol{\Phi}^*(T)=\text{exp}\Big[\int_0^T\mathbf{A}(t)\hspace{0.5mm}\mathrm{dt}\Big]
-\end{equation}
+\end{equation*}
 which is equivalent in the limit of infinitesimal time steps to the ordered product
 of infinitesimal propogators:
-\begin{equation}
+\begin{equation*}
  \boldsymbol{\Phi}^*(T)=\lim_{\Delta{t}\rightarrow0}\prod_{j=1}^N\mathrm{e}^{\mathbf{A}(t_j)\Delta{t}}
- \label{eq:ordered_product}
-\end{equation}
-where $t_0+(j-1)\Delta{t}<t_j<t_0+j\Delta{t}$ and $T=t_0+N\Delta{t}$. Alternatively,
-Equation \ref{eq:matrix_equation} for the fundamental solution matrix can be solved 
-using a conventional time stepping scheme, such as a Runge-Kutta method.
+\end{equation*}
+
+
 % \begin{equation}
 %  \int_0^T\mathrm{d\boldsymbol{\Phi}^*}=\boldsymbol{\Phi}^*(T)-\boldsymbol{\Phi}^*(0)=\boldsymbol{\Phi}^*(T)-\mathbf{I}
 %  =\int_0^T\mathbf{A}(t)\cdot\boldsymbol{\Phi}^*(0)\hspace{0.5mm}\mathrm{dt}
@@ -247,7 +241,7 @@ using a conventional time stepping scheme, such as a Runge-Kutta method.
 %  \label{eq:PhiT}
 % \end{equation}
 
-%\textcolor{red}{this can be equivalently represented as Farrell. ADD BOOKS}
+\textcolor{red}{this can be equivalently represented as Farrell. ADD BOOKS}
 
 \newpage
 \section*{An example 2$\times$2 system}
@@ -448,10 +442,9 @@ that if the real part of $\gamma_k$ is greater than unity growth will occur.
 
 
 \newpage
-\section*{Verification of the time stepping algorithms}
 \begin{figure}[h!]
 \centering
-\includegraphics[width=4.1in]{LTE_loglog.png}
+\includegraphics[width=4.3in]{LTE_loglog.png}
 \caption{$L_\infty$ norm of the local (i.e. one time step) Floquet multiplier percent error 
 ($\max[|\lambda_{k,\text{computed}}-\lambda_{k,\text{analytical}}|/|-\lambda_{k,\text{analytical}}|]$) 
 due to temporal truncation
@@ -466,12 +459,11 @@ eigenvalues
 (i.e. Floquet multipliers) of 
 the computed matrix $\boldsymbol{\Phi}^*(t)$ and the exact analytical solutions (Equation \ref{eq:multipliers}). Machine precision is acheived at time step 
 size corresponding to about $3\cdot10^4$ time steps per period. The \textcolor{red}{red} line error was 
-computed by advancing in time using the ordered product in Equation \ref{eq:ordered_product}. A percent error 
-of $\mathcal{O}(10^{-13})$ is approximately machine precision.}
+computed by advancing in time using the ordered product in Equation \textcolor{red}{BLANK}.}
 \end{figure}
 \begin{figure}[h!]
 \centering
-\includegraphics[width=4.1in]{GTE_loglog.png}
+\includegraphics[width=4.3in]{GTE_loglog.png}
 \caption{$L_\infty$ norm of the global (i.e. integrated one period) Floquet multiplier percent error 
 due to temporal truncation
 %($\max[|\lambda_{k,\text{computed}}-\lambda_{k,\text{analytical}}|/|-\lambda_{k,\text{analytical}}|]$) 
@@ -564,24 +556,20 @@ Here we verify the estimate of system stability obtained from the Floquet multip
 with the stability obtained from the trace of the monodromy matrix for the Mathieu equation.
 
 \newpage
-\section*{Verification of the stability calculation}
 \begin{figure}[h!]
 \centering
-\includegraphics[width=4.5in]{strutt_eig_rk4.png}
+\includegraphics[width=4.75in]{strutt_eig_rk4.png}
 \caption{A Strutt diagram for the stability of Mathieu's equation (black is unstable, white is 
 stable) using the Floquet multiplier method. The results are consistent with analytical 
-and numerical solutions in the literature regarding Mathieu's equation (\citet{Kovacic18}).
+and numerical solutions in the literature regarding Mathieu's equation \textcolor{red}{CITE}
 }
 \end{figure}
 \begin{figure}[h!]
 \centering
-\includegraphics[width=4.5in]{strutt_Tr_rk4.png}
+\includegraphics[width=4.75in]{strutt_Tr_rk4.png}
 \caption{A Strutt diagram for the stability of Mathieu's equation (black is unstable, white is 
 stable) using the trace of the monodromy matrix method for Hill equations.
 }
 \end{figure}
-
-\newpage
-\bibliography{references} 
 
 \end{document}

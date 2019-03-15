@@ -14,9 +14,12 @@ sysinfo.get_info('atlas')
 
 figure_path = "./figures/"
 u_path = "u/"
+up_path = "up/"
 uz_path = "uz/"
 bz_path = "bz/"
-paths = {'figure_path':figure_path , 'u_path':u_path , 'uz_path':uz_path , 'bz_path':bz_path}
+spy_path = "spy/"
+paths = {'figure_path':figure_path , 'u_path':u_path , 'up_path':up_path , 'uz_path':uz_path , 
+         'bz_path':bz_path, 'spy_path':spy_path}
 
 
 def grid_choice( grid_flag , Nz , H ):
@@ -56,7 +59,7 @@ def rk4_time_step( params , z , Phin , dt, stop_time ):
     #time_elapsed = datetime.now() - start_time_Phi_update
     #print('Phi update time elapsed (hh:mm:ss.ms) {}'.format(time_elapsed))
 
-    output_count = perturb_monitor( time , count , output_count , output_period , Phin , params )
+    output_count = perturb_monitor( time , count , output_count , output_period , Phin , z , params , 'plot' )
     time = time + dt # non-dimensional time
     count = count + 1
 
@@ -71,7 +74,7 @@ def rk4_time_step( params , z , Phin , dt, stop_time ):
   return Phin
 
 
-def perturb_monitor( time , count , output_count , output_period , Phin , params ):
+def perturb_monitor( time , count , output_count , output_period , Phin , z, params , plot_flag ):
   if count == output_count: # show time step every outfreq steps
     print('time step = ',count)
     print('time =', time)
@@ -81,6 +84,52 @@ def perturb_monitor( time , count , output_count , output_period , Phin , params
     print("||w'||_inf = ",np.amax(abs(Phin[int(2*params['Nz']):int(3*params['Nz']),:])))
     print("||b'||_inf = ",np.amax(abs(Phin[int(3*params['Nz']):int(4*params['Nz']),:])))
     output_count = output_count + output_period
+
+  freq = np.floor( (1./params['dt'])/2000. )
+  if plot_flag == 'plot':
+
+    if np.floor(count/freq) == count/freq:
+
+      # Phin sparsity plot:
+      plotname = paths['figure_path'] + paths['spy_path'] +'%i.png' %(count)
+      fig = plt.figure(figsize=(8,8))
+      plt.spy(Phin,0.99)
+      plt.xlabel(r"n",fontsize=13); plt.ylabel(r"n",fontsize=13)
+      plt.title(r"$\Phi$, n = [1,%i], t/T = %.4f, step = %i" %(params['Nz'],time,count),fontsize=13)
+      plt.savefig(plotname,format="png"); plt.close(fig);
+      
+      # plot the solution with the maximum in Phi
+      imax,jmax = find_max_column( Phin , params )
+      print(imax,jmax)
+      if imax < params['Nz']:
+        Phiprof = Phin[0:params['Nz'],jmax]
+      elif imax < int(2*params['Nz']):
+        Phiprof = Phin[params['Nz']:int(2*params['Nz']),jmax]
+      elif imax < int(3*params['Nz']):
+        Phiprof = Phin[int(2*params['Nz']):int(3*params['Nz']),jmax]
+      elif imax < int(4*params['Nz']):
+        Phiprof = Phin[int(3*params['Nz']):int(4*params['Nz']),jmax]
+      plotname = paths['figure_path'] + paths['up_path'] +'%i.png' %(count)
+      fig = plt.figure(figsize=(16,4.25))
+      plt.subplot(131);
+      plt.plot(Phiprof,z,'b') #,alpha=0.2)
+      plt.xlabel(r"$\Phi$",fontsize=13); plt.ylabel(r"z/L",fontsize=13)
+      plt.ylim([-0.001,1.001]); plt.grid()
+      plt.title(r"%i$^{th}$ solution, t/T = %.4f, step = %i" %(jmax+1,time,count),fontsize=13)
+      plt.subplot(132); 
+      plt.plot(Phiprof,z,'b')
+      plt.xlabel(r"$\Phi$",fontsize=13); #plt.ylabel(r"z/L",fontsize=13)
+      plt.ylim([-0.001,0.03]); plt.grid()
+      plt.title(r"%i$^{th}$ solution, t/T = %.4f, step = %i" %(jmax+1,time,count),fontsize=13)
+      plt.subplot(133); 
+      plt.semilogy(Phiprof,z,'b')
+      plt.xlabel(r"$\Phi$",fontsize=13); #plt.ylabel(r"z/L",fontsize=13)
+      plt.ylim([0.,0.03]); plt.grid()
+      plt.title(r"%i$^{th}$ solution, t/T = %.4f, step = %i" %(jmax+1,time,count),fontsize=13)
+      plt.savefig(plotname,format="png"); plt.close(fig);
+  
+      print(Phin[imax,jmax])
+      print(Phin[int(4*params['Nz'])-1,int(4*params['Nz'])-1])
   return output_count
 
 
@@ -91,6 +140,12 @@ def make_stationary_matrices( z , H , C , tht , k0 , l0 ):
  pz3 = partial_z( z , H , 'dirchlet' , 'neumann' ) # BCs on wall-normal velocity, 1st derivative
  stat_mat = { 'L_inv':L_inv, 'pz3':pz3, 'P4':P4, 'dzP4':dzP4 } 
  return stat_mat
+
+def find_max_column( Phin , params ):
+ # find the column of the maximum value in Phin
+ maxrow = np.floor(abs(Phin).argmax()/(4*params['Nz']))
+ maxcol = abs(Phin).argmax()-maxrow*(4*params['Nz'])
+ return int(maxrow),int(maxcol)
 
 
 def rk4( params , stat_mat , z, A , time , Phin , count , plot_flag ):

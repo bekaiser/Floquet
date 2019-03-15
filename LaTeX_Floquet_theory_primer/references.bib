@@ -1,0 +1,1441 @@
+%%
+%% JOURNAL ABBREVIATIONS
+%%
+%@STRING{AMS 	= "Amer.\ Meteor.\ Soc."}
+%@STRING{AGU 	= "Amer.\ Geophys.\ Union"}
+%@STRING{AIP 	= "Amer. Inst. Phys."}
+%@STRING{ADGEO     = "Adv.\ Geosci."}
+%@STRING{AFM       = "Agric.\ For.\ Meteor."}
+%@STRING{AM        = "Ann.\ Meteor."}
+%@STRING{AN        = "Astrophys.\ Norv."}		% Astrophysica Norvegica
+%@STRING{AO        = "Atmos.--Ocean"}			% Atmosphere--Ocean, published by Canadian Meteorological Society (CMOS)
+%@STRING{AR        = "Atmos.\ Res."}			% Atmospheric Research
+%@STRING{ARFM      = "Annu.\ Rev.\ Fluid Mech."}
+%@STRING{AUMET     = "Aust.\ Meteor.\ Mag."}
+%@STRING{BAMS      = "Bull.\ Amer.\ Meteor.\ Soc."}
+%@STRING{CAP       = "Contrib.\ Atmos.\ Phys."}
+%@STRING{CC        = "Climate Change"}      % Climate Change 
+%@STRING{CCH       = "Climatic Change"}			% Climatic Change
+%@STRING{CDYN      = "Climate Dyn."}
+%@STRING{CHAOS     = "Chaos"}
+%@STRING{COL       = "Collier's"}
+%@STRING{CRS       = "Cont.\ Shelf Res."}
+%@STRING{DAO       = "Dyn.\ Atmos.\ Oceans"}
+%@STRING{ECO       = "Ecology"}
+%@STRING{EI        = "Earth Interact."}
+%@STRING{GA        = "Geophysica"}			% Geophysica, published by Geophysical Society of Finland 
+%@STRING{GEOMAG    = "Geophys.\ Mag."}
+%@STRING{GN        = "Geophys.\ Norv."}			% Geophysica Norvegica
+%@STRING{GRL       = "Geophys.\ Res.\ Lett."}
+%@STRING{GEOINT    = "Geofis.\ Int."}			% Geofisica Internacional (Mexican journal -- vols. 3--5 contained proceedings from a hurricane conference
+%@STRING{GEOPUB    = "Geofys.\ Publ."}
+%@STRING{GPC       = "Global Planet.\ Change"}
+%@STRING{HP        = "Health Phys."}
+%@STRING{IAOP      = "Izv.\ Atmos.\ Ocean.\ Phys.\ (Engl.\ Transl.)"}
+%@STRING{IJC       = "Int.\ J.\ Climatol."}
+%@STRING{JAM       = "J.\ Appl.\ Meteor."}		% renamed to name below in 2006
+%@STRING{JAMC      = "J.\ Appl.\ Meteor.\ Climatol."}  	% Journal of Applied Meteorology and Climatology (this journal used to be called the Journal of Applied Meteorology before 2006)
+%@STRING{JAS       = "J.\ Atmos.\ Sci."}
+%@STRING{JAOT      = "J.\ Atmos.\ Oceanic Technol."}
+%@STRING{JCAM      = "J.\ Climate Appl.\ Meteor."}	% from 1983--87, now JAMC
+%@STRING{JCLI      = "J.\ Climate"}
+%@STRING{JCR       = "J.\ Coastal Res."}
+%@STRING{JFM       = "J.\ Fluid\ Mech."}
+%@STRING{JEM       = "J.\ Eng.\ Math."}			% Journal of Engineering Mathematics
+%@STRING{JGR       = "J.\ Geophys.\ Res."}
+%@STRING{JHM       = "J.\ Hydrometeor."}
+%@STRING{JMS       = "J.\ Mar.\ Syst."}
+%@STRING{JM        = "J.\ Meteor."}
+%@STRING{JMR       = "J.\ Mar.\ Res."}
+%@STRING{JMSJ      = "J.\ Meteor.\ Soc.\ Japan"}
+%@STRING{JPO       = "J.\ Phys.\ Oceanogr."}
+%@STRING{JOCEAN    = "J.\ Oceanogr."}			% Journal of Oceanography
+%@STRING{JOSJ      = "J.\ Oceanogr.\ Soc.\ Japan"}
+%@STRING{JSE       = "J.\ Struct.\ Eng."}	% Journal of Structural Engineering at ASCE
+%@STRING{JTM       = "J.\ Tropical Meteor."}
+%@STRING{JWEIA     = "J.\ Wind Eng.\ Ind.\ Aerodyn."}
+%@STRING{MA        = "Meteor.\ Appl."}
+%@STRING{MAP       = "Meteor.\ Atmos.\ Phys."}
+%@STRING{METMON    = "Meteor.\ Monogr."}
+%@STRING{METZEIT   = "Meteor.\ Z."}
+%@STRING{MWL       = "Mar.\ Wea.\ Log"}
+%@STRING{MWR       = "Mon.\ Wea.\ Rev."}
+%@STRING{NAT       = "Nature"}
+%@STRING{NHR       = "Nat.\ Hazards Rev."}
+%@STRING{NWD       = "Natl.\ Weather Dig."}
+%@STRING{OA        = "Oceanol. Aeta"}
+%@STRING{OCEAN     = "Oceanography"}                	% a quarterly journal of The Oceanography Society
+%@STRING{PAG       = "Pure Appl.\ Geophys."}
+%@STRING{PF        = "Phys.\ Fluids"}
+%@STRING{PHYSD     = "Physica D"}
+%@STRING{PMG       = "Pap.\ Meteor.\ Geophys."}	% Papers in Meteorology and Geophysics
+%@STRING{PNAS      = "Proc.\ Natl.\ Acad.\ Sci.\ (USA)"}
+%@STRING{PRE       = "Phys.\ Rev.\ E"}
+%@STRING{PRSA      = "Proc.\ Roy.\ Soc."}
+%@STRING{PT        = "Phys.\ Today"}
+%@STRING{PTRS      = "Philos.\ Trans.\ Roy.\ Soc.\ London"}
+%@STRING{QJRMS     = "Quart.\ J.\ Roy.\ Meteor.\ Soc."}
+%@STRING{RGEO      = "Rev. Geophys."}
+%@STRING{SCI       = "Science"}
+%@STRING{SOLA      = "SOLA"}				% Scientific Online Letters on the Atmosphere
+%@STRING{TAGU      = "Eos, Trans.\ Amer.\ Geophys.\ Union"}
+%@STRING{TELLUS    = "Tellus"}
+%@STRING{TCFD      = "Theor.\ Comput.\ Fluid Dyn."}
+%@STRING{WEA       = "Weather"}
+%@STRING{WW        = "Weatherwise"}
+%@STRING{WF        = "Wea.\ Forecasting"}
+%@STRING{WMOB      = "WMO Bull."}
+
+% SAMPLE REFERENCES. Remove these and insert your own reference database.
+
+
+@Article{Ascher97,
+  author = 	 {U. Ascher and S. Ruuth and R. Spiteri},
+  title = 	 {Implicit-explicit Runge-Kutta methods for time-dependent partial differential equations},
+  journal = 	 {Applied Numerical Mathematics},
+  year = 	 1997,
+  volume =	 25,
+  number =	 2,
+  pages =	 {151-167},
+}
+
+@Article{Armi78,
+  author = 	 {L. Armi},
+  title = 	 {Some evidence for boundary mixing in the deep ocean},
+  journal = 	 {Journal of Geophysical Research: Oceans},
+  year = 	 1978,
+  volume =	 83,
+  number =	 4,
+  pages =	 {1971-1979},
+}
+
+@Article{Baidulov10,
+  author = 	 {V. Baidulov},
+  title = 	 {Fine structure of one-dimensional periodic stratified flows},
+  journal = 	 {Fluid Dynamics},
+  year = 	 2010,
+  volume =	 45,
+  number =	 6,
+  pages =	 {835-842},
+}
+
+
+@Article{Balmforth02,
+  author = 	 {N. Balmforth and G. Ierley and W. Young},
+  title = 	 {Tidal conversion by subcritical topography},
+  journal = 	 {Journal of Physical Oceanography},
+  year = 	 2002,
+  volume =	 32,
+  number =	 10,
+  pages =	 {2900-2914},
+}
+
+@Article{Baines73,
+  author = 	 {P. Baines},
+  title = 	 {The generation of internal tides by flat-bump topography},
+  journal = 	 {Deep Sea Research},
+  year = 	 1973,
+  volume =	 20,
+  pages =	 {179-205},
+}
+
+@Article{Bell75a,
+  author = 	 {T. Bell},
+  title = 	 {Lee waves in stratified flows with simple harmonic time dependence},
+  journal = 	 {Journal of Fluid Mechanics},
+  year = 	 1975,
+  volume =	 67,
+  pages =	 {705-722},
+}
+
+@Article{Bell75b,
+  author = 	 {T. Bell},
+  title = 	 {Topographically generated internal waves in the open ocean},
+  journal = 	 {Journal of Geophysical Research},
+  year = 	 1975,
+  volume =	 80,
+  pages =	 {320-327},
+}
+
+@Article{Broecker91,
+  author = 	 {W. Broecker},
+  title = 	 {The great ocean conveyor},
+  journal = 	 {Oceanography},
+  year = 	 1991,
+  volume =	 4,
+  pages =	 {79-89},
+}
+
+@Article{Burns16,
+  author = 	 {K. Burns and G. Vasil and J. Oishi and D. Lecoanet and B. Brown},
+  title = 	 {Dedalus: Flexible framework for spectrally solving differential equations},
+  journal = 	 {Astrophysics Source Code Library},
+  year = 	 2016,
+}
+
+@Article{Chalamalla15,
+  author = 	 {V. Chalamalla and S. Sarkar},
+  title = 	 {Mixing, dissipation rate, and their overturn-based estimates in a near-bottom turbulent flow driven by internal tides},
+  journal = 	 {Journal of Physical Oceanography},
+  year = 	 2015,
+  volume =	 45,
+  pages =	 {1969-1987},
+}
+
+@Article{Cox62,
+  author = 	 {C. Cox and H. Sandstrom},
+  title = 	 {Coupling of internal and surface waves in water of variable depth},
+  journal = 	 {Journal of Oceanographical Society of Japan},
+  year = 	 1962,
+  volume =	 18,
+  pages =	 {499-513},
+}
+
+
+@Article{Craxton15,
+  title={Direct-drive inertial confinement fusion: A review},
+  author={R. Craxton and K. Anderson and T. Boehly and V. Goncharov and D. Harding and J. Knauer and R. McCrory and P. McKenty and D. Meyerhofer and J. Myatt and others},
+  journal={Physics of Plasmas},
+  volume={22},
+  number={11},
+  pages={110501},
+  year={2015},
+  publisher={AIP Publishing}
+}
+
+
+
+@Article{Davis76,
+  author = 	 {S. Davis},
+  title = 	 {The stability of time-periodic flows},
+  journal = 	 {Annual Review of Fluid Mechanics},
+  year = 	 1976,
+  volume =	 8,
+  number =	 1,
+  pages =	 {57-74},
+}
+
+
+@Article{deLavergne17,
+  author = 	 {C. De Lavergne and G. Madec and F. Roquet and R. M. Holmes and T.J. McDougall},
+  title = 	 {Abyssal ocean overturning shaped by seafloor distribution},
+  journal = 	 {Nature},
+  year = 	 2017,
+  volume =	 551,
+  pages =	 {181-186},
+}
+
+@phdthesis{Dell13,
+	author={R. Dell},
+	title={Boundary layer dynamics and deep ocean mixing in Mid-Atlantic Ridge canyons},
+	school={Massachusetts Institute of Technology and Woods Hole Oceanographic Institution},
+	year={2013}
+}
+
+
+@Article{Dell15,
+  author = 	 {R. Dell and L. Pratt},
+  title = 	 {Diffusive boundary layers over varying topography},
+  journal = 	 {Journal of Fluid Mechanics},
+  year = 	 2015,
+  volume =	 769,
+  pages =	 {635-653},
+}
+
+@Article{Drake17,
+  author = 	 {H. Drake and A. Morrison and S. Griffies and J. Sarmiento and W. Weijer and A. Gray},
+  title = 	 {Lagrangian timescales of southern ocean upwellingin a hierarchy of model resolutions},
+  journal = 	 {Geophysical Research Letters},
+  year = 	 2018,
+}
+
+
+@article{Farrell96,
+  title={Generalized stability theory. Part II: Nonautonomous operators},
+  author={B. Farrell and P. Ioannou},
+  journal={Journal of the Atmospheric Sciences},
+  volume={53},
+  number={14},
+  pages={2041-2053},
+  year={1996}
+}
+
+@Article{Ferrari16,
+  author = 	 {R. Ferrari and A. Mashayek and T. McDougall and M. Nikurashin and J. Campin},
+  title = 	 {Turning ocean mixing upside down},
+  journal = 	 {Journal of Physical Oceanography},
+  year = 	 2016,
+}
+
+@Article{Garrett91,
+  author = 	 {C. Garrett},
+  title = 	 {Marginal mixing theories},
+  journal = 	 {Atmosphere-Ocean},
+  year = 	 1991,
+  volume =	 29,
+  number =	 2,
+  pages =	 {313-339},
+}
+
+@Article{Garrett93,
+  author = 	 {C. Garrett and P. MacCready and P. Rhines},
+  title = 	 {Boundary mixing and arrested Ekman layers: Rotating stratified flow near a sloping boundary},
+  journal = 	 {Annual Review of Fluid Mechanics},
+  year = 	 1993,
+  volume =	 25,
+  number =	 1,
+  pages =	 {291-323},
+}
+
+@Article{Garrett07,
+  author = 	 {C. Garrett and E. Kunze},
+  title = 	 {Internal tide generation in the deep ocean},
+  journal = 	 {Annual Review of Fluid Mechanics},
+  year = 	 2007,
+  volume =	 39,
+  pages =	 {57-87},
+}
+
+@Article{Gayen10,
+  author = 	 {B. Gayen and S. Sarkar},
+  title = 	 {Turbulence during the generation of internal tide on a critical slope},
+  journal = 	 {Physical Review Letters},
+  year = 	 2010,
+  volume =	 104,
+  number =       21
+}
+
+@Article{Gayen10b,
+  author = 	 {B. Gayen and S. Sarkar},
+  title = 	 {Large eddy simulation of a stratified boundary
+layer under an oscillatory current},
+  journal = 	 {Journal of Fluid Mechanics},
+  year = 	 2010,
+  volume =	 643,
+  pages =	 {233-266},
+}
+
+@Article{Gayen11,
+  author = 	 {B. Gayen and S. Sarkar},
+  title = 	 {Direct and large-eddy simulations of internal tide
+generation at a near-critical slope},
+  journal = 	 {Journal of Fluid Mechanics},
+  year = 	 2011,
+  volume =	 681,
+  pages =	 {48-79},
+}
+
+@Article{Gayen11b,
+  author = 	 {B. Gayen and S. Sarkar},
+  title = 	 {Boundary mixing by density overturns in an internal tidal beam},
+  journal = 	 {Geophysical Research Letters},
+  year = 	 2011,
+  volume =	 38,
+  number =       14,
+}
+
+@Article{Goff10,
+  author = 	 {J.A. Goff and B.K. Arbic},
+  title = 	 {Global prediction of abyssal hill roughness statistics for use in ocean models from digital maps of paleo-spreading rate, paleo-ridge orientation, and sediment thickness},
+  journal = 	 {Ocean Modelling},
+  year = 	 2010,
+  volume =	 32,
+  number = 	 1
+  pages =	 {36-43},
+}
+
+
+@Article{Gregg18,
+  author = 	 {M.C. Gregg and E.A. D'Asaro and J.J. Riley and Kunze, E},
+  title = 	 {Mixing efficiency in the ocean: annual review of marine science},
+  journal = 	 {Ocean Modelling},
+  year = 	 2018,
+  volume =	 10,
+  pages =	 {443-473},
+}
+
+@Article{Hart71,
+  author = 	 {J. Hart},
+  title = 	 {A possible mechanism for boundary layer mixing and layer formation in a stratified fluid},
+  journal = 	 {Journal of Physical Oceanography},
+  year = 	 1971,
+  volume =	 1,
+  pages =	 {258-262},
+}
+
+
+@Article{Holloway99,
+  author = 	 {P. Holloway and M. Merrifeld},
+  title = 	 {Internal tide generation by seamounts, ridges, and islands},
+  journal = 	 {Journal of Geophysical Research: Oceans},
+  year = 	 1999,
+  volume =	 104,
+  number =	 11,
+  pages =	 {25937-25951},
+}
+
+
+@Article{Huang02,
+  author = 	 {R. Huang and X. Jin},
+  title = 	 {Deep circulation in the South Atlantic induced by bottom-intensified
+mixing over the midocean ridge},
+  journal = 	 {Journal of Physical Oceanography},
+  year = 	 2002,
+  volume =	 32,
+  number =	 4,
+  pages =	 {1150-1164},
+}
+
+@Article{Hunt88,
+  author = 	 {J. Hunt and A. Wray and P. Moin},
+  title = 	 {Eddies, streams, and convergence zones in turbulent flows},
+  journal = 	 {Proceedings of the Summer Program, Center for Turbulence Research, Stanford},
+  year = 	 1988,
+}
+
+@article{Kovacic18,
+  title={Mathieu's Equation and Its Generalizations: Overview of Stability Charts and Their Features},
+  author={I. Kovacic and R. Rand and S.M. Sah},
+  journal={Applied Mechanics Reviews},
+  volume={70},
+  number={2},
+  year=2018,
+  publisher={American Society of Mechanical Engineers}
+}
+
+
+
+
+
+
+
+@Article{Khatiwala03,
+  author = 	 {S. Khatiwala},
+  title = 	 {A simple parameterization of turbulent tidal mixing near supercritical topography},
+  journal = 	 {Deep Sea Research Part I: Oceanographic Research Papers},
+  year = 	 2003,
+  volume =	 50,
+  number =	 1,
+  pages =	 {3-21},
+}
+
+
+@Article{Klymak10,
+  author = 	 {J. Klymak and S. Legg and R. Pinkel},
+  title = 	 {A simple parameterization of turbulent tidal mixing near supercritical topography},
+  journal = 	 {Journal of Physical Oceanography},
+  year = 	 2010,
+  volume =	 40,
+  number =	 9,
+  pages =	 {2059-2074},
+}
+
+@Article{Large01,
+  author = 	 {W. Large and A. Nurser},
+  title = 	 {Ocean surface water mass transformation},
+  journal = 	 {International Geophysics},
+  year = 	 2001,
+  volume =	 77,
+  pages =	 {317-336},
+}
+
+@Article{Ledwell00,
+  author = 	 {J. Ledwell and E. Montgomery and K. Polzin and L. St. Laurent and R. Schmitt and J. Toole},
+  title = 	 {Evidence for enhanced mixing over rough topography in the abyssal ocean},
+  journal = 	 {Nature},
+  year = 	 2000,
+  volume =	 403,
+  pages =	 {179-182},
+}
+
+
+@Article{Legg04,
+  author = 	 {S. Legg},
+  title = 	 {Internal tides generated on a corrugated continental slope. 
+  Part I: Cross-slope barotropic forcing},
+  journal = 	 {Journal of Physical Oceanography},
+  year = 	 2004,
+  volume =	 34,
+  number =	 1,
+  pages =	 {156-173},
+}
+
+@Article{Legg04b,
+  author = 	 {S. Legg},
+  title = 	 {Internal tides generated on a corrugated continental slope. 
+  Part I: Along-slope barotropic forcing},
+  journal = 	 {Journal of Physical Oceanography},
+  year = 	 2004,
+  volume =	 34,
+  number =	 8,
+  pages =	 {1824-1838},
+}
+
+@Book{Lesieur05,
+  author =	 {M. Lesieur and O. M\'{e}tais and P. Comte},
+  title = 	 {Large-eddy simulations of turbulence},
+  publisher = 	 {Cambridge University Press},
+  year = 	 2005
+}
+
+@Book{Lumley79,
+  author = 	 {J. Lumley},
+  title = 	 {Computational modeling of turbulent flows},
+  booktitle={Advances in applied mechanics},
+  volume={18},
+  pages={123-176},
+  year={1979},
+  publisher={Elsevier}
+}
+
+@Article{Lumpkin07,
+  author = 	 {R. Lumpkin and K. Speer},
+  title = 	 {Global ocean meridonal overturning},
+  journal = 	 {Journal of Physical Oceanography},
+  year = 	 2007,
+  volume =	 37,
+  number =	 10,
+  pages =	 {2550-2562},
+}
+
+@Article{Marshall12,
+  author = 	 {J. Marshall, and K. Speer},
+  title = 	 {Closure of the meridional overturning circulation through Southern Ocean upwelling},
+  journal = 	 {Nature Geoscience},
+  year = 	 2012,
+  volume =	 5,
+  number =	 3,
+  pages =	 {171-180},
+}
+
+@Article{Mashayek11b,
+  author = 	 {A. Mashayek and W. R. Peltier},
+  title = 	 {Three-dimensionalization of the stratified mixing layer at high Reynolds number},
+  journal = 	 {Physics of Fluids},
+  year = 	 2011,
+  volume =	 23,
+  number =	 11,
+  pages =	 {111701},
+}
+
+@Article{Mashayek17,
+  title={Efficiency of turbulent mixing in the abyssal ocean circulation},
+  author={A. Mashayek and H. Salehipour and D. Bouffard and P. Caulfield and R. Ferrari and M. Nikurashin and W. Peltier and W. Smyth},
+  journal={Geophysical Research Letters},
+  volume={44},
+  number={12},
+  pages={6296-6306},
+  year={2017},
+  publisher={Wiley Online Library}
+}
+
+
+@Article{Melet13,
+  author = 	 {A. Melet and R. Hallberg and S. Legg and K. Polzin},
+  title = 	 {Sensitivity of the Ocean State to the Vertical Distribution of Internal-Tide-Driven Mixing},
+  journal = 	 {Journal of Physical Oceanography},
+  year = 	 2013,
+  volume =	 43,
+  number =	 3,
+  pages =	 {602-615},
+}
+
+@Article{Moum01,
+  author = 	 {J. N. Moum and D. R. Caldwell and J.D. Nash and G.D. Gunderson},
+  title = 	 {Observations of Boundary Mixing over the Continental Slope},
+  journal = 	 {Journal of Physical Oceanography},
+  year = 	 2001,
+  volume =	 32,
+  number =	 7,
+  pages =	 {2113-2130},
+}
+
+@Article{Munk66,
+  author = 	 {W. Munk},
+  title = 	 {Abyssal recipes},
+  journal = 	 {Deep Sea Research and Oceanographic Abstracts},
+  year = 	 1966,
+  volume =	 13,
+  number =	 4,
+  pages =	 {707-730},
+}
+
+
+@Article{Munk98,
+  author = 	 {W. Munk, and C. Wunsch},
+  title = 	 {Abyssal Recipes $\text{II}$: energetics of tidal and wind mixing},
+  journal = 	 {Deep Sea Research Part I: Oceanographic Research Papers},
+  year = 	 1998,
+  volume =	 45,
+  number =	 12,
+  pages =	 {1977-2010},
+}
+
+@Article{Nikurashin13,
+  author = 	 {M. Nikurashin and G. Vallis and A. Adcroft},
+  title = 	 {Routes to energy dissipation for geostrophic flows in the Southern Ocean},
+  journal = 	 {Nature Geoscience},
+  year = 	 2013,
+  volume =	 6,
+  number =	 1,
+  pages =	 {48-51},
+}
+
+@Article{Osborn80,
+  author = 	 {T. Osborn},
+  title = 	 {Estimates of the local rate of vertical diffusion from dissipation measurements},
+  journal = 	 {Journal of Physical Oceanography},
+  year = 	 1980,
+  volume =	 10,
+  number =	 1,
+  pages =	 {83-89},
+}
+
+
+
+@Article{Paparella02,
+  author = 	 {F. Paparella and W. Young},
+  title = 	 {Horizontal convection is non-turbulent},
+  journal = 	 {Journal of Fluid Mechanics},
+  year = 	 2002,
+  volume =	 466,
+  pages =	 {205-214},
+}
+
+@Article{Peacock04,
+  author = 	 {T. Peacock and R. Stocker and J. Aristoff},
+  title = 	 {An experimental investigation of the angular dependence of diffusion-driven flow},
+  journal = 	 {Physics of Fluids},
+  year = 	 2004,
+  volume =	 16,
+  number =	 9,
+  pages =	 {3503-3505},
+}
+
+@Article{Phillips70,
+  author = 	 {O. Phillips},
+  title = 	 {On flows induced by diffusion in a stably stratified fluid},
+  journal = 	 {Deep Sea Research and Oceanographic Abstracts},
+  year = 	 1970,
+  volume =	 17,
+  number =	 3,
+  pages =	 {435-443},
+}
+
+@Article{Phillips86,
+  author = 	 {O. Phillips and J. Shyu and H. Salmun},
+  title = 	 {An experiment on boundary mixing: mean circulation and transport rates},
+  journal = 	 {Journal of Fluid Mechanics},
+  year = 	 1986,
+  volume =	 173,
+  pages =	 {473-499},
+}
+
+
+@Article{Polzin97,
+  author = 	 {K. Polzin and J. Toole and J. Ledwell and R. Schmitt},
+  title = 	 {Spatial variability of turbulent mixing in the abyssal ocean},
+  journal = 	 {Science},
+  year = 	 1997,
+  volume =	 276,
+  number =	 5309,
+  pages =	 {93-96},
+}
+
+
+@Article{Polzin09,
+  author = 	 {K. Polzin},
+  title = 	 {An abyssal recipe},
+  journal = 	 {Ocean Modelling},
+  year = 	 2009,
+  volume =	 30,
+  number =	 4,
+  pages =	 {298-309},
+}
+
+@Book{Pope00,
+  author =	 {S. Pope},
+  title = 	 {Turbulent flows},
+  publisher = 	 {Cambridge University Press},
+  year = 	 2000
+}
+
+@Article{Rattray60,
+  author = 	 {M. Rattray},
+  title = 	 {On the coastal generation of internal tides},
+  journal = 	 {Tellus},
+  year = 	 1960,
+  volume =	 12,
+  number = 	 1
+  pages =	 {54-62},
+}
+
+@Article{Rapaka13,
+  author = 	 {N. Rapaka and B. Gayen and S. Sarkar},
+  title = 	 {Tidal conversion and turbulence at a model ridge:
+direct and large eddy simulations},
+  journal = 	 {Journal of Fluid Mechanics},
+  year = 	 2013,
+  volume =	 715,
+  pages =	 {181-209},
+}
+
+@Article{Ray05,
+  author = 	 {R. Ray and G. Egbert and S. Erofeeva},
+  title = 	 {A brief overview of tides in the Indonesian Seas},
+  journal = 	 {Oceanography},
+  year = 	 2005,
+  volume =	 18,
+  number = 	 4,
+  pages =	 {74-79},
+}
+
+@Article{Rayleigh16,
+  author = 	 {Lord Rayleigh},
+  title = 	 {On convective currents in a horizontal layer of fluid when the higher temperature is on the under side},
+  journal = 	 {The London, Edinburgh, and Dublin Philosophical Magazine and Journal of Science},
+  year = 	 1916,
+  volume =	 32,
+  pages =	 {512-546},
+}
+
+
+@Article{Richardson08,
+  author = 	 {P. Richardson},
+  title = 	 {On the history of meridional overturning circulation schematic diagrams.},
+  journal = 	 {Progress in Oceanography},
+  year = 	 2008,
+  volume =	 76,
+  number = 	 4
+  pages =	 {466-486},
+}
+
+
+@Article{Robichaux99,
+  author = 	 {J. Robichaux and S. Balachandar and S. Vanka},
+  title = 	 {Three-dimensional Floquet instability of the wake of square cylinder.},
+  journal = 	 {Physics of Fluids},
+  year = 	 1999,
+  volume =	 11,
+  number = 	 3
+  pages =	 {560-578},
+}
+
+@Article{Salehipour15,
+  author = 	 {H. Salehipour and W.R. Peltier and A. Mashayek},
+  title = 	 {Turbulent diapycnal mixing in stratified shear flows: the influence of Prandtl number of mixing efficiency and transition at high Reynolds numbers},
+  journal = 	 {Journal of Fluid Mechanics},
+  year = 	 2015,
+  volume =	 773,
+  pages =	 {178-223},
+}
+
+
+
+@Article{Sarmiento84,
+  author = 	 {J. Sarmiento and J. Toggweiler},
+  title = 	 {A new model for the role of the oceans in determining atmospheric P$_{CO_2}$},
+  journal = 	 {Nature},
+  year = 	 1984,
+  volume =	 308,
+  number =	 5960,
+  pages =	 {621-624},
+}
+
+
+@Article{Schlichting35,
+  author = 	 {H. Schlichting},
+  title = 	 {Hauptaufs{\"a}tze: turbulenz bei w{\"a}rmeschichtung},
+  journal = 	 {ZAMM Journal of Applied Mathematics and Mechanics},
+  year = 	 1935,
+  volume =	 15,
+  number =	 6,
+  pages =	 {313-338},
+}
+
+@Article{Schmid07,
+  title={Nonmodal stability theory},
+  author={P. Schmid},
+  journal={Annual Review of Fluid Mechanics},
+  volume={39},
+  pages={129-162},
+  year={2007},
+  publisher={Annual Reviews}
+}
+
+
+
+@Article{Simmons04,
+  author = 	 {H. Simmons and S. Jayne and L.C. St.Laurent and A. Weaver},
+  title = 	 {Tidally driven mixing in a numerical model of the ocean general circulation},
+  journal = 	 {Journal of Physical Oceanography},
+  year = 	 2005,
+  volume =	 6,
+  number =	 3,
+  pages =	 {245-263},
+}
+
+@Article{Smagorinsky63,
+  author = 	 {J. Smagorinsky},
+  title = 	 {General circulation experiments with the primitive equations: I. The basic experiment},
+  journal = 	 {Monthly Weather Review},
+  year = 	 1963,
+  volume =	 91,
+  number =	 3,
+  pages =	 {99-164},
+}
+
+
+@Article{StLaurent01,
+  author = 	 {L.C. St.Laurent, and J.M. Toole and R.W. Schmitt},
+  title = 	 {Buoyancy Forcing by Turbulence above Rough Topography in the Abyssal Brazil Basin},
+  journal = 	 {Journal of Physical Oceanography},
+  year = 	 2001,
+  volume =	 31,
+  number =	 12,
+  pages =	 {3476-3495},
+}
+
+@Article{StLaurent02,
+  author = 	 {L. St.Laurent, and C. Garrett},
+  title = 	 {The role of internal tides in mixing the deep ocean},
+  journal = 	 {Journal of Physical Oceanography},
+  year = 	 2002,
+  volume =	 32,
+  number =	 10,
+  pages =	 {2882-2899},
+}
+
+@Article{StLaurent02b,
+  author = 	 {L. St.Laurent and H. Simmons and S. Jayne},
+  title = 	 {Estimating tidally driven mixing in the deep ocean},
+  journal = 	 {Journal of Physical Oceanography},
+  year = 	 2002,
+  volume =	 29,
+  number =	 23,
+}
+
+@Article{Stokes1851,
+  author = 	 {G. Stokes},
+  title = 	 {On the effect of the internal friction of fluids on the motion of pendulums},
+  journal = 	 {Cambridge Philosophical Transactions},
+  year = 	 1851,
+  volume =	 9,
+  pages =	 {8-106},
+}
+
+
+
+@Article{Stommel57,
+  author = 	 {H. Stommel},
+  title = 	 {The abyssal circulation of the ocean.},
+  journal = 	 {Nature},
+  year = 	 1957,
+  pages =	 {733-734},
+}
+
+@Article{Stommel60,
+  author = 	 {H. Stommel and A. Arons},
+  title = 	 {On the abyssal circulation of the world ocean- $\text{I}$. Stationary flow patterns on a sphere.},
+  journal = 	 {Deep Sea Research},
+  year = 	 1960,
+  volume =	 6,
+  pages =	 {140-154},
+}
+
+@Article{Stommel60b,
+  author = 	 {H. Stommel and A. Arons},
+  title = 	 {On the abyssal circulation of the world ocean- $\text{II}$. An idealized model of the circulation pattern and amplitude in oceanic basins.},
+  journal = 	 {Deep Sea Research},
+  year = 	 1960,
+  volume =	 6,
+  pages =	 {217-233},
+}
+
+@Article{Stuiver83,
+  author = 	 {M. Stuiver and P. Quay and H. Ostlund},
+  title = 	 {Abyssal water carbon-14 distribution and the age of the world oceans},
+  journal = 	 {Science},
+  year = 	 1983,
+  volume =	 219,
+  pages =	 {849-851},
+}
+
+
+@Article{Talley08,
+  author = 	 {L. Talley},
+  title = 	 {Freshwater transport estimates and the global overturning circulation: Shallow, deep and throughflow components.},
+  journal = 	 {Progress in Oceanography},
+  year = 	 2008,
+  volume =	 78,
+  number =       4,
+  pages =	 {257-303},
+}
+
+@Book{Talley11,
+  author =	 {L. Talley},
+  title = 	 {Descriptive Physical Oceanography},
+  publisher = 	 {Academic Press},
+  year = 	 2011
+}
+
+@Article{Talley13,
+  author = 	 {L. Talley},
+  title = 	 {Closure of the global overturning circulation through the Indian, Pacific, and Southern Oceans: Schematics and transports},
+  journal = 	 {Oceanography},
+  year = 	 2013,
+  volume =	 26,
+  number =       1,
+  pages =	 {80-97},
+}
+
+@Article{Thorpe87,
+  author = 	 {S. Thorpe},
+  title = 	 {Current and temperature variability on the continental slope},
+  journal = 	 {Philosophical Transactions of the Royal Society of London A: Mathematical, Physical and Engineering Sciences},
+  year = 	 1987,
+  volume =	 323,
+  pages =	 {471-517},
+}
+
+@Article{Thorpe90,
+  author = 	 {S. Thorpe and P. Hall and M. White},
+  title = 	 {The variability of mixing at the continental slope},
+  journal = 	 {Philosophical Transactions of the Royal Society of London A: Mathematical, Physical and Engineering Sciences},
+  year = 	 1987,
+  volume =	 331,
+  pages =	 {183-194},
+}
+
+
+@Book{Thorpe07,
+  author =	 {S. Thorpe},
+  title = 	 {An introduction to ocean turbulence},
+  publisher = 	 {Cambridge University Press},
+  year = 	 2007
+}
+
+@Article{Thurnherr03,
+  author = 	 {A. Thurnherr and K. Speer},
+  title = 	 {Boundary mixing and topographic blocking on the Mid-Atlantic Ridge in the South Atlantic},
+  journal = 	 {Journal of Physical Oceanography},
+  year = 	 2003,
+  volume =	 33,
+  number =	 4,
+  pages =	 {848-862},
+}
+
+@Article{Thurnherr15,
+  author = 	 {A. Thurnherr and E. Kunze and J. Toole and L. St.Laurent and K. Richards and A. Ruiz-Angulo},
+  title = 	 {Vertical kinetic energy and turbulent dissipation in the ocean},
+  journal = 	 {Geophysical Research Letters},
+  year = 	 2015,
+  volume =	 42,
+  number =	 18,
+  pages =	 {7639-7647},
+}
+
+@Article{Toggweiler98,
+  author = 	 {J. Toggweiler and B. Samuels},
+  title = 	 {On the ocean’s large-scale circulation near the limit of no vertical mixing},
+  journal = 	 {Journal of Physical Oceanography},
+  year = 	 1998,
+  volume =	 28,
+  number =       9,
+  pages =	 {1832-1852},
+}
+
+@Article{Toole07,
+  author = 	 {J. Toole},
+  title = 	 {Temporal characteristics of abyssal finescale motions above rough bathymetry},
+  journal = 	 {Journal of Physical Oceanography},
+  year = 	 2007,
+  volume =	 37,
+  pages =	 {409-427},
+}
+
+@Article{vanAken09,
+  author = 	 {H. van Aken and I. Brodjonegoro and I. Jaya},
+  title = 	 {The deep-water motion through the Lifamatola Passage and its contribution to the Indonesian throughflow},
+  journal = 	 {Deep Sea Research Part I: Oceanographic Research Papers},
+  year = 	 2009,
+  volume =	 56,
+  number =       8,
+  pages =	 {1203-1216},
+}
+
+
+
+@Article{Walin82,
+  author = 	 {G. Walin},
+  title = 	 {On the relation between sea-surface heat flow and thermal circulation in the ocean},
+  journal = 	 {Tellus},
+  year = 	 1982,
+  volume =	 34,
+  number =	 2,
+  pages =	 {187-195},
+}
+
+@Article{Winters15,
+  author = 	 {K. Winters},
+  title = 	 {Tidally driven mixing and dissipation in the stratified boundary layer above steep submarine topography},
+  journal = 	 {Geophysical Research Letters},
+  year = 	 2015,
+  volume =	 42,
+  number =	 17,
+  pages =	 {7123-7130},
+}
+
+@Article{Wunsch70,
+  author = 	 {C. Wunsch},
+  title = 	 {On oceanic boundary mixing},
+  journal = 	 {Deep Sea Research and Oceanographic Abstracts},
+  year = 	 1970,
+  volume =	 17,
+  number =	 2,
+  pages =	 {293-301},
+}
+
+@Article{Wunsch04,
+  author = 	 {C. Wunsch and R. Ferrari},
+  title = 	 {Vertical mixing, energy, and the general circulation of the oceans},
+  journal = 	 {Annual Reviews of Fluid Mechanics},
+  year = 	 2004,
+  volume =	 36,
+  pages =	 {281-314},
+}
+
+@Article{Wunsch05,
+  author = 	 {C. Wunsch},
+  title = 	 {The total meridional heat flux and its oceanic and atmospheric partition},
+  journal = 	 {Journal of Climate},
+  year = 	 2005,
+  volume =	 18
+  number =	 21,
+  pages =	 {4374-4380},
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@article{Becker+Schmitz2003,
+         author = {E. Becker and G. Schmitz},
+         title = {Climatological effects of orography and land--sea heating contrasts on the gravity
+                  wave--driven circulation of the mesosphere},
+         journal = {J. Atmos. Sci.},
+         year = {2003},
+         volume = 60,
+         pages = {103--118}, 
+        doi = {10.1175/1520-0469(2003)060<0103:CEOOAL>2.0.CO;2}}
+
+@article{Knutti2008,
+	author={R. Knutti and M. R. Allen and P. Friedlingstein and J. M. Gregory and G. C. Hegerl and G. A. Meeh and M. Meinshausen and J. M. Murphy and G.-K. Plattne and S. C. B. Raper 		and T. F. Stocker and P. A. Stott and H. Teng and and T. M. L. Wigley},
+	title={A review of uncertainties in global temperature projections over the twenty-first century},
+	journal = {J. Climate},
+	year = {2008},
+	volume = 21,
+	pages = {2651--2663},
+          doi = {10.1175/2007JCLI2119.1}}
+
+@article {EmeryEA1986,
+author = {Emery, W. J. and Thomas, A. C. and Collins, M. J. and Crawford, W. R. and Mackas, D. L.},
+title = {An objective method for computing advective surface velocities from sequential infrared satellite images},
+journal = {J. Geophys. Res.},
+volume = {91},
+doi = {10.1029/JC091iC11p12865},
+pages = {12865--12878},
+year = {1986}
+}
+
+@CONFERENCE{Kuji_Nakajima2002,
+AUTHOR = {M. Kuji and T. Nakajima},
+	YEAR = 2002,
+	TITLE = {Retrieval of cloud geometrical parameters using remote sensing data},
+	BOOKTITLE = {{\rm Preprints,} 11th Conf. on Cloud Physics},
+	ADDRESS = {Ogden, UT},
+	ORGANIZATION = {Amer. Meteor. Soc.},
+	PAGES = {JP1.7},
+	NOTE = {[Available online at \url{http://ams.confex.com/ams/pdfpapers/39550.pdf}.]}
+
+@article {MeixnerEA2002,
+author = {T. Meixner and L. A. Bastidas and H. V. Gupta and R. C. Bales},
+title = {Multicriteria parameter estimation for models of stream chemical composition},
+journal = {Water Resour. Res.},
+volume = {38},
+doi = {10.1029/2000WR000112},
+eid = {1027},
+year = {2002}
+}
+
+@Article{A97,
+  author = 	 {M.A. Alexander and J.D. Scott},
+  title = 	 {Surface flux variability over the North Pacific and North Atlantic oceans},
+  journal = 	 {Journal of Climate},
+  year = 	 1997,
+  volume =	 10,
+  number =	 11,
+  pages =	 {2963-2978},
+}
+
+@Article{H76,
+  author = 	 {K. Hasselmann},
+  title = 	 {Stochastic climate models part I: Theory},
+  journal = 	 {Tellus},
+  year = 	 1976,
+  volume =	 28,
+  number =	 6,
+  pages =	 {473-485},
+}
+
+@Article{FCL98,
+  author = 	 {C. Frankignoul, A. Czaja, and B. L'Heveder},
+  title = 	 {Air-sea feedback in the North Atlantic and surface boundary conditions for ocean models},
+  journal = 	 {Journal of Climate},
+  year = 	 1998,
+  volume =	 11,
+  pages =	 {2310-2324},
+}
+
+@Article{FH77,
+  author = 	 {C. Frankignoul and K. Hasselmann},
+  title = 	 {Stochastic climate models, part II: Application to sea-surface temperature anomalies and thermocline variability},
+  journal = 	 {Tellus},
+  year = 	 1977,
+  volume =	 29,
+  pages =	 {289-305},
+}
+
+@Article{D10,
+  author = 	 {C. Deser and M.A. Alexander and S.P. Xie, and A.S. Phillips},
+  title = 	 {Sea surface temperature variability: Patterns and mechanisms},
+  journal = 	 {Annual Review of Marine Science},
+  year = 	 2010,
+  volume =	 2,
+  pages =	 {115-143},
+}
+
+@Article{DL02,
+  author = 	 {D. Dommenget and M. Latif},
+  title = 	 {Analysis of observed and simulated SST spectra in the midlatitudes},
+  journal = 	 {Climate Dynamics},
+  year = 	 2002,
+  volume =	 19,
+  pages =	 {277-288},
+}
+
+@Article{B82,
+  author = 	 {D. Blaauboer, D. and G.J. Komen and J. Reiff},
+  title = 	 {The behaviour of the sea surface temperature (SST) as a response to stochastic latent-and sensible heat forcing},
+  journal = 	 {Tellus A},
+  year = 	 1982,
+  volume =	 34,
+}
+
+@Article{BB98,
+  author = 	 {J.J. Barsugli and D.S. Battisti},
+  title = 	 {The Basic Effects of Atmosphere-Ocean Thermal Coupling on Midlatitude Variability},
+  journal = 	 {Journal of the Atmospheric Sciences},
+  year = 	 1998,
+  volume =	 55,
+  pages =	 {477-493},
+}
+
+@Article{BG95,
+  author = 	 {K.E. Brainerd and M.C. Gregg},
+  title = 	 {Surface mixed and mixing layer depths},
+  journal = 	 {Deep Sea Research Part I: Oceanographic Research Papers},
+  year = 	 1995,
+  volume =	 42,
+  pages =	 {1521-1543},
+}
+
+@Article{CB13,
+  author = 	 {C.A. Clayson and A.S. Bogdanoff},
+  title = 	 {The effect of diurnal sea surface temperature warming on climatological air–sea fluxes},
+  journal = 	 {Journal of Climate},
+  year = 	 2013,
+  volume =	 26,
+  pages =	 {2546-2556},
+}
+
+@Article{CRB,
+  author = 	 {C.A. Clayson and J.B. Roberts and A.S. Bogdanoff},
+  title = 	 {Seaflux version 1: a new satellite based ocean atmosphere turbulent flux dataset},
+  journal = 	 {International Journal of Climatology},
+  year = 	 2016,
+  note = 	 {(in press)}
+}
+
+@phdthesis{R11,
+	author={J.B. Roberts},
+	title={Evaluation of surface heat flux uncertainties and their impacts on the study of ocean mixed layer temperature variability},
+	school={The Florida State University},
+	year={2011}
+}
+
+@Article{CW07,
+  author = 	 {C.A. Clayson and D. Weitlich},
+  title = 	 {Variability of Tropical Diurnal Sea Surface Temperature},
+  journal = 	 {Journal of Climate},
+  year = 	 2007,
+  volume =	 20,
+  pages =	 {334-352},
+}
+
+@Article{D03,
+  author = 	 {C. Deser and M.A. Alexander and M.S. Timlin},
+  title = 	 {Understanding the persistence of sea surface temperature anomalies in midlatitudes},
+  journal = 	 {Journal of Climate},
+  year = 	 2003,
+  volume =	 16,
+  pages =	 {57-72},
+}
+
+@Article{F00,
+  author = 	 {S.B. Feldstein},
+  title = 	 {The timescale, power spectra, and climate noise properties of teleconnection patterns},
+  journal = 	 {Journal of Climate},
+  year = 	 2000,
+  volume =	 13,
+  pages =	 {4430-4440},
+}
+
+
+@Article{HM97,
+  author = 	 {A. Hall and S. Manabe},
+  title = 	 {Can local linear stochastic theory explain sea surface temperature and salinity variability?},
+  journal = 	 {Climate Dynamics},
+  year = 	 1997,
+  volume =	 13,
+  pages =	 {167-180},
+}
+
+@Article{HP06,
+  author = 	 {J.A. Hansen and C. Penland},
+  title = 	 {Efficient approximate techniques for integrating stochastic differential equations},
+  journal = 	 {Monthly Weather Review},
+  year = 	 2006,
+  volume =	 134,
+  pages =	 {3006-3014},
+}
+
+@Article{FK02,
+  author = 	 {C. Frankignoul and E. Kestenare},
+  title = 	 {The surface heat flux feedback. Part I: Estimates from observations in the Atlantic and the North Pacific},
+  journal = 	 {Climate Dynamics},
+  year = 	 2002,
+  volume =	 19,
+  pages =	 {633-647},
+}
+
+@Article{FR83,
+  author = 	 {C. Frankignoul and R.W. Reynolds},
+  title = 	 {Testing a dynamical model for mid-latitude sea surface temperature anomalies},
+  journal = 	 {Journal of Physical Oceanography},
+  year = 	 1983,
+  volume =	 13,
+  pages =	 {1131-1145},
+}
+
+@Article{F85,
+  author = 	 {C. Frankignoul},
+  title = 	 {Sea surface temperature anomalies, planetary waves, and air-sea feedback in the middle latitudes},
+  journal = 	 {Reviews of Geophysics},
+  year = 	 1985,
+  volume =	 23,
+  pages =	 {357-390},
+}
+
+@Article{KH96,
+  author = 	 {Y. Kushnir and I.M. Held},
+  title = 	 {Equilibrium atmospheric response to North Atlantic SST anomalies},
+  journal = 	 {Journal of Climate},
+  year = 	 1996,
+  volume =	 9,
+  pages =	 {1208-1220},
+}
+
+@Article{K02,
+  author = 	 {Y. Kushnir and W.A. Robinson and I. Blad\'{e} and N.M.J. Hall and S. Peng and R. Sutton},
+  title = 	 {Atmospheric GCM response to extratropical SST anomalies: Synthesis and evaluation},
+  journal = 	 {Journal of Climate},
+  year = 	 2002,
+  volume =	 15,
+  pages =	 {2233-2256},
+}
+
+@Article{MJG01,
+  author = 	 {J. Marshall and H. Johnson and J. Goodman},
+  title = 	 {A study of the interaction of the North Atlantic Oscillation with ocean circulation},
+  journal = 	 {Journal of Climate},
+  year = 	 2001,
+  volume =	 14,
+  pages =	 {1399-1421},
+}
+
+@Article{M03,
+  author = 	 {A.J. Madja and I. Timofeyev and E. Vanden-Eijnden},
+  title = 	 {Systematic strategies for stochastic mode reduction in climate},
+  journal = 	 {Journal of the Atmospheric Sciences},
+  year = 	 2003,
+  volume =	 14,
+  pages =	 {1705-1722},
+}
+
+@Article{M04,
+  author = 	 {C. de Boyer Mont{\'e}gut, and G. Madec, and A.S. Fischer, and A. Lazar and D. Iudicone},
+  title = 	 {Mixed layer depth over the global ocean: An examination of profile data and a profile-based climatology},
+  journal = 	 {Journal of Geophysical Research: Oceans},
+  year = 	 2004,
+  volume =	 109,
+}
+
+@Article{M87,
+  author = 	 {D. M{\"u}ller},
+  title = 	 {Bispectra of sea-surface temperature anomalies},
+  journal = 	 {Journal of Physical Oceanography},
+  year = 	 1987,
+  volume =	 17,
+  pages =	 {26-36},
+}
+
+@Article{PDA05,
+  author = 	 {S. Park and C. Deser and M.A. Alexander},
+  title = 	 {Estimation of the surface heat flux response to sea surface temperature anomalies over the global oceans},
+  journal = 	 {Journal of Climate},
+  year = 	 2005,
+  volume =	 18,
+  pages =	 {4582-4599},
+}
+
+@Article{P96,
+  author = 	 {Penland, C.},
+  title = 	 {A stochastic model of IndoPacific sea surface temperature anomalies},
+  journal = 	 {Physica D},
+  year = 	 1996,
+  volume =	 98,
+  pages =	 {534-558},
+}
+
+@Article{TC98,
+  author = 	 {C. Torrence and G.P. Compo},
+  title = 	 {A practical guide to wavelet analysis},
+  journal = 	 {Bulletin of the American Meteorological Society},
+  year = 	 1998,
+  volume =	 79,
+  pages =	 {61-78},
+}
+
+@Article{R78,
+  author = 	 {R.W. Reynolds},
+  title = 	 {Sea surface temperature anomalies in the North Pacific Ocean},
+  journal = 	 {Tellus},
+  year = 	 1978,
+  volume =	 30,
+  pages =	 {97-103},
+}
+
+
+@Article{S05,
+  author = 	 {P. Sura and M. Newman and C. Penland and P. Sardeshmukh},
+  title = 	 {Multiplicative noise and non-Gaussianity: A paradigm for atmospheric regimes?},
+  journal = 	 {Journal of the Atmospheric Sciences},
+  year = 	 2005,
+  volume =	 62,
+  pages =	 {1391-1409},
+}
+
+@Article{S07,
+  author = 	 {D.B. Chelton and M.G. Schlax and R.M. Samelson and R.A. de Szoeke},
+  title = 	 {Global observations of large oceanic eddies},
+  journal = 	 {Geophysical Research Letters},
+  year = 	 2007,
+  volume =	 34,
+  number = 15,
+  pages =	 {1391-1409},
+}
+
+@Article{SN08,
+  author = 	 {P. Sura and M. Newman},
+  title = 	 {The impact of rapid wind variability upon air-sea thermal coupling},
+  journal = 	 {Journal of Climate},
+  year = 	 2008,
+  volume =	 21,
+  pages =	 {621-637},
+}
+
+@Article{SS08,
+  author = 	 {P. Sura and P. Sardeshmukh},
+  title = 	 {A global view of non-Gaussian SST variability},
+  journal = 	 {Journal of Physical Oceanography},
+  year = 	 2008,
+  volume =	 38,
+  pages =	 {639-647},
+}
+
+@Article{V00,
+  author = 	 {J-S. von Storch},
+  title = 	 {Signatures of air-sea interactions in a coupled atmosphere-ocean GCM},
+  journal = 	 {Journal of Climate},
+  year = 	 2000,
+  volume =	 13,
+  pages =	 {3361-3379},
+}
+
+@Article{W96,
+  author = 	 {B.A. Wielicki and B. R. Barkstrom and E. F. Harrison and R. B. Lee III and G. L. Smith and J. E. Cooper},
+  title = 	 {Clouds and the Earth's Radiant Energy System (CERES): An Earth Observing System Experiment},
+  journal = 	 {Bulletin of the American Meteorological Society},
+  year = 	 1996,
+  volume =	 77,
+  pages =	 {853-868},
+}
+
+@Article{Y11,
+  author = 	 {B. Yu, and G.J. Boer and F.W. Zwiers and W.J. Merryfield},
+  title = 	 {Covariability of SST and surface heat fluxes in reanalyses and CMIP3 climate models},
+  journal = 	 {Climate Dynamics},
+  year = 	 2011,
+  volume =	 36,
+  pages =	 {589-605},
+}
+
+@Article{Y09,
+  author = 	 {B. Yu, and G.J. Boer and F.W. Zwiers and W.J. Merryfield},
+  title = 	 {Covariability of SST and surface heat fluxes in reanalyses and CMIP3 climate models},
+  journal = 	 {Climate Dynamics},
+  year = 	 2009,
+  volume =	 36,
+  pages =	 {589-605},
+}
+
+@Book{PO92,
+  author =	 {J. Peixoto and A. Oort},
+  title = 	 {Physics of Climate},
+  publisher = 	 {American Institute of Physics},
+  year = 	 1992
+}
+
+
+
+
+
+
+
+
+

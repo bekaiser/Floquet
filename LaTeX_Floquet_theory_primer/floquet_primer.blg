@@ -1,0 +1,77 @@
+This is BibTeX, Version 0.99d (TeX Live 2015/Debian)
+Capacity: max_strings=35307, hash_size=35307, hash_prime=30011
+The top-level auxiliary file: floquet_primer.aux
+The style file: plainnat.bst
+Database file #1: references.bib
+I was expecting a `,' or a `}'---line 344 of file references.bib
+ :   
+ :   pages =  {36-43},
+(Error may have been on previous line)
+I'm skipping whatever remains of this entry
+I was expecting a `,' or a `}'---line 670 of file references.bib
+ :   
+ :   pages =  {54-62},
+(Error may have been on previous line)
+I'm skipping whatever remains of this entry
+I was expecting a `,' or a `}'---line 710 of file references.bib
+ :   
+ :   pages =  {466-486},
+(Error may have been on previous line)
+I'm skipping whatever remains of this entry
+I was expecting a `,' or a `}'---line 721 of file references.bib
+ :   
+ :   pages =  {560-578},
+(Error may have been on previous line)
+I'm skipping whatever remains of this entry
+I was expecting a `,' or a `}'---line 1014 of file references.bib
+ :   
+ :   number =  21,
+(Error may have been on previous line)
+I'm skipping whatever remains of this entry
+I was expecting a `,' or a `}'---line 1075 of file references.bib
+ : 
+ : @article {MeixnerEA2002,
+(Error may have been on previous line)
+I'm skipping whatever remains of this entry
+You've used 1 entry,
+            2773 wiz_defined-function locations,
+            768 strings with 6798 characters,
+and the built_in function-call counts, 455 in all, are:
+= -- 35
+> -- 30
+< -- 0
++ -- 10
+- -- 9
+* -- 40
+:= -- 78
+add.period$ -- 3
+call.type$ -- 1
+change.case$ -- 6
+chr.to.int$ -- 1
+cite$ -- 2
+duplicate$ -- 20
+empty$ -- 33
+format.name$ -- 10
+if$ -- 87
+int.to.chr$ -- 1
+int.to.str$ -- 1
+missing$ -- 1
+newline$ -- 13
+num.names$ -- 4
+pop$ -- 10
+preamble$ -- 1
+purify$ -- 5
+quote$ -- 0
+skip$ -- 17
+stack$ -- 0
+substring$ -- 2
+swap$ -- 1
+text.length$ -- 0
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 11
+warning$ -- 0
+while$ -- 3
+width$ -- 0
+write$ -- 20
+(There were 6 error messages)

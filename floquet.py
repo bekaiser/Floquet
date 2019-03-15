@@ -2,8 +2,6 @@
 # Bryan Kaiser
 # 
 
-# non-dimensionalize the U component!!!
-
 import h5py
 import numpy as np
 import math as ma
@@ -12,11 +10,6 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import scipy
 from scipy.linalg import expm
-#from scipy.stats import chi2
-#from scipy import signal
-#from scipy.fftpack import fft, fftshift
-#import matplotlib.patches as mpatches
-#from matplotlib.colors import colorConverter as cc
 import functions as fn
 from datetime import datetime 
 import numpy.distutils.system_info as sysinfo
@@ -77,6 +70,17 @@ params = {'nu': nu, 'kap': kap, 'Pr': Pr, 'omg': omg, 'L':L, 'T': T, 'U': U,
 
 # time advancement:
 Phi0 = np.eye(int(4*Nz),int(4*Nz),0,dtype=complex) # initial condition (prinicipal fundamental solution matrix)
+
+"""
+print()
+print(Phi0[int(Nz/2),int(Nz/2)])
+print(Phi0[int(Nz/2),int(Nz/2)+3])
+print(Phi0[int(Nz/2)+3,int(Nz/2)])
+print(Phi0[int(Nz/2),int(Nz/2)+5])
+print(Phi0[int(Nz/2)+5,int(Nz/2)])
+print()
+"""
+
 start_time = datetime.now()
 Phin = fn.rk4_time_step( params, z, Phi0 , dt, 1. )
 time_elapsed = datetime.now() - start_time
