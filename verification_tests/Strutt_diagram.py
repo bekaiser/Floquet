@@ -22,7 +22,7 @@ figure_path = "./figures/"
 T = 2.*np.pi # s, period
 
 # undamped Hill equation coefficients: f(t) = a + b*cos(t), A(t) = [[0,1],[-f(t),0]]
-Ngrid = 300
+Ngrid = 400
 a = np.linspace(-2.,10.,num=Ngrid,endpoint=True)
 b = np.linspace(0.,8.,num=Ngrid,endpoint=True)
 
