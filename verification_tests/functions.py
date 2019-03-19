@@ -160,7 +160,8 @@ def grid_choice( grid_flag , Nz , H ):
  return z,dz
 
 
-def nonrotating_solution( params, time ): #U, N, omg, tht, nu, kap, t, z ):
+def nonrotating_solution( params, time ):  
+ # don't use, the u & b are 90 degrees out of phase
  
  z = params['z']
  U = params['U']
@@ -227,17 +228,17 @@ def nonrotating_solution( params, time ): #U, N, omg, tht, nu, kap, t, z ):
  for i in range(0,Nz):
   
      if criticality < 1.:
-       u[i] = U*np.real( (u1*np.exp(-(1.+1j)*z[i]/d1) + \
+       u[i] = - U*np.real( (u1*np.exp(-(1.+1j)*z[i]/d1) + \
                 u2*np.exp(-(1.+1j)*z[i]/d2) - 1.)*np.exp(1j*omg*time) )
-       uz[i] = - U*np.real( (u1*(1.+1j)/d1*np.exp(-(1.+1j)*z[i]/d1) + \
+       uz[i] = U*np.real( (u1*(1.+1j)/d1*np.exp(-(1.+1j)*z[i]/d1) + \
                u2*(1.+1j)/d2*np.exp(-(1.+1j)*z[i]/d2) )*np.exp(1j*omg*time) )
-       b[i] = Bs*np.real( (b1*np.exp(-(1.0+1j)*z[i]/d1) - \
+       b[i] = - Bs*np.real( (b1*np.exp(-(1.0+1j)*z[i]/d1) - \
                 b2*np.exp(-(1.+1j)*z[i]/d2) - 1.)*1j*np.exp(1j*omg*time) )
-       bz[i] = Bs*np.real( ( -(1.0+1j)/d1*b1*np.exp(-(1.0+1j)*z[i]/d1) + \
+       bz[i] = - Bs*np.real( ( -(1.0+1j)/d1*b1*np.exp(-(1.0+1j)*z[i]/d1) + \
              (1.+1j)/d2*b2*np.exp(-(1.+1j)*z[i]/d2) )*1j*np.exp(1j*omg*time) )
 
      if criticality > 1.:
-       u[i] = U*np.real( (u1*(2.*kap*d1+omg*d1*d2**2.+ \
+       u[i] = - U*np.real( (u1*(2.*kap*d1+omg*d1*d2**2.+ \
                 1j*(2.*kap*d2-omg*d1**2.*d2))*np.exp((1j-1.0)*z[i]/d2)+ \
                 u2*(omg*d1**2.*d2-2.*kap*d2+ \
                 1j*(2.0*kap*d1+omg*d1*d2**2.))*np.exp(-(1j+1.)*z[i]/d1)- \
@@ -264,7 +265,7 @@ def nonrotating_solution( params, time ): #U, N, omg, tht, nu, kap, t, z ):
  return  b, u, bz, uz
 
 
-def rotating_solution( params, time ):
+def rotating_solution( params, time, order ):
 
  z = params['z']
  U = params['U']
@@ -371,23 +372,45 @@ def rotating_solution( params, time ):
   print('Wall boundary condition failure for b(z,t)')
   return 
  
- b = np.zeros([Nz]); bz = np.zeros([Nz])
- u = np.zeros([Nz]); uz = np.zeros([Nz])
- v = np.zeros([Nz]); vz = np.zeros([Nz])
- 
+ b = np.zeros([Nz]); u = np.zeros([Nz]); v = np.zeros([Nz]); 
+ if order >= 1:
+   bz = np.zeros([Nz]); uz = np.zeros([Nz]); vz = np.zeros([Nz]);
+ if order == 2:
+   bzz = np.zeros([Nz]); uzz = np.zeros([Nz]); vzz = np.zeros([Nz]);
+
  for i in range(0,Nz):
    u[i] = np.real( ( u1*np.exp(-np.sqrt(phi1)*z[i]) + u2*np.exp(-np.sqrt(phi2)*z[i]) + \
                      u3*np.exp(-np.sqrt(phi3)*z[i]) + ap*omg ) * np.exp(1j*omg*time) ) / (N**2.*np.sin(tht))
+   if order >= 1:
+     uz[i] = np.real( ( - np.sqrt(phi1)*u1*np.exp(-np.sqrt(phi1)*z[i]) - np.sqrt(phi2)*u2*np.exp(-np.sqrt(phi2)*z[i]) - \
+                        np.sqrt(phi3)*u3*np.exp(-np.sqrt(phi3)*z[i]) ) * np.exp(1j*omg*time) ) / (N**2.*np.sin(tht))
+   if order == 2:
+     uzz[i] = np.real( ( np.sqrt(phi1)**2.*u1*np.exp(-np.sqrt(phi1)*z[i]) + np.sqrt(phi2)**2.*u2*np.exp(-np.sqrt(phi2)*z[i]) + \
+                     + np.sqrt(phi3)**2.*u3*np.exp(-np.sqrt(phi3)*z[i]) ) * np.exp(1j*omg*time) ) / (N**2.*np.sin(tht))
    if f > 0.:
      v[i] = np.real( ( v1*np.exp(-np.sqrt(phi1)*z[i]) + v2*np.exp(-np.sqrt(phi2)*z[i]) + \
                        v3*np.exp(-np.sqrt(phi3)*z[i]) + ap*(omg**2.-(N*np.sin(tht))**2 ) - \
                        A*N**2.*np.sin(tht) ) * 1j * np.exp(1j*omg*time) ) / (f * np.cos(tht) * N**2.*np.sin(tht)) 
+     if order >= 1:
+       vz[i] = np.real( ( - np.sqrt(phi1)*v1*np.exp(-np.sqrt(phi1)*z[i]) - np.sqrt(phi2)*v2*np.exp(-np.sqrt(phi2)*z[i]) - \
+                          np.sqrt(phi3)*v3*np.exp(-np.sqrt(phi3)*z[i]) ) * 1j * np.exp(1j*omg*time) ) / (f * np.cos(tht) * N**2.*np.sin(tht)) 
+     if order == 2:
+       vzz[i] = np.real( ( np.sqrt(phi1)**2.*v1*np.exp(-np.sqrt(phi1)*z[i]) + np.sqrt(phi2)**2.*v2*np.exp(-np.sqrt(phi2)*z[i]) + \
+                         np.sqrt(phi3)**2.*v3*np.exp(-np.sqrt(phi3)*z[i]) ) * 1j * np.exp(1j*omg*time) ) / (f * np.cos(tht) * N**2.*np.sin(tht)) 
    if f <= 0.:
      v[i] = 0.
+     if order >= 1:
+       vz[i] = 0.
+     if order == 2:
+       vzz[i] = 0.
    b[i] = np.real( ( c2*np.exp(-np.sqrt(phi1)*z[i]) + c4*np.exp(-np.sqrt(phi2)*z[i]) + \
                      c6*np.exp(-np.sqrt(phi3)*z[i]) + ap ) * 1j * np.exp(1j*omg*time) ) 
-
- # add gradients!!
+   if order >= 1:
+     bz[i] = np.real( ( - np.sqrt(phi1)*c2*np.exp(-np.sqrt(phi1)*z[i]) - np.sqrt(phi2)*c4*np.exp(-np.sqrt(phi2)*z[i]) - \
+                        np.sqrt(phi3)*c6*np.exp(-np.sqrt(phi3)*z[i]) ) * 1j * np.exp(1j*omg*time) ) 
+   if order == 2:
+     bzz[i] = np.real( ( np.sqrt(phi1)**2.*c2*np.exp(-np.sqrt(phi1)*z[i]) + np.sqrt(phi2)**2.*c4*np.exp(-np.sqrt(phi2)*z[i]) + \
+                      np.sqrt(phi3)**2.*c6*np.exp(-np.sqrt(phi3)*z[i]) ) * 1j * np.exp(1j*omg*time) ) 
  
  if params['wall'] == 'moving':
    u = u + np.real(U*np.exp(1j*omg*time))
@@ -396,13 +419,12 @@ def rotating_solution( params, time ):
      v = v - np.real( ( ap*(omg**2.-(N*np.sin(tht))**2 ) - A*N**2.*np.sin(tht) ) * 1j * np.exp(1j*omg*time) ) / (f * np.cos(tht) * N**2.*np.sin(tht))
      # subtract the geostropphic component of v; means the wall moves in the along-slope direction
 
- u = np.real(u) 
- v = np.real(v) 
- b = np.real(b)
- uz = np.real(uz) 
- bz = np.real(bz)
-
- return b, u, v
+ if order < 1.:
+   return np.real(b), np.real(u), np.real(v)
+ if order == 1.:
+   return np.real(b), np.real(u), np.real(v), np.real(bz), np.real(uz), np.real(vz)
+ if order == 2.:
+   return np.real(b), np.real(u), np.real(v), np.real(bz), np.real(uz), np.real(vz), np.real(bzz), np.real(uzz), np.real(vzz)
 
 
 #==============================================================================
@@ -425,7 +447,7 @@ def weights2( z0 , z1 , z2 , z3 , zj ):
  return l0, l1, l2, l3
 
 
-def partial_zz( params, time, lower_BC_flag , upper_BC_flag ):
+def partial_zz( params, lower_BC_flag , upper_BC_flag ):
  # second derivative, permiting non-uniform grids
  Nz = params['Nz']
  z = params['z']
@@ -450,6 +472,7 @@ def partial_zz( params, time, lower_BC_flag , upper_BC_flag ):
  if lower_BC_flag == 'neumann':
    l1 = l1 + l0 # Neumann for dz(phi)=0 at z=0 (sets phi_ghost = phi_0)
  pzz[0,0:3] = [ l1 , l2 , l3 ]
+ lBC = l0
 
  # upper (far field) BC
  zj = z[Nz-1] # location of derivative for upper BC
@@ -459,7 +482,7 @@ def partial_zz( params, time, lower_BC_flag , upper_BC_flag ):
  if upper_BC_flag == 'neumann':
    l2 = l3 + l2 # Neumann for dz(phi)=0 at z=H (sets phi_ghost = phi_N)
  pzz[Nz-1,Nz-3:Nz] = [ l0 , l1 , l2 ]
- return pzz
+ return pzz,lBC
 
 
 def partial_z( params, lower_BC_flag , upper_BC_flag ):
@@ -486,7 +509,8 @@ def partial_z( params, lower_BC_flag , upper_BC_flag ):
  if lower_BC_flag == 'neumann':
    l1 = l1 + l0 # Neumann for dz(phi)=0 at z=0 (sets phi_ghost = phi_0)
  pz[0,0:3] = [ l1 , l2 , l3 ]
-   
+ lBC = l0
+  
  # upper (far field) BC
  l0, l1, l2, l3 = weights( z[Nz-3] , z[Nz-2] , z[Nz-1] , H + (H-z[Nz-1]) , z[Nz-1] )
  if upper_BC_flag == 'dirchlet':
@@ -495,7 +519,7 @@ def partial_z( params, lower_BC_flag , upper_BC_flag ):
    l2 = l3 + l2 # Neumann for dz(phi)=0 at z=H (sets phi_ghost = phi_N)
  pz[Nz-1,Nz-3:Nz] = [ l0 , l1 , l2 ]
  
- return pz
+ return pz,lBC
 
 
 def weights( z0 , z1 , z2 , z3 , zj ):

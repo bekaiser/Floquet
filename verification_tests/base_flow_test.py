@@ -2,6 +2,7 @@
 # Bryan Kaiser
 # 3/  /2019
 
+# rotating vs. non-rotating phase relationships: one is not correct! 
 
 import h5py
 import numpy as np
@@ -29,7 +30,7 @@ nu = 2.0e-6 # m^2/s, kinematic viscosity
 Pr = 1. # Prandtl number
 kap = nu/Pr # m^2/s, thermometric diffusivity
 omg = 2.0*np.pi/T # rads/s
-f = 1e-4 # 1/s, inertial frequency
+f = 0. #1e-4 # 1/s, inertial frequency
 N = 1e-3 # 1/s, buoyancy frequency
 C = 1./4. # N^2*sin(tht)/omg, slope ``criticality''
 U = 0.01 # m/s, oscillation velocity amplitude
@@ -58,31 +59,44 @@ params = {'nu': nu, 'kap': kap, 'omg': omg, 'L':L, 'T': T, 'U': U, 'H': H,
           'dz_min':(np.amin(dz)),'Nt':Nt, 'CFL':(dt/np.amin(dz)), 'z':z, 'dz':dz}
 
 
+# non-rotating solutions
 u = np.zeros([Nz,Nt]); b = np.zeros([Nz,Nt]); 
 uz = np.zeros([Nz,Nt]); bz = np.zeros([Nz,Nt]); 
-t = np.zeros([Nt])
 
+# rotating solutions
 ur = np.zeros([Nz,Nt]); vr = np.zeros([Nz,Nt]); br = np.zeros([Nz,Nt]); 
+uzr = np.zeros([Nz,Nt]); vzr = np.zeros([Nz,Nt]); bzr = np.zeros([Nz,Nt]); 
+uzzr = np.zeros([Nz,Nt]); vzzr = np.zeros([Nz,Nt]); bzzr = np.zeros([Nz,Nt]);
 
-uz_check = np.zeros([Nz,Nt]);
-bz_check = np.zeros([Nz,Nt]);
+# verification of the finite differencing
+uz_check = np.zeros([Nz,Nt]); bz_check = np.zeros([Nz,Nt]);
+uzz_check = np.zeros([Nz,Nt]); bzz_check = np.zeros([Nz,Nt]);
 
 
+t = np.zeros([Nt])
 time = 0.
-
 for n in range(0,Nt):
 
   t[n] = time
   b[:,n],u[:,n],bz[:,n],uz[:,n] = fn.nonrotating_solution( params, time )
-  br[:,n],ur[:,n],vr[:,n] = fn.rotating_solution( params, time )
-  time = time + dt
-
+  br[:,n], ur[:,n], vr[:,n], bzr[:,n], uzr[:,n], vzr[:,n] , bzzr[:,n], uzzr[:,n], vzzr[:,n] = fn.rotating_solution( params, time, 2 )
+ 
   if wall_flag == 'moving':
-    uz_check[:,n] = np.dot( np.real(fn.partial_z( params, 'neumann', 'neumann' )) , u[:,n] ) 
-    # lower bc doesn't work for the moving wall, but not necessary
+    dz,lBC = fn.partial_z( params, 'dirchlet' , 'neumann' )
+    dzz,lBC2 = fn.partial_zz( params, 'dirchlet' , 'neumann' )
+    uz_check[:,n] = np.dot( np.real( dz ) , u[:,n] )
+    uz_check[0,n] = uz_check[0,n] + lBC * 2.* np.real(U*np.exp(1j*omg*time)) # moving wall
+    uzz_check[:,n] = np.dot( np.real( dzz ) , u[:,n] )
+    uzz_check[0,n] = uzz_check[0,n] + lBC2 * 2.* np.real(U*np.exp(1j*omg*time)) # moving wall
+
   if wall_flag == 'farfield':
-    uz_check[:,n] = np.dot( np.real(fn.partial_z( params, 'dirchlet', 'neumann' )) , u[:,n] )
-  bz_check[:,n] = np.dot( np.real(fn.partial_z( params, 'neumann' , 'neumann' )) , b[:,n] )
+    uz_check[:,n] = np.dot( np.real( fn.partial_z( params, 'dirchlet', 'neumann' )[0] ) , u[:,n] )
+    uzz_check[:,n] = np.dot( np.real( fn.partial_zz( params, 'dirchlet', 'neumann' )[0] ) , u[:,n] )
+
+  bz_check[:,n] = np.dot( np.real( fn.partial_z( params, 'neumann' , 'neumann' )[0] ) , b[:,n] )
+  bzz_check[:,n] = np.dot( np.real( fn.partial_zz( params, 'neumann' , 'neumann' )[0] ) , b[:,n] )
+
+  time = time + dt
 
 zmaxzoom = 0.002
 
@@ -195,6 +209,22 @@ plt.ylabel(r"z/H",fontsize=13);
 plt.axis([0.,1.,0.,zmaxzoom])
 plt.savefig(plotname,format="png"); plt.close(fig);
 
+plotname = figure_path + wall_flag + '_uzr_solution.png' 
+fig = plt.figure(figsize=(12,5))
+plottitle = r"$u_z\delta$/U" 
+plt.subplot(2, 1, 1)
+CS = plt.contourf(A,B,uzr*dS/U,200,cmap='seismic')
+plt.colorbar(CS)
+plt.ylabel(r"z/H",fontsize=13); 
+plt.axis([0.,1.,0.,1.])
+plt.title(plottitle);
+plt.subplot(2, 1, 2)
+CS = plt.contourf(A,B,uzr*dS/U,200,cmap='seismic')
+plt.colorbar(CS)
+plt.xlabel(r"t/T",fontsize=13);
+plt.ylabel(r"z/H",fontsize=13); 
+plt.axis([0.,1.,0.,zmaxzoom])
+plt.savefig(plotname,format="png"); plt.close(fig);
 
 plotname = figure_path + wall_flag + '_uz_solution_check.png' 
 fig = plt.figure(figsize=(12,5))
@@ -243,6 +273,77 @@ plt.axis([0.,1.,0.,1.])
 plt.title(plottitle);
 plt.subplot(2, 1, 2)
 CS = plt.contourf(A,B,bz_check*dS/Binf,200,cmap='seismic')
+plt.colorbar(CS)
+plt.xlabel(r"t/T",fontsize=13);
+plt.ylabel(r"z/H",fontsize=13); 
+plt.axis([0.,1.,0.,zmaxzoom])
+plt.savefig(plotname,format="png"); plt.close(fig);
+
+
+
+plotname = figure_path + wall_flag + '_uzzr_solution.png' 
+fig = plt.figure(figsize=(12,5))
+plottitle = r"$u_{zz}\delta^2$/U" 
+plt.subplot(2, 1, 1)
+CS = plt.contourf(A,B,uzzr*dS**2/U,200,cmap='seismic')
+plt.colorbar(CS)
+plt.ylabel(r"z/H",fontsize=13); 
+plt.axis([0.,1.,0.,1.])
+plt.title(plottitle);
+plt.subplot(2, 1, 2)
+CS = plt.contourf(A,B,uzzr*dS**2/U,200,cmap='seismic')
+plt.colorbar(CS)
+plt.xlabel(r"t/T",fontsize=13);
+plt.ylabel(r"z/H",fontsize=13); 
+plt.axis([0.,1.,0.,zmaxzoom])
+plt.savefig(plotname,format="png"); plt.close(fig);
+
+plotname = figure_path + wall_flag + '_uzz_solution_check.png' 
+fig = plt.figure(figsize=(12,5))
+plottitle = r"$u_{zz}\delta^2$/U" 
+plt.subplot(2, 1, 1)
+CS = plt.contourf(A,B,uzz_check*dS**2/U,200,cmap='seismic')
+plt.colorbar(CS)
+plt.ylabel(r"z/H",fontsize=13); 
+plt.axis([0.,1.,0.,1.])
+plt.title(plottitle);
+plt.subplot(2, 1, 2)
+CS = plt.contourf(A,B,uzz_check*dS**2./U,200,cmap='seismic')
+plt.colorbar(CS)
+plt.xlabel(r"t/T",fontsize=13);
+plt.ylabel(r"z/H",fontsize=13); 
+plt.axis([0.,1.,0.,zmaxzoom])
+plt.savefig(plotname,format="png"); plt.close(fig);
+
+
+plotname = figure_path + wall_flag + '_bzzr_solution.png' 
+fig = plt.figure(figsize=(12,5))
+plottitle = r"$b_{zz}\delta^2$/($LN^2\sin\theta$)" 
+plt.subplot(2, 1, 1)
+CS = plt.contourf(A,B,bzzr*dS**2/Binf,200,cmap='seismic')
+plt.colorbar(CS)
+plt.ylabel(r"z/H",fontsize=13); 
+plt.axis([0.,1.,0.,1.])
+plt.title(plottitle);
+plt.subplot(2, 1, 2)
+CS = plt.contourf(A,B,bzzr*dS**2/Binf,200,cmap='seismic')
+plt.colorbar(CS)
+plt.xlabel(r"t/T",fontsize=13);
+plt.ylabel(r"z/H",fontsize=13); 
+plt.axis([0.,1.,0.,zmaxzoom])
+plt.savefig(plotname,format="png"); plt.close(fig);
+
+plotname = figure_path + wall_flag + '_bzz_solution_check.png' 
+fig = plt.figure(figsize=(12,5))
+plottitle = r"$b_{zz}\delta^2$/($LN^2\sin\theta$)" 
+plt.subplot(2, 1, 1)
+CS = plt.contourf(A,B,bzz_check*dS**2/Binf,200,cmap='seismic')
+plt.colorbar(CS)
+plt.ylabel(r"z/H",fontsize=13); 
+plt.axis([0.,1.,0.,1.])
+plt.title(plottitle);
+plt.subplot(2, 1, 2)
+CS = plt.contourf(A,B,bzz_check*dS**2./Binf,200,cmap='seismic')
 plt.colorbar(CS)
 plt.xlabel(r"t/T",fontsize=13);
 plt.ylabel(r"z/H",fontsize=13); 
