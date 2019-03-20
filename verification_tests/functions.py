@@ -84,12 +84,18 @@ def rk4( params , time , Phin , count , plot_flag , case_flag ):
     A = np.matrix([[0.,1.],[-params['a']-params['b']*np.cos(time),0.]],dtype=complex)
 
   if case_flag == 'inviscid_buoyancy':
-    #A21 = 2.*np.pi*1j*params['k']*np.sin(time)/(1.-params['c2'])
-    #A22 = 1j*params['k']*np.cos(time)/(params['c2']-1.)
-    A21 = -2.*np.pi*np.sin(time)
-    A22 = np.cos(time)
+    A21 = 2.*np.pi*1j*params['k']*np.sin(time)/(1.-params['c2']) #A21 = -2.*np.pi*np.sin(time)
+    A22 = 1j*params['k']*np.cos(time)/(params['c2']-1.) #A22 = np.cos(time)
     A = np.matrix([[0.,1.],[A21,A22]],dtype=complex)
 
+  if case_flag == 'forcing_test':
+    #A = np.cos(time)
+    omg = params['omg']
+    A = np.cos(omg*time)
+
+
+
+  
   # to use ATLAS BLAS library, both arguments in np.dot should be C-ordered. Check with:
   #print(Am.flags,Phi.flags)
   # Runge-Kutta coefficients

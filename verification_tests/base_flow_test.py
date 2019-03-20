@@ -79,6 +79,8 @@ for n in range(0,Nt):
 
   t[n] = time
   b[:,n],u[:,n],bz[:,n],uz[:,n] = fn.nonrotating_solution( params, time )
+  #br[:,n], ur[:,n], vr[:,n] = fn.rotating_solution( params, time, 0 )
+  #br[:,n], ur[:,n], vr[:,n], bzr[:,n], uzr[:,n], vzr[:,n] = fn.rotating_solution( params, time, 1 )
   br[:,n], ur[:,n], vr[:,n], bzr[:,n], uzr[:,n], vzr[:,n] , bzzr[:,n], uzzr[:,n], vzzr[:,n] = fn.rotating_solution( params, time, 2 )
  
   if wall_flag == 'moving':
