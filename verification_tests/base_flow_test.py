@@ -72,6 +72,8 @@ uzzr = np.zeros([Nz,Nt]); vzzr = np.zeros([Nz,Nt]); bzzr = np.zeros([Nz,Nt]);
 uz_check = np.zeros([Nz,Nt]); bz_check = np.zeros([Nz,Nt]);
 uzz_check = np.zeros([Nz,Nt]); bzz_check = np.zeros([Nz,Nt]);
 
+uzr_check = np.zeros([Nz,Nt]); bzr_check = np.zeros([Nz,Nt]);
+uzzr_check = np.zeros([Nz,Nt]); bzzr_check = np.zeros([Nz,Nt]);
 
 t = np.zeros([Nt])
 time = 0.
@@ -81,22 +83,29 @@ for n in range(0,Nt):
   b[:,n],u[:,n],bz[:,n],uz[:,n] = fn.nonrotating_solution( params, time )
   #br[:,n], ur[:,n], vr[:,n] = fn.rotating_solution( params, time, 0 )
   #br[:,n], ur[:,n], vr[:,n], bzr[:,n], uzr[:,n], vzr[:,n] = fn.rotating_solution( params, time, 1 )
-  br[:,n], ur[:,n], vr[:,n], bzr[:,n], uzr[:,n], vzr[:,n] , bzzr[:,n], uzzr[:,n], vzzr[:,n] = fn.rotating_solution( params, time, 2 )
+  br[:,n], ur[:,n], vr[:,n], bzr[:,n], uzr[:,n], vzr[:,n] , bzzr[:,n], uzzr[:,n], vzzr[:,n] = fn.rotating_solution( params, time, 2 ) # <------------- order 1
  
   if wall_flag == 'moving':
     dz,lBC = fn.partial_z( params, 'dirchlet' , 'neumann' )
     dzz,lBC2 = fn.partial_zz( params, 'dirchlet' , 'neumann' )
     uz_check[:,n] = np.dot( np.real( dz ) , u[:,n] )
-    uz_check[0,n] = uz_check[0,n] + lBC * 2.* np.real(U*np.exp(1j*omg*time)) # moving wall
+    uz_check[0,n] = uz_check[0,n] - lBC * 2.* np.real(U*np.exp(1j*omg*time)) # moving wall
     uzz_check[:,n] = np.dot( np.real( dzz ) , u[:,n] )
-    uzz_check[0,n] = uzz_check[0,n] + lBC2 * 2.* np.real(U*np.exp(1j*omg*time)) # moving wall
+    uzz_check[0,n] = uzz_check[0,n] - lBC2 * 2.* np.real(U*np.exp(1j*omg*time)) # moving wall
+    uzr_check[:,n] = np.dot( np.real( dz ) , ur[:,n] )
+    uzr_check[0,n] = uzr_check[0,n] - lBC * 2.* np.real(U*np.exp(1j*omg*time)) # moving wall
+    uzzr_check[:,n] = np.dot( np.real( dzz ) , ur[:,n] )
+    uzzr_check[0,n] = uzzr_check[0,n] - lBC2 * 2.* np.real(U*np.exp(1j*omg*time)) # moving wall
+    bz_check[:,n] = np.dot( np.real( fn.partial_z( params, 'neumann' , 'neumann' )[0] ) , b[:,n] )
+    bzz_check[:,n] = np.dot( np.real( fn.partial_zz( params, 'neumann' , 'neumann' )[0] ) , b[:,n] )
+    bzr_check[:,n] = np.dot( np.real( fn.partial_z( params, 'neumann' , 'neumann' )[0] ) , br[:,n] )
+    bzzr_check[:,n] = np.dot( np.real( fn.partial_zz( params, 'neumann' , 'neumann' )[0] ) , br[:,n] ) # <-------------
 
   if wall_flag == 'farfield':
     uz_check[:,n] = np.dot( np.real( fn.partial_z( params, 'dirchlet', 'neumann' )[0] ) , u[:,n] )
     uzz_check[:,n] = np.dot( np.real( fn.partial_zz( params, 'dirchlet', 'neumann' )[0] ) , u[:,n] )
-
-  bz_check[:,n] = np.dot( np.real( fn.partial_z( params, 'neumann' , 'neumann' )[0] ) , b[:,n] )
-  bzz_check[:,n] = np.dot( np.real( fn.partial_zz( params, 'neumann' , 'neumann' )[0] ) , b[:,n] )
+    bz_check[:,n] = np.dot( np.real( fn.partial_z( params, 'neumann' , 'neumann' )[0] ) , b[:,n] )
+    bzz_check[:,n] = np.dot( np.real( fn.partial_zz( params, 'neumann' , 'neumann' )[0] ) , b[:,n] )
 
   time = time + dt
 
@@ -104,9 +113,14 @@ zmaxzoom = 0.002
 
 A,B = np.meshgrid(t/T,z/H)
 
+Binf = U*(N**2.0)*np.sin(tht)/omg  #L*N**2.*np.sin(tht)
+
+
+### u
+
 plotname = figure_path + wall_flag + '_u_solution.png' 
 fig = plt.figure(figsize=(12,5))
-plottitle = r"non-rotating u/U" 
+plottitle = r"analytical non-rotating u/U" 
 plt.subplot(2, 1, 1)
 CS = plt.contourf(A,B,u/U,200,cmap='seismic')
 plt.colorbar(CS)
@@ -123,7 +137,7 @@ plt.savefig(plotname,format="png"); plt.close(fig);
 
 plotname = figure_path + wall_flag + '_ur_solution.png' 
 fig = plt.figure(figsize=(12,5))
-plottitle = r"rotating u/U" 
+plottitle = r"analytical rotating u/U" 
 plt.subplot(2, 1, 1)
 CS = plt.contourf(A,B,ur/U,200,cmap='seismic')
 plt.colorbar(CS)
@@ -137,10 +151,12 @@ plt.xlabel(r"t/T",fontsize=13);
 plt.ylabel(r"z/H",fontsize=13); 
 plt.axis([0.,1.,0.,zmaxzoom])
 plt.savefig(plotname,format="png"); plt.close(fig);
+
+### v
 
 plotname = figure_path + wall_flag + '_vr_solution.png' 
 fig = plt.figure(figsize=(12,5))
-plottitle = r"rotating v/U" 
+plottitle = r"analytical rotating v/U" 
 plt.subplot(2, 1, 1)
 CS = plt.contourf(A,B,vr/U,200,cmap='seismic')
 plt.colorbar(CS)
@@ -156,12 +172,11 @@ plt.axis([0.,1.,0.,zmaxzoom])
 plt.savefig(plotname,format="png"); plt.close(fig);
 
 
-Binf = U*(N**2.0)*np.sin(tht)/omg  #L*N**2.*np.sin(tht)
-#print(np.amin(b/Binf),np.amax(b/Binf))
+### b
 
 plotname = figure_path + wall_flag + '_b_solution.png' 
 fig = plt.figure(figsize=(12,5))
-plottitle = r"non-rotating b/($LN^2\sin\theta$)" 
+plottitle = r"analytical non-rotating b/($LN^2\sin\theta$)" 
 plt.subplot(2, 1, 1)
 CS = plt.contourf(A,B,b/Binf,200,cmap='seismic')
 plt.colorbar(CS)
@@ -179,7 +194,7 @@ plt.savefig(plotname,format="png"); plt.close(fig);
 
 plotname = figure_path + wall_flag + '_br_solution.png' 
 fig = plt.figure(figsize=(12,5))
-plottitle = r"rotating b/($LN^2\sin\theta$)" 
+plottitle = r"analytical rotating b/($LN^2\sin\theta$)" 
 plt.subplot(2, 1, 1)
 CS = plt.contourf(A,B,br/Binf,200,cmap='seismic')
 plt.colorbar(CS)
@@ -194,9 +209,12 @@ plt.ylabel(r"z/H",fontsize=13);
 plt.axis([0.,1.,0.,zmaxzoom])
 plt.savefig(plotname,format="png"); plt.close(fig);
 
+
+### uz
+
 plotname = figure_path + wall_flag + '_uz_solution.png' 
 fig = plt.figure(figsize=(12,5))
-plottitle = r"$u_z\delta$/U" 
+plottitle = r"analytical non-rotating $u_z\delta$/U" 
 plt.subplot(2, 1, 1)
 CS = plt.contourf(A,B,uz*dS/U,200,cmap='seismic')
 plt.colorbar(CS)
@@ -213,7 +231,7 @@ plt.savefig(plotname,format="png"); plt.close(fig);
 
 plotname = figure_path + wall_flag + '_uzr_solution.png' 
 fig = plt.figure(figsize=(12,5))
-plottitle = r"$u_z\delta$/U" 
+plottitle = r"analytical rotating $u_z\delta$/U" 
 plt.subplot(2, 1, 1)
 CS = plt.contourf(A,B,uzr*dS/U,200,cmap='seismic')
 plt.colorbar(CS)
@@ -227,10 +245,28 @@ plt.xlabel(r"t/T",fontsize=13);
 plt.ylabel(r"z/H",fontsize=13); 
 plt.axis([0.,1.,0.,zmaxzoom])
 plt.savefig(plotname,format="png"); plt.close(fig);
+
+plotname = figure_path + wall_flag + '_uzr_solution_check.png' 
+fig = plt.figure(figsize=(12,5))
+plottitle = r"computed rotating $u_z\delta$/U" 
+plt.subplot(2, 1, 1)
+CS = plt.contourf(A,B,uzr_check*dS/U,200,cmap='seismic')
+plt.colorbar(CS)
+plt.ylabel(r"z/H",fontsize=13); 
+plt.axis([0.,1.,0.,1.])
+plt.title(plottitle);
+plt.subplot(2, 1, 2)
+CS = plt.contourf(A,B,uzr_check*dS/U,200,cmap='seismic')
+plt.colorbar(CS)
+plt.xlabel(r"t/T",fontsize=13);
+plt.ylabel(r"z/H",fontsize=13); 
+plt.axis([0.,1.,0.,zmaxzoom])
+plt.savefig(plotname,format="png"); plt.close(fig);
+
 
 plotname = figure_path + wall_flag + '_uz_solution_check.png' 
 fig = plt.figure(figsize=(12,5))
-plottitle = r"$u_z\delta$/U" 
+plottitle = r"computed non-rotating $u_z\delta$/U" 
 plt.subplot(2, 1, 1)
 CS = plt.contourf(A,B,uz_check*dS/U,200,cmap='seismic')
 plt.colorbar(CS)
@@ -245,10 +281,11 @@ plt.ylabel(r"z/H",fontsize=13);
 plt.axis([0.,1.,0.,zmaxzoom])
 plt.savefig(plotname,format="png"); plt.close(fig);
 
+### bz
 
 plotname = figure_path + wall_flag + '_bz_solution.png' 
 fig = plt.figure(figsize=(12,5))
-plottitle = r"$b_z\delta$/($LN^2\sin\theta$)" 
+plottitle = r"analytical non-rotating $b_z\delta$/($LN^2\sin\theta$)" 
 plt.subplot(2, 1, 1)
 CS = plt.contourf(A,B,bz*dS/Binf,200,cmap='seismic')
 plt.colorbar(CS)
@@ -262,11 +299,10 @@ plt.xlabel(r"t/T",fontsize=13);
 plt.ylabel(r"z/H",fontsize=13); 
 plt.axis([0.,1.,0.,zmaxzoom])
 plt.savefig(plotname,format="png"); plt.close(fig);
-
 
 plotname = figure_path +  wall_flag + '_bz_solution_check.png' 
 fig = plt.figure(figsize=(12,5))
-plottitle = r"$b_z\delta$/($LN^2\sin\theta$)" 
+plottitle = r"computed non-rotating $b_z\delta$/($LN^2\sin\theta$)" 
 plt.subplot(2, 1, 1)
 CS = plt.contourf(A,B,bz_check*dS/Binf,200,cmap='seismic')
 plt.colorbar(CS)
@@ -281,6 +317,42 @@ plt.ylabel(r"z/H",fontsize=13);
 plt.axis([0.,1.,0.,zmaxzoom])
 plt.savefig(plotname,format="png"); plt.close(fig);
 
+plotname = figure_path + wall_flag + '_bzr_solution.png' 
+fig = plt.figure(figsize=(12,5))
+plottitle = r"analytical rotating $b_z\delta$/($LN^2\sin\theta$)" 
+plt.subplot(2, 1, 1)
+CS = plt.contourf(A,B,bzr*dS/Binf,200,cmap='seismic')
+plt.colorbar(CS)
+plt.ylabel(r"z/H",fontsize=13); 
+plt.axis([0.,1.,0.,1.])
+plt.title(plottitle);
+plt.subplot(2, 1, 2)
+CS = plt.contourf(A,B,bzr*dS/Binf,200,cmap='seismic')
+plt.colorbar(CS)
+plt.xlabel(r"t/T",fontsize=13);
+plt.ylabel(r"z/H",fontsize=13); 
+plt.axis([0.,1.,0.,zmaxzoom])
+plt.savefig(plotname,format="png"); plt.close(fig);
+
+plotname = figure_path +  wall_flag + '_bzr_solution_check.png' 
+fig = plt.figure(figsize=(12,5))
+plottitle = r"computed rotating $b_z\delta$/($LN^2\sin\theta$)" 
+plt.subplot(2, 1, 1)
+CS = plt.contourf(A,B,bzr_check*dS/Binf,200,cmap='seismic')
+plt.colorbar(CS)
+plt.ylabel(r"z/H",fontsize=13); 
+plt.axis([0.,1.,0.,1.])
+plt.title(plottitle);
+plt.subplot(2, 1, 2)
+CS = plt.contourf(A,B,bzr_check*dS/Binf,200,cmap='seismic')
+plt.colorbar(CS)
+plt.xlabel(r"t/T",fontsize=13);
+plt.ylabel(r"z/H",fontsize=13); 
+plt.axis([0.,1.,0.,zmaxzoom])
+plt.savefig(plotname,format="png"); plt.close(fig);
+
+
+###
 
 
 plotname = figure_path + wall_flag + '_uzzr_solution.png' 
@@ -318,26 +390,30 @@ plt.axis([0.,1.,0.,zmaxzoom])
 plt.savefig(plotname,format="png"); plt.close(fig);
 
 
-plotname = figure_path + wall_flag + '_bzzr_solution.png' 
+### bzz
+
+"""
+plotname = figure_path + wall_flag + '_bzz_solution.png' 
 fig = plt.figure(figsize=(12,5))
-plottitle = r"$b_{zz}\delta^2$/($LN^2\sin\theta$)" 
+plottitle = r"analytical non-rotating $b_{zz}\delta^2$/($LN^2\sin\theta$)" 
 plt.subplot(2, 1, 1)
-CS = plt.contourf(A,B,bzzr*dS**2/Binf,200,cmap='seismic')
+CS = plt.contourf(A,B,bzz*dS**2/Binf,200,cmap='seismic')
 plt.colorbar(CS)
 plt.ylabel(r"z/H",fontsize=13); 
 plt.axis([0.,1.,0.,1.])
 plt.title(plottitle);
 plt.subplot(2, 1, 2)
-CS = plt.contourf(A,B,bzzr*dS**2/Binf,200,cmap='seismic')
+CS = plt.contourf(A,B,bzz*dS**2/Binf,200,cmap='seismic')
 plt.colorbar(CS)
 plt.xlabel(r"t/T",fontsize=13);
 plt.ylabel(r"z/H",fontsize=13); 
 plt.axis([0.,1.,0.,zmaxzoom])
 plt.savefig(plotname,format="png"); plt.close(fig);
+"""
 
 plotname = figure_path + wall_flag + '_bzz_solution_check.png' 
 fig = plt.figure(figsize=(12,5))
-plottitle = r"$b_{zz}\delta^2$/($LN^2\sin\theta$)" 
+plottitle = r"computed non-rotating $b_{zz}\delta^2$/($LN^2\sin\theta$)" 
 plt.subplot(2, 1, 1)
 CS = plt.contourf(A,B,bzz_check*dS**2/Binf,200,cmap='seismic')
 plt.colorbar(CS)
@@ -352,3 +428,37 @@ plt.ylabel(r"z/H",fontsize=13);
 plt.axis([0.,1.,0.,zmaxzoom])
 plt.savefig(plotname,format="png"); plt.close(fig);
 
+
+plotname = figure_path + wall_flag + '_bzzr_solution.png' 
+fig = plt.figure(figsize=(12,5))
+plottitle = r"analytical rotating $b_{zz}\delta^2$/($LN^2\sin\theta$)" 
+plt.subplot(2, 1, 1)
+CS = plt.contourf(A,B,bzzr*dS**2/Binf,200,cmap='seismic')
+plt.colorbar(CS)
+plt.ylabel(r"z/H",fontsize=13); 
+plt.axis([0.,1.,0.,1.])
+plt.title(plottitle);
+plt.subplot(2, 1, 2)
+CS = plt.contourf(A,B,bzzr*dS**2/Binf,200,cmap='seismic')
+plt.colorbar(CS)
+plt.xlabel(r"t/T",fontsize=13);
+plt.ylabel(r"z/H",fontsize=13); 
+plt.axis([0.,1.,0.,zmaxzoom])
+plt.savefig(plotname,format="png"); plt.close(fig);
+
+plotname = figure_path + wall_flag + '_bzzr_solution_check.png' 
+fig = plt.figure(figsize=(12,5))
+plottitle = r"computed rotating $b_{zz}\delta^2$/($LN^2\sin\theta$)" 
+plt.subplot(2, 1, 1)
+CS = plt.contourf(A,B,bzzr_check*dS**2/Binf,200,cmap='seismic')
+plt.colorbar(CS)
+plt.ylabel(r"z/H",fontsize=13); 
+plt.axis([0.,1.,0.,1.])
+plt.title(plottitle);
+plt.subplot(2, 1, 2)
+CS = plt.contourf(A,B,bzzr_check*dS**2./Binf,200,cmap='seismic')
+plt.colorbar(CS)
+plt.xlabel(r"t/T",fontsize=13);
+plt.ylabel(r"z/H",fontsize=13); 
+plt.axis([0.,1.,0.,zmaxzoom])
+plt.savefig(plotname,format="png"); plt.close(fig);

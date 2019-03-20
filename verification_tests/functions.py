@@ -93,9 +93,6 @@ def rk4( params , time , Phin , count , plot_flag , case_flag ):
     omg = params['omg']
     A = np.cos(omg*time)
 
-
-
-  
   # to use ATLAS BLAS library, both arguments in np.dot should be C-ordered. Check with:
   #print(Am.flags,Phi.flags)
   # Runge-Kutta coefficients
@@ -260,8 +257,8 @@ def nonrotating_solution( params, time ):
                (1j-1.0)/d2*( beta1 + 1j*beta2 )*np.exp((1j-1.0)*z[i]/d2) )*1j*np.exp(1j*omg*time) )
 
  if params['wall'] == 'moving':
-   u = u + np.real(U*np.exp(1j*omg*time))
-   b = b + np.real(Bs*1j*np.exp(1j*omg*time)) # check if this is correct!
+   u = u - np.real(U*np.exp(1j*omg*time))
+   b = b - np.real(Bs*1j*np.exp(1j*omg*time)) # check if this is correct!  #98BC37
 
  u = np.real(u) 
  b = np.real(b)
@@ -419,7 +416,7 @@ def rotating_solution( params, time, order ):
                       np.sqrt(phi3)**2.*c6*np.exp(-np.sqrt(phi3)*z[i]) ) * 1j * np.exp(1j*omg*time) ) 
  
  if params['wall'] == 'moving':
-   u = u + np.real(U*np.exp(1j*omg*time))
+   u = u - np.real(U*np.exp(1j*omg*time))
    b = b - np.real(ap*1j*np.exp(1j*omg*time)) # why is this the opposite sign from the non-rotating case? Which one is wrong?
    if f > 0.:
      v = v - np.real( ( ap*(omg**2.-(N*np.sin(tht))**2 ) - A*N**2.*np.sin(tht) ) * 1j * np.exp(1j*omg*time) ) / (f * np.cos(tht) * N**2.*np.sin(tht))
