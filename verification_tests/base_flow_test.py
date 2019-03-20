@@ -84,7 +84,7 @@ for n in range(0,Nt):
   #br[:,n], ur[:,n], vr[:,n] = fn.rotating_solution( params, time, 0 )
   #br[:,n], ur[:,n], vr[:,n], bzr[:,n], uzr[:,n], vzr[:,n] = fn.rotating_solution( params, time, 1 )
   br[:,n], ur[:,n], vr[:,n], bzr[:,n], uzr[:,n], vzr[:,n] , bzzr[:,n], uzzr[:,n], vzzr[:,n] = fn.rotating_solution( params, time, 2 ) # <------------- order 1
- 
+  #print(np.shape(ur[:,n]))
   if wall_flag == 'moving':
     dz,lBC = fn.partial_z( params, 'dirchlet' , 'neumann' )
     dzz,lBC2 = fn.partial_zz( params, 'dirchlet' , 'neumann' )
@@ -96,6 +96,7 @@ for n in range(0,Nt):
     uzr_check[0,n] = uzr_check[0,n] - lBC * 2.* np.real(U*np.exp(1j*omg*time)) # moving wall
     uzzr_check[:,n] = np.dot( np.real( dzz ) , ur[:,n] )
     uzzr_check[0,n] = uzzr_check[0,n] - lBC2 * 2.* np.real(U*np.exp(1j*omg*time)) # moving wall
+    #print(np.shape(fn.partial_z( params, 'neumann' , 'neumann' )[0]))
     bz_check[:,n] = np.dot( np.real( fn.partial_z( params, 'neumann' , 'neumann' )[0] ) , b[:,n] )
     bzz_check[:,n] = np.dot( np.real( fn.partial_zz( params, 'neumann' , 'neumann' )[0] ) , b[:,n] )
     bzr_check[:,n] = np.dot( np.real( fn.partial_z( params, 'neumann' , 'neumann' )[0] ) , br[:,n] )

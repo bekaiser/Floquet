@@ -93,6 +93,14 @@ def rk4( params , time , Phin , count , plot_flag , case_flag ):
     omg = params['omg']
     A = np.cos(omg*time)
 
+  if case_flag == 'buoyancy_equation':
+    br, ur, vr = rotating_solution( params, time, 0 )
+    diag0 = np.zeros([params['Nz']],dtype=complex)
+    for q in range(0,params['Nz']):
+      diag0[q] = ur[q]*1j*params['k0'] - (params['k0']**2.+params['l0']**2.) / (params['Pr']*params['Re'])
+    dzz = ( partial_zz( params, 'neumann' , 'neumann' )[0] ) / (params['Pr']*params['Re'])
+    A = diag0 + dzz
+
   # to use ATLAS BLAS library, both arguments in np.dot should be C-ordered. Check with:
   #print(Am.flags,Phi.flags)
   # Runge-Kutta coefficients
