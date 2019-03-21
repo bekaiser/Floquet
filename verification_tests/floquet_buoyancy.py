@@ -21,7 +21,7 @@ figure_path = "./figures/"
 
 T = 2.*np.pi #44700. # s, M2 tide period
 
-Nz = 200 # number of grid points
+Nz = 40 # number of grid points
 grid_flag = 'cosine' # 'uniform'
 wall_flag = 'moving' 
 #wall_flag = 'farfield' 
@@ -37,18 +37,26 @@ U = 0.01 # m/s, oscillation velocity amplitude
 L = U/omg # m, excursion length (here we've assumed L>>H)
 thtc= ma.asin(omg/N) # radians    
 tht = C*thtc # radians
+#print(tht/thtc)
 Re = omg*L**2./nu # Reynolds number
 dS = np.sqrt(2.*nu/omg) # Stokes' 2nd problem BL thickness
 ReS = np.sqrt(2.*Re) # Stokes' 2nd problem Reynolds number
-H = 30.*dS # m, dimensional domain height (L is the lengthscale)
+H = 4000.*dS # m, dimensional domain height (L is the lengthscale)
 z,dz = fn.grid_choice( grid_flag , Nz , H )
 
+print(dS)
+print(L)
+print(H)
+print(np.amin(z),np.amax(z))
 
-#CFL = 0.02
-#dt = np.amin(dz)*CFL # non-dimensional time step
-#Nt = 1000 #T/dt
+CFL = 0.001
+dt = np.amin(dz)**2.*CFL / kap # non-dimensional time step
+print(dt)
+Nt = int(T/dt) #1000 #T/dt
+print(Nt)
 #dt = T/(Nt-1) 'dz_min':(np.amin(dz)), 'CFL':(dt/np.amin(dz)),
 
+"""
 k0 = 1.
 l0 = 1.
 
@@ -56,9 +64,9 @@ params = {'nu': nu, 'kap': kap, 'omg': omg, 'L':L, 'T': T, 'U': U, 'H': H,
           'N':N, 'tht':tht, 'Re':Re, 'C':C, 'H':H, 'Nz':Nz, 'wall':wall_flag,
           'dS':dS, 'ReS':ReS, 'thtc':thtc, 'grid':grid_flag, 'f': f, 'Pr':Pr,
           'z':z, 'dz':dz,'k0': k0, 'l0': l0, 'wall':wall_flag}
+"""
 
-
-
+params = {'H': H,'grid':grid_flag,'z':z, 'Nz':Nz, 'dz':dz,'wall':wall_flag}
 
 
 
@@ -68,6 +76,7 @@ strutt = np.zeros([Ngrid,Ngrid]); #strutt2 = np.zeros([Ngrid,Ngrid])
 
 count = 1
 
+"""
 for i in range(0,Ngrid):
   for j in range(0,Ngrid):
  
@@ -75,20 +84,18 @@ for i in range(0,Ngrid):
     count = count + 1
 
     Phi0 = np.eye(int(Nz),int(Nz),0,dtype=complex) # initial condition (prinicipal fundamental solution matrix)
-    Phin,final_time = fn.rk4_time_step( params, Phi0 , T/5000, T , 'buoyancy_equation' )
-
+    Phin,final_time = fn.rk4_time_step( params, Phi0 , T/Nt, T , 'buoyancy_equation' )
 
     mod = np.abs(np.linalg.eigvals(Phin)) # eigenvals = floquet multipliers
     if mod[0] < 1. and mod[1] < 1.:
       strutt[j,i] = 1. # stable
     print(mod)
-    """
-    modOPH = np.abs(np.linalg.eigvals(PhinOPH)) # eigenvals = floquet multipliers
-    if modOPH[0] < 1. and modOPH[1] < 1.:
-      strutt4[j,i] = 1.
-    """
+
 
 print(strutt)
+"""
+
+
 
 """
 A,B = np.meshgrid(np.log10(k),np.log10(c))

@@ -93,13 +93,16 @@ def rk4( params , time , Phin , count , plot_flag , case_flag ):
     omg = params['omg']
     A = np.cos(omg*time)
 
-  if case_flag == 'buoyancy_equation':
-    br, ur, vr = rotating_solution( params, time, 0 )
-    diag0 = np.zeros([params['Nz']],dtype=complex)
-    for q in range(0,params['Nz']):
-      diag0[q] = ur[q]*1j*params['k0'] - (params['k0']**2.+params['l0']**2.) / (params['Pr']*params['Re'])
-    dzz = ( partial_zz( params, 'neumann' , 'neumann' )[0] ) / (params['Pr']*params['Re'])
-    A = diag0 + dzz
+  if case_flag == 'buoyancy_diffusion':
+    #br, ur, vr = rotating_solution( params, time, 0 )
+    #diag0 = np.zeros([params['Nz']],dtype=complex)
+    #for q in range(0,params['Nz']):
+    #  diag0[q] = ur[q]*1j*params['k0'] - (params['k0']**2.+params['l0']**2.) / (params['Pr']*params['Re'])
+    #dzz = ( partial_zz( params, 'neumann' , 'neumann' )[0] ) #/ (params['Pr']*params['Re'])
+    #A = diag0 + dzz
+    A = ( partial_zz( params, 'neumann' , 'neumann' )[0] ) / (params['Pr']*params['Re'])
+    #print(A)
+    #-np.eye(int(params['Nz']),int(params['Nz']),0,dtype=complex) # dzz
 
   # to use ATLAS BLAS library, both arguments in np.dot should be C-ordered. Check with:
   #print(Am.flags,Phi.flags)
@@ -163,11 +166,11 @@ def op_time_step( params , Phin , dt, stop_time, case_flag ):
 def grid_choice( grid_flag , Nz , H ):
  # non-dimensional grid 
  if grid_flag == 'uniform': 
-   z = np.linspace((H/Nz)/2. , H, num=Nz) / H 
+   z = np.linspace((H/Nz)/2. , H-(H/Nz)/2., num=Nz, endpoint=True) 
  if grid_flag == 'cosine': # half cosine grid
    z = -np.cos(((np.linspace(1., 2.*Nz, num=int(2*Nz)))*2.-1.)/(4.*Nz)*np.pi)*H+H
-   z = z[0:Nz] #/ 2. 
-   dz = z[1:Nz]-z[0:Nz-1]
+ z = z[0:Nz] #/ 2. 
+ dz = z[1:Nz]-z[0:Nz-1]
  return z,dz
 
 
