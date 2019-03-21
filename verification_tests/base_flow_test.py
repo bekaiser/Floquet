@@ -19,7 +19,9 @@ figure_path = "./figures/"
 
 # =============================================================================
 
-T = 44700. # s, M2 tide period
+
+T = 2.*np.pi # radians, non-dimensional period
+Td = 44700. # s, M2 tide period
 
 Nz = 200 # number of grid points
 grid_flag = 'cosine' # 'uniform'
@@ -29,7 +31,7 @@ wall_flag = 'moving'
 nu = 2.0e-6 # m^2/s, kinematic viscosity
 Pr = 1. # Prandtl number
 kap = nu/Pr # m^2/s, thermometric diffusivity
-omg = 2.0*np.pi/T # rads/s
+omg = 2.0*np.pi/Td # rads/s
 f = 0. #1e-4 # 1/s, inertial frequency
 N = 1e-3 # 1/s, buoyancy frequency
 C = 1./4. # N^2*sin(tht)/omg, slope ``criticality''
@@ -40,20 +42,14 @@ tht = C*thtc # radians
 Re = omg*L**2./nu # Reynolds number
 dS = np.sqrt(2.*nu/omg) # Stokes' 2nd problem BL thickness
 ReS = np.sqrt(2.*Re) # Stokes' 2nd problem Reynolds number
-H = 100.*dS # m, dimensional domain height (L is the lengthscale)
+H = 1.
+Hd = 100.*dS # m, dimensional domain height 
 z,dz = fn.grid_choice( grid_flag , Nz , H )
 
-#print(np.amin(z),np.amax(z))
+Nt = 100 # number of time steps
+dt = T/(Nt-1) # non-dimensional dt
 
-#CFL = 0.02
-#dt = np.amin(dz)*CFL # non-dimensional time step
-Nt = 100 #T/dt
-dt = T/(Nt-1)
-
-#print('dimensional dt = ',dt*T)
-#print('approx number of time steps = ',1./dt)
-
-params = {'nu': nu, 'kap': kap, 'omg': omg, 'L':L, 'T': T, 'U': U, 'H': H,
+params = {'nu': nu, 'kap': kap, 'omg': omg, 'L':L, 'T': T, 'Td': Td, 'U': U, 'H': H, 'Hd': Hd,
           'N':N, 'tht':tht, 'Re':Re, 'C':C, 'H':H, 'Nz':Nz, 'wall':wall_flag,
           'dS':dS, 'ReS':ReS, 'thtc':thtc, 'grid':grid_flag, 'f': f, 'Pr':Pr,
           'dz_min':(np.amin(dz)),'Nt':Nt, 'CFL':(dt/np.amin(dz)), 'z':z, 'dz':dz}
@@ -79,46 +75,49 @@ t = np.zeros([Nt])
 time = 0.
 for n in range(0,Nt):
 
-  t[n] = time
-  b[:,n],u[:,n],bz[:,n],uz[:,n] = fn.nonrotating_solution( params, time )
-  #br[:,n], ur[:,n], vr[:,n] = fn.rotating_solution( params, time, 0 )
-  #br[:,n], ur[:,n], vr[:,n], bzr[:,n], uzr[:,n], vzr[:,n] = fn.rotating_solution( params, time, 1 )
-  br[:,n], ur[:,n], vr[:,n], bzr[:,n], uzr[:,n], vzr[:,n] , bzzr[:,n], uzzr[:,n], vzzr[:,n] = fn.rotating_solution( params, time, 2 ) # <------------- order 1
-  #print(np.shape(ur[:,n]))
+  t[n] = time # non-dimensional time, time = [0,2pi]
+  #b[:,n],u[:,n],bz[:,n],uz[:,n] = fn.nonrotating_solution( params, time )
+  br[:,n], ur[:,n], vr[:,n], bzr[:,n], uzr[:,n], vzr[:,n] , bzzr[:,n], uzzr[:,n], vzzr[:,n] = fn.rotating_solution( params, time, 2 ) 
+  
+  timed = time*params['Td']/(2.*np.pi) # s, dimensional time
   if wall_flag == 'moving':
-    dz,lBC = fn.partial_z( params, 'dirchlet' , 'neumann' )
-    dzz,lBC2 = fn.partial_zz( params, 'dirchlet' , 'neumann' )
+    dz,lBC = fn.partial_z( z*Hd, Nz, Hd, 'dirchlet' , 'neumann' ) # dimensional dz  
+    dzz,lBC2 = fn.partial_zz( z*Hd, Nz, Hd, 'dirchlet' , 'neumann' )
+    """
     uz_check[:,n] = np.dot( np.real( dz ) , u[:,n] )
-    uz_check[0,n] = uz_check[0,n] - lBC * 2.* np.real(U*np.exp(1j*omg*time)) # moving wall
+    uz_check[0,n] = uz_check[0,n] - lBC * 2.* np.real(U*np.exp(1j*omg*timed)) # moving wall
     uzz_check[:,n] = np.dot( np.real( dzz ) , u[:,n] )
-    uzz_check[0,n] = uzz_check[0,n] - lBC2 * 2.* np.real(U*np.exp(1j*omg*time)) # moving wall
+    uzz_check[0,n] = uzz_check[0,n] - lBC2 * 2.* np.real(U*np.exp(1j*omg*timed)) # moving wall
+    """
     uzr_check[:,n] = np.dot( np.real( dz ) , ur[:,n] )
-    uzr_check[0,n] = uzr_check[0,n] - lBC * 2.* np.real(U*np.exp(1j*omg*time)) # moving wall
+    uzr_check[0,n] = uzr_check[0,n] - lBC * 2. * np.real(U*np.exp(1j*omg*timed)) # moving wall
     uzzr_check[:,n] = np.dot( np.real( dzz ) , ur[:,n] )
-    uzzr_check[0,n] = uzzr_check[0,n] - lBC2 * 2.* np.real(U*np.exp(1j*omg*time)) # moving wall
-    #print(np.shape(fn.partial_z( params, 'neumann' , 'neumann' )[0]))
+    uzzr_check[0,n] = uzzr_check[0,n] - lBC2 * 2.* np.real(U*np.exp(1j*omg*timed)) # moving wall
+    """
     bz_check[:,n] = np.dot( np.real( fn.partial_z( params, 'neumann' , 'neumann' )[0] ) , b[:,n] )
     bzz_check[:,n] = np.dot( np.real( fn.partial_zz( params, 'neumann' , 'neumann' )[0] ) , b[:,n] )
-    bzr_check[:,n] = np.dot( np.real( fn.partial_z( params, 'neumann' , 'neumann' )[0] ) , br[:,n] )
-    bzzr_check[:,n] = np.dot( np.real( fn.partial_zz( params, 'neumann' , 'neumann' )[0] ) , br[:,n] ) # <-------------
+    """
+    bzr_check[:,n] = np.dot( np.real( fn.partial_z( z*Hd, Nz, Hd, 'neumann' , 'neumann' )[0] ) , br[:,n] )
+    bzzr_check[:,n] = np.dot( np.real( fn.partial_zz( z*Hd, Nz, Hd, 'neumann' , 'neumann' )[0] ) , br[:,n] ) 
 
   if wall_flag == 'farfield':
-    uz_check[:,n] = np.dot( np.real( fn.partial_z( params, 'dirchlet', 'neumann' )[0] ) , u[:,n] )
-    uzz_check[:,n] = np.dot( np.real( fn.partial_zz( params, 'dirchlet', 'neumann' )[0] ) , u[:,n] )
-    bz_check[:,n] = np.dot( np.real( fn.partial_z( params, 'neumann' , 'neumann' )[0] ) , b[:,n] )
-    bzz_check[:,n] = np.dot( np.real( fn.partial_zz( params, 'neumann' , 'neumann' )[0] ) , b[:,n] )
+    uz_check[:,n] = np.dot( np.real( fn.partial_z( z*Hd, Nz, Hd, 'dirchlet', 'neumann' )[0] ) , u[:,n] )
+    uzz_check[:,n] = np.dot( np.real( fn.partial_zz( z*Hd, Nz, Hd, 'dirchlet', 'neumann' )[0] ) , u[:,n] )
+    bz_check[:,n] = np.dot( np.real( fn.partial_z( z*Hd, Nz, Hd, 'neumann' , 'neumann' )[0] ) , b[:,n] )
+    bzz_check[:,n] = np.dot( np.real( fn.partial_zz( z*Hd, Nz, Hd, 'neumann' , 'neumann' )[0] ) , b[:,n] )
 
-  time = time + dt
+  time = time + dt # non-dimensional time
 
 zmaxzoom = 0.002
 
-A,B = np.meshgrid(t/T,z/H)
+A,B = np.meshgrid(t/T,z)
 
-Binf = U*(N**2.0)*np.sin(tht)/omg  #L*N**2.*np.sin(tht)
+Binf = U*(N**2.0)*np.sin(tht)/omg  
 
 
 ### u
 
+"""
 plotname = figure_path + wall_flag + '_u_solution.png' 
 fig = plt.figure(figsize=(12,5))
 plottitle = r"analytical non-rotating u/U" 
@@ -135,6 +134,7 @@ plt.xlabel(r"t/T",fontsize=13);
 plt.ylabel(r"z/H",fontsize=13); 
 plt.axis([0.,1.,0.,zmaxzoom])
 plt.savefig(plotname,format="png"); plt.close(fig);
+"""
 
 plotname = figure_path + wall_flag + '_ur_solution.png' 
 fig = plt.figure(figsize=(12,5))
@@ -174,7 +174,7 @@ plt.savefig(plotname,format="png"); plt.close(fig);
 
 
 ### b
-
+"""
 plotname = figure_path + wall_flag + '_b_solution.png' 
 fig = plt.figure(figsize=(12,5))
 plottitle = r"analytical non-rotating b/($LN^2\sin\theta$)" 
@@ -191,7 +191,7 @@ plt.xlabel(r"t/T",fontsize=13);
 plt.ylabel(r"z/H",fontsize=13); 
 plt.axis([0.,1.,0.,zmaxzoom])
 plt.savefig(plotname,format="png"); plt.close(fig);
-
+"""
 
 plotname = figure_path + wall_flag + '_br_solution.png' 
 fig = plt.figure(figsize=(12,5))
@@ -212,7 +212,7 @@ plt.savefig(plotname,format="png"); plt.close(fig);
 
 
 ### uz
-
+"""
 plotname = figure_path + wall_flag + '_uz_solution.png' 
 fig = plt.figure(figsize=(12,5))
 plottitle = r"analytical non-rotating $u_z\delta$/U" 
@@ -229,7 +229,7 @@ plt.xlabel(r"t/T",fontsize=13);
 plt.ylabel(r"z/H",fontsize=13); 
 plt.axis([0.,1.,0.,zmaxzoom])
 plt.savefig(plotname,format="png"); plt.close(fig);
-
+"""
 plotname = figure_path + wall_flag + '_uzr_solution.png' 
 fig = plt.figure(figsize=(12,5))
 plottitle = r"analytical rotating $u_z\delta$/U" 
@@ -264,7 +264,7 @@ plt.ylabel(r"z/H",fontsize=13);
 plt.axis([0.,1.,0.,zmaxzoom])
 plt.savefig(plotname,format="png"); plt.close(fig);
 
-
+"""
 plotname = figure_path + wall_flag + '_uz_solution_check.png' 
 fig = plt.figure(figsize=(12,5))
 plottitle = r"computed non-rotating $u_z\delta$/U" 
@@ -281,9 +281,11 @@ plt.xlabel(r"t/T",fontsize=13);
 plt.ylabel(r"z/H",fontsize=13); 
 plt.axis([0.,1.,0.,zmaxzoom])
 plt.savefig(plotname,format="png"); plt.close(fig);
+"""
 
 ### bz
 
+"""
 plotname = figure_path + wall_flag + '_bz_solution.png' 
 fig = plt.figure(figsize=(12,5))
 plottitle = r"analytical non-rotating $b_z\delta$/($LN^2\sin\theta$)" 
@@ -317,6 +319,7 @@ plt.xlabel(r"t/T",fontsize=13);
 plt.ylabel(r"z/H",fontsize=13); 
 plt.axis([0.,1.,0.,zmaxzoom])
 plt.savefig(plotname,format="png"); plt.close(fig);
+"""
 
 plotname = figure_path + wall_flag + '_bzr_solution.png' 
 fig = plt.figure(figsize=(12,5))
@@ -373,23 +376,22 @@ plt.ylabel(r"z/H",fontsize=13);
 plt.axis([0.,1.,0.,zmaxzoom])
 plt.savefig(plotname,format="png"); plt.close(fig);
 
-plotname = figure_path + wall_flag + '_uzz_solution_check.png' 
+plotname = figure_path + wall_flag + '_uzzr_solution_check.png' 
 fig = plt.figure(figsize=(12,5))
 plottitle = r"$u_{zz}\delta^2$/U" 
 plt.subplot(2, 1, 1)
-CS = plt.contourf(A,B,uzz_check*dS**2/U,200,cmap='seismic')
+CS = plt.contourf(A,B,uzzr_check*dS**2/U,200,cmap='seismic')
 plt.colorbar(CS)
 plt.ylabel(r"z/H",fontsize=13); 
 plt.axis([0.,1.,0.,1.])
 plt.title(plottitle);
 plt.subplot(2, 1, 2)
-CS = plt.contourf(A,B,uzz_check*dS**2./U,200,cmap='seismic')
+CS = plt.contourf(A,B,uzzr_check*dS**2./U,200,cmap='seismic')
 plt.colorbar(CS)
 plt.xlabel(r"t/T",fontsize=13);
 plt.ylabel(r"z/H",fontsize=13); 
 plt.axis([0.,1.,0.,zmaxzoom])
 plt.savefig(plotname,format="png"); plt.close(fig);
-
 
 ### bzz
 
@@ -411,7 +413,7 @@ plt.ylabel(r"z/H",fontsize=13);
 plt.axis([0.,1.,0.,zmaxzoom])
 plt.savefig(plotname,format="png"); plt.close(fig);
 """
-
+"""
 plotname = figure_path + wall_flag + '_bzz_solution_check.png' 
 fig = plt.figure(figsize=(12,5))
 plottitle = r"computed non-rotating $b_{zz}\delta^2$/($LN^2\sin\theta$)" 
@@ -428,7 +430,7 @@ plt.xlabel(r"t/T",fontsize=13);
 plt.ylabel(r"z/H",fontsize=13); 
 plt.axis([0.,1.,0.,zmaxzoom])
 plt.savefig(plotname,format="png"); plt.close(fig);
-
+"""
 
 plotname = figure_path + wall_flag + '_bzzr_solution.png' 
 fig = plt.figure(figsize=(12,5))

@@ -19,7 +19,8 @@ figure_path = "./figures/"
 
 # =============================================================================
 
-T = 2.*np.pi # s, period
+T = 2.*np.pi # radians, non-dimensional period
+# dt in RK4 needs to be non-dimensional, as in dt = omg*T/Nt and omg*T = 2*pi
 
 # undamped Hill equation coefficients: f(t) = a + b*cos(t), A(t) = [[0,1],[-f(t),0]]
 Ngrid = 400

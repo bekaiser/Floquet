@@ -82,6 +82,7 @@ def rk4( params , time , Phin , count , plot_flag , case_flag ):
  
   if case_flag == 'Hills_equation':
     A = np.matrix([[0.,1.],[-params['a']-params['b']*np.cos(time),0.]],dtype=complex)
+    # note that time must be in radians
 
   if case_flag == 'inviscid_buoyancy':
     A21 = 2.*np.pi*1j*params['k']*np.sin(time)/(1.-params['c2']) #A21 = -2.*np.pi*np.sin(time)
@@ -93,16 +94,17 @@ def rk4( params , time , Phin , count , plot_flag , case_flag ):
     omg = params['omg']
     A = np.cos(omg*time)
 
-  if case_flag == 'buoyancy_diffusion':
-    #br, ur, vr = rotating_solution( params, time, 0 )
-    #diag0 = np.zeros([params['Nz']],dtype=complex)
-    #for q in range(0,params['Nz']):
-    #  diag0[q] = ur[q]*1j*params['k0'] - (params['k0']**2.+params['l0']**2.) / (params['Pr']*params['Re'])
-    #dzz = ( partial_zz( params, 'neumann' , 'neumann' )[0] ) #/ (params['Pr']*params['Re'])
-    #A = diag0 + dzz
-    A = ( partial_zz( params, 'neumann' , 'neumann' )[0] ) / (params['Pr']*params['Re'])
-    #print(A)
-    #-np.eye(int(params['Nz']),int(params['Nz']),0,dtype=complex) # dzz
+  if case_flag == 'diffusion': # buoyancy equation diffusion (i.e. the heat equation)
+    A = ( partial_zz( params['z'], params['Nz'], params['H'], 'neumann' , 'neumann' )[0] ) / (params['Pr']*params['Re'])
+    # non-dimensional diffusion
+
+  if case_flag == 'advection_diffusion': # FIX
+    u = ( rotating_solution( params, time, 0 )[1] ) / params['U']
+    diag0 = np.zeros([int(params['Nz'])],dtype=complex)
+    for q in range(0,params['Nz']):
+      diag0[q] = u[q]*1j*params['k0'] - (params['k0']**2.+params['l0']**2.) / (params['Pr']*params['Re'])
+    dzz = ( partial_zz( params, 'neumann' , 'neumann' )[0] ) / (params['Pr']*params['Re'])
+    A = diag0 + dzz
 
   # to use ATLAS BLAS library, both arguments in np.dot should be C-ordered. Check with:
   #print(Am.flags,Phi.flags)
@@ -175,9 +177,10 @@ def grid_choice( grid_flag , Nz , H ):
 
 
 def nonrotating_solution( params, time ):  
- # don't use, the u & b are 90 degrees out of phase
+ # FIX don't use, the u & b are 90 degrees out of phase
  
- z = params['z']
+ # FIX all dimensional:  z and t
+ z = params['z'] 
  U = params['U']
  N = params['N'] 
  omg = params['omg']
@@ -281,7 +284,9 @@ def nonrotating_solution( params, time ):
 
 def rotating_solution( params, time, order ):
 
- z = params['z']
+ # all dimensional: 
+ z = params['z']*params['Hd'] # m, dimensional z
+ time = time*params['Td']/(2.*np.pi) # s, dimensional time
  U = params['U']
  N = params['N'] 
  omg = params['omg']
@@ -433,6 +438,7 @@ def rotating_solution( params, time, order ):
      v = v - np.real( ( ap*(omg**2.-(N*np.sin(tht))**2 ) - A*N**2.*np.sin(tht) ) * 1j * np.exp(1j*omg*time) ) / (f * np.cos(tht) * N**2.*np.sin(tht))
      # subtract the geostropphic component of v; means the wall moves in the along-slope direction
 
+ # dimensional output:
  if order < 1.:
    return np.real(b), np.real(u), np.real(v)
  if order == 1.:
@@ -461,11 +467,11 @@ def weights2( z0 , z1 , z2 , z3 , zj ):
  return l0, l1, l2, l3
 
 
-def partial_zz( params, lower_BC_flag , upper_BC_flag ):
+def partial_zz( z, Nz, H, lower_BC_flag , upper_BC_flag ):
  # second derivative, permiting non-uniform grids
- Nz = params['Nz']
- z = params['z']
- H = params['H']
+ #Nz = params['Nz']
+ #z = params['z']
+ #H = params['H']
 
  # 2nd order accurate (truncated 3rd order terms), variable grid
  diagm1 = np.zeros([Nz-1],dtype=complex)
@@ -499,11 +505,11 @@ def partial_zz( params, lower_BC_flag , upper_BC_flag ):
  return pzz,lBC
 
 
-def partial_z( params, lower_BC_flag , upper_BC_flag ):
+def partial_z( z, Nz, H, lower_BC_flag , upper_BC_flag ):
  # first-order derivative matrix, 2nd order accurate truncation
- Nz = params['Nz']
- H = params['H']
- z = params['z']
+ #Nz = params['Nz']
+ #H = params['H']
+ #z = params['z']
  
  # interior points, variable grid
  diagm1 = np.zeros([Nz-1],dtype=complex)
