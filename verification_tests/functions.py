@@ -103,7 +103,7 @@ def rk4( params , time , Phin , count , plot_flag , case_flag ):
     diag0 = np.zeros([int(params['Nz'])],dtype=complex)
     for q in range(0,params['Nz']):
       diag0[q] = u[q]*1j*params['k0'] - (params['k0']**2.+params['l0']**2.) / (params['Pr']*params['Re'])
-    dzz = ( partial_zz( params, 'neumann' , 'neumann' )[0] ) / (params['Pr']*params['Re'])
+    dzz = ( partial_zz( params['z'], params['Nz'], params['H'], 'neumann' , 'neumann' )[0] ) / (params['Pr']*params['Re'])
     A = diag0 + dzz
 
   # to use ATLAS BLAS library, both arguments in np.dot should be C-ordered. Check with:
@@ -285,7 +285,7 @@ def nonrotating_solution( params, time ):
 def rotating_solution( params, time, order ):
 
  # all dimensional: 
- z = params['z']*params['Hd'] # m, dimensional z
+ z = params['z']*params['Hd'] # m, dimensional grid
  time = time*params['Td']/(2.*np.pi) # s, dimensional time
  U = params['U']
  N = params['N'] 
@@ -296,10 +296,7 @@ def rotating_solution( params, time, order ):
  kap = params['kap']
  L = params['L']
  f = params['f'] 
-
  tht = params['tht']
- #thtcrit = params['thtc'] #ma.asin(omg/N) # radians 
- #criticality = params['C']
 
  sqfcos = ( f * np.cos( tht ) )**2.
  sqNsin = ( N * np.sin( tht ) )**2.
