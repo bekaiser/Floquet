@@ -46,6 +46,7 @@ def rk4_time_step( params , Phin , dt, stop_time, case_flag ):
     #output_count = perturb_monitor( time , count , output_count , output_period , Phin , z , params , 'plot' )
     time = time + dt # non-dimensional time
     count = count + 1
+    print(count)
     check_matrix(Phin,'Phin')
 
   dtf = stop_time - time
@@ -54,6 +55,8 @@ def rk4_time_step( params , Phin , dt, stop_time, case_flag ):
   k3 = rk4( params , time + dtf/2. , Phin + k2*dtf/2. , count , 0 , case_flag )
   k4 = rk4( params , time + dtf , Phin + k3*dtf , count , 0 , case_flag )
   Phin = Phin + ( k1 + k2*2. + k3*2. + k4 )*dtf/6.; 
+
+  # this is where conservation of mass needs to be checked
 
   final_time = time + dtf # non-dimensional final time
   count = count + 1
@@ -98,8 +101,9 @@ def rk4( params , time , Phin , count , plot_flag , case_flag ):
     A = ( partial_zz( params['z'], params['Nz'], params['H'], 'neumann' , 'neumann' )[0] ) / (params['Pr']*params['Re'])
     # non-dimensional diffusion
 
-  if case_flag == 'advection_diffusion': # FIX
-    u = ( rotating_solution( params, time, 0 )[1] ) / params['U']
+  if case_flag == 'advection_diffusion': 
+    u = ( rotating_solution( params, time, 0 )[1] ) / params['U'] # non-dimensional advection
+    #print('max/min U = ',np.amax(abs(u)),np.amin(abs(u)))
     diag0 = np.zeros([int(params['Nz'])],dtype=complex)
     for q in range(0,params['Nz']):
       diag0[q] = u[q]*1j*params['k0'] - (params['k0']**2.+params['l0']**2.) / (params['Pr']*params['Re'])
@@ -175,7 +179,7 @@ def grid_choice( grid_flag , Nz , H ):
  dz = z[1:Nz]-z[0:Nz-1]
  return z,dz
 
-
+"""
 def nonrotating_solution( params, time ):  
  # FIX don't use, the u & b are 90 degrees out of phase
  
@@ -280,7 +284,7 @@ def nonrotating_solution( params, time ):
  bz = np.real(bz)
  
  return  b, u, bz, uz
-
+"""
 
 def rotating_solution( params, time, order ):
 
@@ -319,6 +323,7 @@ def rotating_solution( params, time, order ):
  phi3 = - (1. + 1j*np.sqrt(3.)) * beta / (6.*2.**(1./3.)) +  \
          (1. - 1j*np.sqrt(3.)) * (a4**2. + 3.*a2) / (3.*2**(2./3.)*beta) - 1j*a4/3. 
 
+ # ADD FUNCTION HERE THAT DETERMINES IF THE GRID IS APPROPRIATE
  """
  ups = kap**2.*nu*( np.sqrt(phi2*phi3)*phi1 + np.sqrt(phi1*phi3)*phi2 + \
                     np.sqrt(phi1*phi2)*phi3 ) + 1j*kap*nu*omg*( np.sqrt(phi1*phi2) + \
@@ -436,11 +441,11 @@ def rotating_solution( params, time, order ):
      # subtract the geostropphic component of v; means the wall moves in the along-slope direction
 
  # dimensional output:
- if order < 1.:
+ if order < 1:
    return np.real(b), np.real(u), np.real(v)
- if order == 1.:
+ if order == 1:
    return np.real(b), np.real(u), np.real(v), np.real(bz), np.real(uz), np.real(vz)
- if order == 2.:
+ if order == 2:
    return np.real(b), np.real(u), np.real(v), np.real(bz), np.real(uz), np.real(vz), np.real(bzz), np.real(uzz), np.real(vzz)
 
 

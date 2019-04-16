@@ -1,8 +1,6 @@
 
 # Bryan Kaiser
-# 3/  /2019
 
-# rotating vs. non-rotating phase relationships: one is not correct! 
 
 import h5py
 import numpy as np
@@ -12,7 +10,10 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import scipy   
 from scipy import signal
-import functions as fn
+#import functions_old as fn
+import sys
+sys.path.insert(0, '/path/to/application/app/folder')
+import functions_old as fn
 
 figure_path = "./figures/"
 
@@ -76,7 +77,6 @@ time = 0.
 for n in range(0,Nt):
 
   t[n] = time # non-dimensional time, time = [0,2pi]
-  #b[:,n],u[:,n],bz[:,n],uz[:,n] = fn.nonrotating_solution( params, time )
   br[:,n], ur[:,n], vr[:,n], bzr[:,n], uzr[:,n], vzr[:,n] , bzzr[:,n], uzzr[:,n], vzzr[:,n] = fn.rotating_solution( params, time, 2 ) 
   
   timed = time*params['Td']/(2.*np.pi) # s, dimensional time

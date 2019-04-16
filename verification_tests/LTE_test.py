@@ -12,9 +12,12 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import scipy
 from scipy import signal
+import sys
+sys.path.insert(0, '/path/to/application/app/folder')
 import functions as fn
 
-figure_path = "./figures/"
+#figure_path = "./figures/"
+figure_path = './verification_tests/figures/LTE_test/'
 
 
 # =============================================================================
