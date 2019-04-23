@@ -220,9 +220,10 @@ def rk4( params , time , Phin , count , plot_flag , case_flag ):
       plt.title(r"t/T = %.4f, step = %i" %(time/params['T'],count),fontsize=13)
       plt.savefig(plotname,format="png"); plt.close(fig);
 
-    inv_psi = np.linalg.inv( partial_zz(  params['z'] , 'thom' , 'dirchlet' ) ) # dimensional
-    dzz_zeta = partial_zz( params['z'] , 'thom' , 'dirchlet' ) # dimensional
-    #Nz = int(params['Nz'])
+    dzz_zeta = fn.diff_matrix( params , 'open' , 'dirchlet' , diff_order=2 , stencil_size=3 ) 
+    # dzz_zeta: could try neumann LBC. Upper BC irrotational
+    inv_psi = np.linalg.inv( fn.diff_matrix( params , 'thom' , 'dirchlet' , diff_order=2 , stencil_size=3 ) )
+    # inv_psi: lower BCs are no-slip, impermiable, upper BC is impermiable.
     eye_matrix = np.eye( params['Nz'] , params['Nz'] , 0 , dtype=complex )
     A = np.zeros( [int(params['Nz']),int(params['Nz'])] , dtype=complex ) 
     #print(np.shape(u*1j*params['k0']* eye_matrix))
@@ -864,6 +865,10 @@ def diff_matrix( params , lower_BC_flag , upper_BC_flag , diff_order , stencil_s
      l5 = l5 + l1
      l6 = l6 + l0
      pzz[0,0:3] = [l4, l5, l6]
+   if lower_BC_flag == 'open':
+     l0, l1, l2, l3, l4 = fornberg_weights(z[0], z[0:5], diff_order)[:, diff_order]
+     pzz[0,0:5] = [l0, l1, l2, l3, l4]
+
 
    # upper (far field) BC 
    if upper_BC_flag == 'dirchlet':

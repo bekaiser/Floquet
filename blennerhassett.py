@@ -20,7 +20,7 @@ figure_path = "./figures/"
 
 T = 2.*np.pi # radians, non-dimensional period
 Td = 44700. # s, M2 tide period
-Nz = 50 # number of grid points
+Nz = 100 # number of grid points
 grid_flag = 'cosine' # 'uniform' 
 wall_flag = 'moving' 
 #H = 1. # non-dimensional domain height (L is the lengthscale)
@@ -32,10 +32,10 @@ omg = 2.*np.pi/44700. # rads/s
 #ReS = 1190 # 1192.8307471060361
 k0 = 0.35+0.j # non-dimensional wavenumber
 dS = np.sqrt(2.*nu/omg) # Stokes' 2nd problem BL thickness
-Hd = 5.*dS # m, dimensional domain height (arbitrary choice)
+Hd = 50.*dS # m, dimensional domain height (arbitrary choice)
 Ngrid = 1
 #ReS = np.linspace(1200.,2400.,num=Ngrid,endpoint=True)
-ReS = np.array([400.])
+ReS = np.array([200.])
 #tht = np.linspace(0.5,1.5,num=Ngrid,endpoint=True)*(2.*np.pi/180.)
 CFL = 0.5
 

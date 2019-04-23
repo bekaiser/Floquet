@@ -12,7 +12,7 @@ figure_path = './verification_tests/figures/discretization_test/'
 
 
 # SET A THRESHOLD
-
+# DO OPEN BC CHECK!
 
 # add uniform case with known coefficients
 # problem with case 3 second derivative, lower BC
@@ -57,7 +57,10 @@ Linfpc3f = np.zeros([Ng])
 Linfp3FBf = np.zeros([Ng]) # infinity norm, Poisson solution, uniform grid
 Linfpc3FBf = np.zeros([Ng]) # infinity norm, Poisson solution, cosine grid
 
-output_plot_no = 7
+Linf10a = np.zeros([Ng])
+Linf10b = np.zeros([Ng])
+
+output_plot_no = 6
  
 H = 1.0 # domain height
 Hd = H*3
@@ -128,10 +131,12 @@ for n in range(0, Ng):
     p[:,0] = U0*np.cos(q*z) - U0
     pz[:,0] = -U0*q*np.sin(q*z) 
     pzz[:,0] = -U0*q**2.*np.cos(q*z) 
+    #zetazz = np.zeros([Nz,1]); zeta[:,0] = U0*q**4.*np.cos(q*z)
     pc = np.zeros([Nz,1]); pzc = np.zeros([Nz,1]); pzzc = np.zeros([Nz,1])
     pc[:,0] = U0*np.cos(q*zc) - U0
     pzc[:,0] = -U0*q*np.sin(q*zc) 
     pzzc[:,0] = -U0*q**2.*np.cos(q*zc)
+    #zetazzc = np.zeros([Nz,1]); zetac[:,0] = U0*q**4.*np.cos(q*zc)
     """
     p = np.zeros([Nz,1]); pz = np.zeros([Nz,1]); pzz = np.zeros([Nz,1])
     p[:,0] = U0*( np.cos(q*z) - np.cos(2.*q*z) )
@@ -142,53 +147,77 @@ for n in range(0, Ng):
     pzc[:,0] = -U0*q*( np.sin(q*zc) - 2.*np.sin(2.*q*zc) )
     pzzc[:,0] = -U0*q**2.*( np.cos(q*zc) - 4.*np.cos(2.*q*zc) )
     """    
+     
+    m2 = 5*2.*np.pi/(4.*Hd)
+    # case 4: zero at z=H at lowest order
+    zeta = np.zeros([Nz,1]); zetazz = np.zeros([Nz,1])
+    zetac = np.zeros([Nz,1]); zetazzc = np.zeros([Nz,1])
+    zeta[:,0] = U0*np.cos(m2*z) #U0*(np.cos(z-np.pi) - np.sin(2.*z))
+    zetazz[:,0] = -U0*m2**2.*np.cos(m2*z) #U0*(np.cos(z) + 4.*np.sin(2.*z))
+    zetac[:,0] = U0*np.cos(m2*zc) #U0*(np.cos(zc-np.pi) - np.sin(2.*zc))
+    zetazzc[:,0] = -U0*m2**2.*np.cos(m2*zc) #U0*(np.cos(zc) + 4.*np.sin(2.*zc))
 
     if n == output_plot_no:
   
         plotname = figure_path + 'analytical_solutions.png'
         fig = plt.figure(figsize=(18,10))
-        plt.subplot(2,3,3)
+        plt.subplot(2,4,3)
         plt.plot(p/U0,z,'b',label=r"$\psi$")
         plt.plot(pz/(q*U0),z,'k',label=r"$\psi_z$")
         plt.plot(pzz/(q**2.*U0),z,'--r',label=r"$\psi_{zz}$")
+        #plt.plot(zetazz/(q**4.*U0),z,'--b',label=r"$\zeta_{zz}$")
         plt.ylabel(r"$z$",fontsize=13)
         plt.title(r"uniform grid, case 3",fontsize=13)
         plt.grid(); plt.legend(loc=3,fontsize=13)
-        plt.subplot(2,3,6)
+        plt.subplot(2,4,7)
         plt.plot(pc/U0,zc,'b',label=r"$\psi$")
         plt.plot(pzc/(q*U0),zc,'k',label=r"$\psi_z$")
         plt.plot(pzzc/(q**2.*U0),zc,'--r',label=r"$\psi_{zz}$")
+        #plt.plot(zetazzc/(q**4.*U0),zc,'--b',label=r"$\zeta_{zz}$")
         plt.ylabel(r"$z$",fontsize=13)
         plt.title(r"cosine grid, case 3",fontsize=13)
         plt.grid(); plt.legend(loc=3,fontsize=13)
-        plt.subplot(2,3,2)
+        plt.subplot(2,4,2)
         plt.plot(b/U0,z,'b',label=r"$b$")
         plt.plot(bz/(q*U0),z,'k',label=r"$b_z$")
         plt.plot(bzz/(q**2.*U0),z,'--r',label=r"$b_{zz}$")
         plt.ylabel(r"$z$",fontsize=13)
         plt.title(r"uniform grid, case 2",fontsize=13)
         plt.grid(); plt.legend(loc=3,fontsize=13)
-        plt.subplot(2,3,5)
+        plt.subplot(2,4,6)
         plt.plot(bc/U0,zc,'b',label=r"$b$")
         plt.plot(bzc/(q*U0),zc,'k',label=r"$b_z$")
         plt.plot(bzzc/(q**2.*U0),zc,'--r',label=r"$b_{zz}$")
         plt.ylabel(r"$z$",fontsize=13)
         plt.title(r"cosine grid, case 2",fontsize=13)
         plt.grid(); plt.legend(loc=3,fontsize=13)
-        plt.subplot(2,3,1)
+        plt.subplot(2,4,1)
         plt.plot(u/U0,z,'b',label=r"$u$")
         plt.plot(uz/(m*U0),z,'k',label=r"$u_z$")
         plt.plot(uzz/(m**2.*U0),z,'--r',label=r"$u_{zz}$")
         plt.ylabel(r"$z$",fontsize=13)
         plt.title(r"uniform grid, case 1",fontsize=13)
         plt.grid(); plt.legend(loc=3,fontsize=13)
-        plt.subplot(2,3,4)
+        plt.subplot(2,4,5)
         plt.plot(uc/U0,zc,'b',label=r"$u$")
         plt.plot(uzc/(m*U0),zc,'k',label=r"$u_z$")
         plt.plot(uzzc/(m**2.*U0),zc,'--r',label=r"$u_{zz}$")
         plt.ylabel(r"$z$",fontsize=13)
         plt.title(r"cosine grid, case 1",fontsize=13)
         plt.grid(); plt.legend(loc=3,fontsize=13)
+        plt.subplot(2,4,4)
+        plt.plot(zeta/U0,z,'b',label=r"$\zeta$")
+        plt.plot(zetazz/(U0*m2**2.),z,'--r',label=r"$\zeta_{zz}$")
+        plt.ylabel(r"$z$",fontsize=13)
+        plt.title(r"uniform grid, case 4",fontsize=13)
+        plt.grid(); plt.legend(loc=3,fontsize=13)
+        plt.subplot(2,4,8)
+        plt.plot(zetac/U0,zc,'b',label=r"$\zeta$")
+        plt.plot(zetazzc/(U0*m2**2.),zc,'--r',label=r"$\zeta_{zz}$")
+        plt.ylabel(r"$z$",fontsize=13)
+        plt.title(r"cosine grid, case 4",fontsize=13)
+        plt.grid(); plt.legend(loc=3,fontsize=13)
+
         plt.savefig(plotname,format="png"); plt.close(fig);
 
     # case 1:
@@ -224,6 +253,9 @@ for n in range(0, Ng):
     pzz0c = np.dot( fn.partial_zz( paramsc , 'robin' , case3_upper_BC ) , pc ) # cosine grid   (use 'open','dirchlet' for vorticity)
     pzz0f = np.dot( fn.diff_matrix( params , 'thom' , case3_upper_BC , diff_order=2 , stencil_size=3 ) , p ) # uniform grid
     pzz0cf = np.dot( fn.diff_matrix( paramsc , 'thom' , case3_upper_BC , diff_order=2 , stencil_size=3 ) , pc ) # cosine grid
+
+    zetazz0 = np.dot( fn.diff_matrix( params , 'open' , case3_upper_BC , diff_order=2 , stencil_size=3 ) , zeta ) # uniform grid
+    zetazz0c = np.dot( fn.diff_matrix( paramsc , 'open' , case3_upper_BC , diff_order=2 , stencil_size=3 ) , zetac ) # cosine grid
 
     # Poisson equation solution: (the backward derivative needs mean information, hence the robin BC)
     p0 =  np.dot( np.linalg.inv( fn.partial_zz(  params , 'robin' , case3_upper_BC ) ) , pzz  ) # uniform grid
@@ -392,7 +424,33 @@ for n in range(0, Ng):
         plt.grid(); #plt.legend(loc=1,fontsize=13)
         plt.savefig(plotname,format="png"); plt.close(fig);
 
- 
+        plotname = figure_path + 'second_derivative_solutions_case4.png'
+        fig = plt.figure(figsize=(10,10))
+        plt.subplot(2,2,1)
+        plt.plot(zetazz/(U0),z,'k',label=r"analytical")
+        plt.plot(zetazz0/(U0),z,'--r',label=r"computed")
+        plt.ylabel(r"$z$",fontsize=13)
+        plt.title(r"uniform grid, case 4, N = %i" %(Nz),fontsize=13)
+        plt.grid(); plt.legend(loc=2,fontsize=13)
+        plt.subplot(2,2,2)
+        plt.plot(zetazzc/(U0),zc,'k',label=r"analytical")
+        plt.plot(zetazz0c/(U0),zc,'--r',label=r"computed")
+        plt.ylabel(r"$z$",fontsize=13)
+        plt.title(r"cosine grid, case 4, N = %i" %(Nz),fontsize=13)
+        plt.grid(); plt.legend(loc=2,fontsize=13)
+        plt.subplot(2,2,3)
+        plt.semilogx(abs(zetazz-zetazz0)/abs(U0),z,'k')
+        plt.ylabel(r"$z$",fontsize=13)
+        plt.title(r"uniform grid, case 4, N = %i" %(Nz),fontsize=13)
+        plt.grid(); 
+        plt.subplot(2,2,4)
+        plt.semilogx(abs(zetazzc-zetazz0c)/abs(U0),zc,'k')
+        plt.ylabel(r"$z$",fontsize=13)
+        plt.title(r"cosine grid, case 4, N = %i" %(Nz),fontsize=13)
+        plt.grid(); 
+        plt.savefig(plotname,format="png"); plt.close(fig); 
+
+
         plotname = figure_path + 'second_derivative_solutions.png'
         fig = plt.figure(figsize=(18,20))
         plt.subplot(4,4,1)
@@ -524,6 +582,9 @@ for n in range(0, Ng):
     Linf23f[n] = np.amax(abs(pzz-pzz0f)/abs(q**2.*U0)) 
     Linf2c3f[n] = np.amax(abs(pzzc-pzz0cf)/abs(q**2.*U0))
 
+    Linf10a[n] = np.amax(abs(zetazz-zetazz0)/abs(m2**2.*U0)) 
+    Linf10b[n] = np.amax(abs(zetazzc-zetazz0c)/abs(m2**2.*U0))
+
 plotname = figure_path + 'poisson_error_curves.png'
 fig = plt.figure(figsize=(24,8))
 plt.subplot(1,3,1)
@@ -605,32 +666,39 @@ plt.savefig(plotname,format="png"); plt.close(fig);
 
 plotname = figure_path + 'second_derivative_error_curve.png'
 fig = plt.figure(figsize=(30,8))
-plt.subplot(1,4,1)
+plt.subplot(1,5,1)
 plt.loglog(Nr,Linf2,'r',label=r"uniform")
 plt.loglog(Nr,Linf2c,'b',label=r"cosine")
 plt.xlabel(r"$N$ grid points",fontsize=13)
 plt.ylabel(r"L$_\infty$ error",fontsize=13)
 plt.title(r"case 1",fontsize=13)
 plt.grid(); plt.legend(loc=1,fontsize=13)
-plt.subplot(1,4,2)
+plt.subplot(1,5,2)
 plt.loglog(Nr,Linf22,'r',label=r"uniform")
 plt.loglog(Nr,Linf2c2,'b',label=r"cosine")
 plt.xlabel(r"$N$ grid points",fontsize=13)
 plt.ylabel(r"L$_\infty$ error",fontsize=13)
 plt.title(r"case 2",fontsize=13)
 plt.grid(); plt.legend(loc=1,fontsize=13)
-plt.subplot(1,4,3)
+plt.subplot(1,5,3)
 plt.loglog(Nr,Linf23,'r',label=r"uniform")
 plt.loglog(Nr,Linf2c3,'b',label=r"cosine")
 plt.xlabel(r"$N$ grid points",fontsize=13)
 plt.ylabel(r"L$_\infty$ error",fontsize=13)
 plt.title(r"case 3, Robin z=0 BC",fontsize=13)
 plt.grid(); plt.legend(loc=1,fontsize=13)
-plt.subplot(1,4,4)
+plt.subplot(1,5,4)
 plt.loglog(Nr,Linf23f,'r',label=r"uniform")
 plt.loglog(Nr,Linf2c3f,'b',label=r"cosine")
 plt.xlabel(r"$N$ grid points",fontsize=13)
 plt.ylabel(r"L$_\infty$ error",fontsize=13)
 plt.title(r"case 3, Thom z=0 BC",fontsize=13)
+plt.grid(); plt.legend(loc=1,fontsize=13)
+plt.subplot(1,5,5)
+plt.loglog(Nr,Linf10a,'r',label=r"uniform")
+plt.loglog(Nr,Linf10b,'b',label=r"cosine")
+plt.xlabel(r"$N$ grid points",fontsize=13)
+plt.ylabel(r"L$_\infty$ error",fontsize=13)
+plt.title(r"case 4, open z=0 BC",fontsize=13)
 plt.grid(); plt.legend(loc=1,fontsize=13)
 plt.savefig(plotname,format="png"); plt.close(fig);
