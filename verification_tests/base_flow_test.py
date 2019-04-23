@@ -16,7 +16,7 @@ sys.path.insert(0, '/path/to/application/app/folder')
 import functions_old as fn
 
 figure_path = "./figures/"
-
+figure_path = './verification_tests/figures/base_flow_test/'
 
 # =============================================================================
 

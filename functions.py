@@ -706,6 +706,9 @@ def partial_zz( params , lower_BC_flag , upper_BC_flag ):
  if lower_BC_flag == 'robin':
    l0, l1, l2, l3 = weights2( -z[1] , -z[0] , z[0] , z[1] , zj ) 
    pzz[0,0:2] = [ l1 + l2 , l3 - l0 ] # combined Neumann and Dirchlet at z = 0
+ #if lower_BC_flag == 'thom':
+ #  l0, l1, l2, l3 = weights2( -z[1] , -z[0] , z[0] , z[1] , zj ) 
+ #  pzz[0,0:2] = [ l1 + l2 , l3 - l0 ] # combined Neumann and Dirchlet at z = 0
    
  # upper (far field) BC
  zj = z[Nz-1] # location of derivative for upper BC
@@ -784,6 +787,154 @@ def weights( z0 , z1 , z2 , z3 , zj ):
       1./(z3-z1) * (zj-z0)/(z3-z0) * (zj-z2)/(z3-z2) + \
       1./(z3-z2) * (zj-z0)/(z3-z0) * (zj-z1)/(z3-z1)
  return l0, l1, l2, l3
+
+
+def fornberg_weights(z,x,m):
+# From Bengt Fornbergs (1998) SIAM Review paper.
+#  	Input Parameters
+#	z location where approximations are to be accurate,
+#	x(0:nd) grid point locations, found in x(0:n)
+#	n one less than total number of grid points; n must
+#	not exceed the parameter nd below,
+#	nd dimension of x- and c-arrays in calling program
+#	x(0:nd) and c(0:nd,0:m), respectively,
+#	m highest derivative for which weights are sought,
+#	Output Parameter
+#	c(0:nd,0:m) weights at grid locations x(0:n) for derivatives
+#	of order 0:m, found in c(0:n,0:m)
+#      	dimension x(0:nd),c(0:nd,0:m)
+
+  n = np.shape(x)[0]-1
+  c = np.zeros([n+1,m+1])
+  c1 = 1.0
+  c4 = x[0]-z
+  for k in range(0,m+1):  
+    for j in range(0,n+1): 
+      c[j,k] = 0.0
+  c[0,0] = 1.0
+  for i in range(0,n+1):
+    mn = min(i,m)
+    c2 = 1.0
+    c5 = c4
+    c4 = x[i]-z
+    for j in range(0,i):
+      c3 = x[i]-x[j]
+      c2 = c2*c3
+      if (j == i-1):
+        for k in range(mn,0,-1): 
+          c[i,k] = c1*(k*c[i-1,k-1]-c5*c[i-1,k])/c2
+      c[i,0] = -c1*c5*c[i-1,0]/c2
+      for k in range(mn,0,-1):
+        c[j,k] = (c4*c[j,k]-k*c[j,k-1])/c3
+      c[j,0] = c4*c[j,0]/c3
+    c1 = c2
+  return c
+
+
+def diff_matrix( params , lower_BC_flag , upper_BC_flag , diff_order , stencil_size ):
+ # uses ghost nodes for dirchlet/neumann/thom bcs.
+ # make stencil size odd!
+ # no interpolation
+ z = params['z']*params['Hd']
+ Nz = params['Nz']
+ H = params['Hd']
+ #wall_flag = params['wall_flag']
+
+ if stencil_size == 3:
+   Dm1 = np.zeros([Nz-1])
+   D0 = np.zeros([Nz])
+   Dp1 = np.zeros([Nz-1])
+   for j in range(1,Nz-1):
+     Dm1[j-1],D0[j],Dp1[j] = fornberg_weights(z[j],z[j-1:j+2],diff_order)[:,diff_order]
+   pzz = np.diag(Dp1,k=1) + np.diag(Dm1,k=-1) + np.diag(D0,k=0) 
+
+   # lower (wall) BC sets variable to zero at the wall
+   if lower_BC_flag == 'dirchlet':
+     l0, l1, l2, l3 = fornberg_weights(z[0], np.append(-z[0],z[0:3]) ,diff_order)[:,diff_order]
+     l1 = l1 - l0 # Dirchlet phi=0 at z=0 (sets phi_ghost = -phi_0)
+     pzz[0,0:3] = [ l1 , l2 , l3 ]
+   if lower_BC_flag == 'neumann':
+     l0, l1, l2, l3 = fornberg_weights(z[0], np.append(-z[0],z[0:3]) ,diff_order)[:,diff_order]
+     l1 = l1 + l0 # Neumann for dz(phi)=0 at z=0 (sets phi_ghost = phi_0)
+     pzz[0,0:3] = [ l1 , l2 , l3 ]
+   if lower_BC_flag == 'thom':
+     l0, l1, l2, l3, l4, l5, l6 = fornberg_weights(z[0], np.append(-z[2],np.append(-z[1],np.append(-z[0],np.append(0.,z[0:3])))), diff_order)[:, diff_order]
+     l3 = 0.
+     l4 = l4 + l2
+     l5 = l5 + l1
+     l6 = l6 + l0
+     pzz[0,0:3] = [l4, l5, l6]
+
+   # upper (far field) BC 
+   if upper_BC_flag == 'dirchlet':
+     l0, l1, l2, l3, l4, l5 = fornberg_weights(z[Nz-1], np.append(z[Nz-5:Nz],H) ,diff_order)[:,diff_order]
+     pzz[Nz-1,Nz-5:Nz] = [ l0, l1, l2, l3, l4 ] # effectively sets l5, the variable at the boundary, to zero, without zeroing out the gradient.
+   if upper_BC_flag == 'neumann':
+     l0, l1, l2, l3 = fornberg_weights(z[Nz-1], np.append(z[Nz-3:Nz],H + (H-z[Nz-1])) ,diff_order)[:,diff_order]
+     l2 = l3 + l2 # Neumann for dz(phi)=0 at z=H (sets phi_ghost = phi_N)
+     pzz[Nz-1,Nz-3:Nz] = [ l0 , l1 , l2 ]
+   if upper_BC_flag == 'thom':
+     l0, l1, l2, l3, l4, l5, l6 = fornberg_weights(z[Nz-1], np.append(z[Nz-3:Nz],np.append(H,np.append(np.append(H + (H-z[Nz-1]),H+(H-z[Nz-2])),H+(H-z[Nz-3])))) ,diff_order)[:,diff_order]
+     l3 = 0.
+     l2 = l2 + l4 # Dirchlet phi=0 at z=H (sets phi_ghost = -phi_N)
+     l1 = l1 + l5
+     l0 = l0 + l6
+     pzz[Nz-1,Nz-3:Nz] = [ l0 , l1 , l2 ]
+
+
+ """
+ if stencil_size == 5:
+   Dm2 = np.zeros([Nz-2])
+   Dm1 = np.zeros([Nz-1])
+   D0 = np.zeros([Nz])
+   Dp1 = np.zeros([Nz-1])
+   Dp2 = np.zeros([Nz-2])
+   for j in range(2,Nz-2):
+     Dm2[j-2],Dm1[j-1],D0[j],Dp1[j],Dp2[j] = fornberg_weights(z[j],z[j-2:j+3],diff_order)[:,diff_order]
+   pzz = np.diag(Dp2,k=2) + np.diag(Dp1,k=1) + np.diag(D0,k=0) + np.diag(Dm1,k=-1) + np.diag(Dm2,k=-2) 
+ 
+
+   # lower (wall) BC sets variable to zero at the wall
+   l0, l1, l2, l3, l4, l5 = fornberg_weights(z[0], np.append(-z[0],z[0:5]) ,diff_order)[:,diff_order]
+   if lower_BC_flag == 'dirchlet':
+     l1 = l1 - l0 # Dirchlet phi=0 at z=0 (sets phi_ghost = -phi_0)
+   if lower_BC_flag == 'neumann':
+     l1 = l1 + l0 # Neumann for dz(phi)=0 at z=0 (sets phi_ghost = phi_0)
+   pzz[0,0:5] = [ l1 , l2 , l3, l4 , l5 ]
+   # lower (wall) BC sets variable to zero at the wall
+   l0, l1, l2, l3, l4, l5 = fornberg_weights(z[1], np.append(-z[0],z[0:5]) ,diff_order)[:,diff_order]
+   if lower_BC_flag == 'dirchlet':
+     l1 = l1 - l0 # Dirchlet phi=0 at z=0 (sets phi_ghost = -phi_0)
+   if lower_BC_flag == 'neumann':
+     l1 = l1 + l0 # Neumann for dz(phi)=0 at z=0 (sets phi_ghost = phi_0)
+   pzz[1,0:5] = [ l1 , l2 , l3, l4 , l5 ]
+   # upper (far field) BC
+   l0, l1, l2, l3, l4, l5 = fornberg_weights(z[Nz-1], np.append(z[Nz-5:Nz],H + (H-z[Nz-1])) ,diff_order)[:,diff_order]
+   if upper_BC_flag == 'dirchlet':
+     l4 = l4 - l5 # Dirchlet phi=0 at z=H (sets phi_ghost = -phi_N)
+   if upper_BC_flag == 'neumann':
+     l4 = l4 + l5 # Neumann for dz(phi)=0 at z=H (sets phi_ghost = phi_N)
+   pzz[Nz-1,Nz-5:Nz] = [ l0 , l1 , l2 , l3 , l4 ]
+   # upper (far field) BC
+   l0, l1, l2, l3, l4, l5 = fornberg_weights(z[Nz-2], np.append(z[Nz-5:Nz],H + (H-z[Nz-1])) ,diff_order)[:,diff_order]
+   if upper_BC_flag == 'dirchlet':
+     l4 = l4 - l5 # Dirchlet phi=0 at z=H (sets phi_ghost = -phi_N)
+   if upper_BC_flag == 'neumann':
+     l4 = l4 + l5 # Neumann for dz(phi)=0 at z=H (sets phi_ghost = phi_N)
+   pzz[Nz-2,Nz-5:Nz] = [ l0 , l1 , l2 , l3 , l4 ]
+ """
+
+ return pzz
+
+
+
+
+
+
+
+
+
+
 
 #==============================================================================
 # error related functions

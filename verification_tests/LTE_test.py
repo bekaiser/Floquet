@@ -39,7 +39,7 @@ for m in range(0,np.shape(M)[0]):
 
  Nt = int(M[m]) 
  dt = T/Nt
- print(Nt,dt)
+ #print(Nt,dt)
  dT[m] = dt
 
  Phin = np.eye(int(2),int(2),0,dtype=complex)
