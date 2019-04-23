@@ -33,8 +33,8 @@ for j in range(0,3):
 print('Verifying that discrete derivatives are consistent with the laminar flow')
 runpy.run_path('./verification_tests/base_flow_test.py')
 """
-print('Verifying that the discrete derivatives are computed properly')
-runpy.run_path('./verification_tests/discretization_test.py')
+#print('Verifying that the discrete derivatives are computed properly')
+#runpy.run_path('./verification_tests/discretization_test.py')
 """
 print('Verifying the global truncation error curve for Runge-Kutta 4th-order time stepper')
 runpy.run_path('./verification_tests/GTE_test.py')
