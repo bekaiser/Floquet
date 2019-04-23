@@ -220,8 +220,8 @@ def rk4( params , time , Phin , count , plot_flag , case_flag ):
       plt.title(r"t/T = %.4f, step = %i" %(time/params['T'],count),fontsize=13)
       plt.savefig(plotname,format="png"); plt.close(fig);
 
-    inv_psi = np.linalg.inv( partial_zz(  params['z'] , 'robin' , 'dirchlet' ) ) # dimensional
-    dzz_zeta = partial_zz( params['z'] , 'open' , 'dirchlet' ) # dimensional
+    inv_psi = np.linalg.inv( partial_zz(  params['z'] , 'thom' , 'dirchlet' ) ) # dimensional
+    dzz_zeta = partial_zz( params['z'] , 'thom' , 'dirchlet' ) # dimensional
     #Nz = int(params['Nz'])
     eye_matrix = np.eye( params['Nz'] , params['Nz'] , 0 , dtype=complex )
     A = np.zeros( [int(params['Nz']),int(params['Nz'])] , dtype=complex ) 
