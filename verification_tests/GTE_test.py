@@ -46,7 +46,7 @@ for m in range(0,np.shape(M)[0]):
  Nt = int(M[m]) 
  dt = T/Nt
  dt2 = T2/Nt
- print(Nt,dt)
+ #print(Nt,dt)
  dT[m] = dt
  dT2[m] = dt2
 
@@ -79,6 +79,19 @@ for m in range(0,np.shape(M)[0]):
  percent_diff_1 = abs((wH[0]-wOPH[0]))/abs(1./2.*(wH[0]+wOPH[0]))*100.
  percent_diff_2 = abs((wH[1]-wOPH[1]))/abs(1./2.*(wH[1]+wOPH[1]))*100.
  Ldiff[m] = np.amax([percent_diff_1,percent_diff_2])
+
+check_flag = 0
+if Ldiff[3] < 7.5e-06:
+    check_flag = check_flag + 1
+
+if Linf[3] < 9.9e-14:
+    check_flag = check_flag + 1
+
+if check_flag == 2:
+     print('\n :) Global temporal discretization error sufficient \n for Mathieu equation & simple example\n') 
+else:
+     print('\n ERROR: Global temporal discretization not sufficient \n for Mathieu equation & simple example\n') 
+
 
 plotname = figure_path +'GTE_loglog.png' 
 plottitle = r"Floquet multiplier % GTE, for $\alpha=0.5,\beta=0.1$" 

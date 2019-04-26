@@ -1,6 +1,21 @@
 #
 # Bryan Kaiser
 
+# add deletion of plots
+# check analytical solutions
+# check non-dim of analytical consistent with full equation
+# check RK4 for 2 pi vs. T
+# make poisson and derivative matrixes ahead of time
+
+
+
+
+
+# go through whole loop, checking dimensionalization (match document, compute dimensionally?)
+  #make sure analytical solutions are non-dimmed the same way
+
+
+
 
 import h5py
 import numpy as np
@@ -18,26 +33,23 @@ figure_path = "./figures/"
 # =============================================================================
 
 
+# set this up like stokes problem test:
+
 T = 2.*np.pi # radians, non-dimensional period
 Td = 44700. # s, M2 tide period
 Nz = 100 # number of grid points
 grid_flag = 'cosine' # 'uniform' 
 wall_flag = 'moving' 
-#H = 1. # non-dimensional domain height (L is the lengthscale)
 z,dz = fn.grid_choice( grid_flag , Nz , 1. ) # non-dimensional grid
-# fixed variables
 nu = 1.e-6 # m^2/s
-omg = 2.*np.pi/44700. # rads/s
-# variables to loop over:
-#ReS = 1190 # 1192.8307471060361
-k0 = 0.35+0.j # non-dimensional wavenumber
+omg = 2.*np.pi/Td # rads/s
+k0 = 0.1+0.j # non-dimensional wavenumber
 dS = np.sqrt(2.*nu/omg) # Stokes' 2nd problem BL thickness
-Hd = 50.*dS # m, dimensional domain height (arbitrary choice)
+Hd = 100.*dS # m, dimensional domain height (arbitrary choice)
 Ngrid = 1
 #ReS = np.linspace(1200.,2400.,num=Ngrid,endpoint=True)
-ReS = np.array([200.])
-#tht = np.linspace(0.5,1.5,num=Ngrid,endpoint=True)*(2.*np.pi/180.)
-CFL = 0.5
+Re = 2.*np.array([800.]) # Blennerhasset Re in brackets
+CFL = 0.25
 
 u_path = '/home/bryan/git_repos/Floquet/figures/base_flow/u/'
 uz_path = '/home/bryan/git_repos/Floquet/figures/base_flow/uz/'
@@ -56,26 +68,23 @@ for i in range(0,1):
     count = count + 1
 
     # dependent variables
-    U = ReS[j] * np.sqrt(nu*omg/2.)
-    L = U/omg
+    U = Re[j] * (nu/dS)
+    L = dS #U/omg
 
     print('non-dimensional period, T = ',T)
     print('dimensional period, Td = ',Td)
-    print('dimensional excursion length, L = ',L)
-    print('Stokes Reynolds number, ReS = ',ReS[j])
+    #print('dimensional excursion length, L = ',L)
+    #print('Stokes Reynolds number, ReS = ',ReS[j])
     print('dimensional domain height, Hd = ',Hd)
     print('oscillation amplitude, U = ',U)
-    print('streamwise perturbation wavenumber, k = ',k0)
+    #print('streamwise perturbation wavenumber, k = ',k0)
     print('Non-dimensional z_max = ',np.amax(z))
     print('Non-dimensional z_min = ',np.amin(z))
 
-    
-    dt1 = CFL * (U**.2/nu*omg) * np.amin(dz)**2.  #CFL = nu * omg * / (U^2) dt/dz**2 
-    dt2 = CFL / (U*np.sqrt(2.*nu*omg)) * np.amin(dz)   # CFL = U*dt/dz = U*sqrt(2*nu*omg) * dt/dz
-    #dt1 = CFL * ReS[j] * np.amin(dz)**2. # non-dimensional diffusion time step limit
-    #dt2 = CFL * np.amin(dz) # non-dimensional advective time step limit
+    dt1 = CFL*np.amin(dz*Hd)/U
+    dt2 = CFL*(np.amin(dz*Hd))**2./ nu
     dt = np.amin([dt1,dt2])
-    Nt = int(T/dt)
+    Nt = int(Td/dt)
     print('Number of time steps, Nt = ',Nt)
 
     params = {'nu': nu, 'omg': omg, 'L':L, 'T': T, 'Td': Td, 'Nt':Nt, 'U': U,  

@@ -11,12 +11,6 @@ import functions as fn
 figure_path = './verification_tests/figures/discretization_test/'
 
 
-# SET A THRESHOLD
-# DO OPEN BC CHECK!
-
-# add uniform case with known coefficients
-# problem with case 3 second derivative, lower BC
-
 
 # =============================================================================
 # loop over Nz resolution Chebyshev node grid
@@ -63,7 +57,7 @@ Linf10b = np.zeros([Ng])
 output_plot_no = 6
  
 H = 1.0 # domain height
-Hd = H*3
+Hd = H*3 # non-dimensional grid scale
 
 for n in range(0, Ng): 
       
@@ -79,9 +73,9 @@ for n in range(0, Ng):
 
     wall_flag = 'null'
     params = {'H': H, 'Hd': Hd, 'Nz':Nz, 'wall_flag':wall_flag, 
-              'z':z, 'dz':dz} # non-dimensional grid for functions
+              'z':z, 'dz':dz, 'grid_scale':Hd} # non-dimensional grid for functions
     paramsc = {'H': H, 'Hd': Hd, 'Nz':Nz, 'wall_flag':wall_flag, 
-               'z':zc, 'dz':dzc} # non-dimensional grid for functions
+               'z':zc, 'dz':dzc, 'grid_scale':Hd} # non-dimensional grid for functions
 
     z = z*Hd
     zc = zc*Hd
@@ -573,7 +567,7 @@ for n in range(0, Ng):
     Linf2c3[n] = np.amax(abs(pzzc-pzz0c)/abs(q**2.*U0))
     Linfp3[n] = np.amax(abs(p-p0)/abs(U0)) 
     Linfpc3[n] = np.amax(abs(pc-p0c)/abs(U0))
-    Linfp3f[n] = np.amax(abs(p-p0f)/abs(U0)) 
+    Linfp3f[n] = np.amax(abs(p-p0f)/abs(U0))  # Poisson with Thom at z=0, Dirchlet at z=H
     Linfpc3f[n] = np.amax(abs(pc-p0cf)/abs(U0))
     Linfp3FB[n] = np.amax(abs(p-p0FB)/abs(U0)) 
     Linfpc3FB[n] = np.amax(abs(pc-p0cFB)/abs(U0))
@@ -582,8 +576,49 @@ for n in range(0, Ng):
     Linf23f[n] = np.amax(abs(pzz-pzz0f)/abs(q**2.*U0)) 
     Linf2c3f[n] = np.amax(abs(pzzc-pzz0cf)/abs(q**2.*U0))
 
-    Linf10a[n] = np.amax(abs(zetazz-zetazz0)/abs(m2**2.*U0)) 
+    Linf10a[n] = np.amax(abs(zetazz-zetazz0)/abs(m2**2.*U0)) # dzz with Dirchlet at z=H, open at z=0
     Linf10b[n] = np.amax(abs(zetazzc-zetazz0c)/abs(m2**2.*U0))
+
+"""
+print(Nr)
+print(Linf10a) 
+print(Linf10b)
+print(Linfp3f)
+print(Linfpc3f)
+"""
+check_flag = 0
+if Linf10a[2] < 2e-3:
+    if Linf10a[3] < 5e-4:
+        if Linf10a[4] < 8e-5:
+            if Linf10a[5] < 2e-5:
+                 if Linf10a[6] < 5e-6:
+                     check_flag = check_flag + 1
+#print(check_flag)
+if Linf10b[2] < 3.1e-3:
+    if Linf10b[3] < 7.5e-4:
+        if Linf10b[4] < 1.9e-4:
+            if Linf10b[5] < 4.7e-5:
+                 if Linf10b[6] < 1.2e-5:
+                     check_flag = check_flag + 1
+#print(check_flag)
+if Linfp3f[2] < 1.7e-3:
+    if Linfp3f[3] < 4.1e-4:
+        if Linfp3f[4] < 1.1e-4:
+            if Linfp3f[5] < 2.6e-5:
+                 if Linfp3f[6] < 6.3e-6:
+                     check_flag = check_flag + 1
+#print(check_flag)
+if Linfpc3f[2] < 2.5e-3:
+    if Linfpc3f[3] < 6.1e-4:
+        if Linfpc3f[4] < 1.6e-4:
+            if Linfpc3f[5] < 3.8e-5:
+                 if Linfpc3f[6] < 9.4e-6:
+                     check_flag = check_flag + 1
+#print(check_flag)
+if check_flag == 4:
+     print('\n :) 2nd derivative and Poisson equation discretization \n working properly for resolutions Nz = [64,1024]\n') 
+else:
+     print('\n ERROR: 2nd derivative and Poisson equation discretization \n not working properly for resolutions Nz = [64,1024]\n') 
 
 plotname = figure_path + 'poisson_error_curves.png'
 fig = plt.figure(figsize=(24,8))

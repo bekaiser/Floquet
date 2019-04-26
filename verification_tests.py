@@ -12,12 +12,14 @@ import os
 import shutil
 import numpy as np
 
+
 # delete old plots:
 folder = ('./verification_tests/figures/discretization_test/',
           './verification_tests/figures/GTE_test/',
-          './verification_tests/figures/LTE_test/')
+          './verification_tests/figures/LTE_test/',
+          './verification_tests/figures/sinusoid_integration_test/')
 
-for j in range(0,3):
+for j in range(0,4):
     for the_file in os.listdir(folder[j]):
         file_path = os.path.join(folder[j], the_file)
         try:
@@ -29,23 +31,25 @@ for j in range(0,3):
 
 
 
-"""
-print('Verifying that discrete derivatives are consistent with the laminar flow')
-runpy.run_path('./verification_tests/base_flow_test.py')
-"""
-print('Verifying that the discrete derivatives are computed properly')
-runpy.run_path('./verification_tests/discretization_test.py')
-"""
-print('Verifying the global truncation error curve for Runge-Kutta 4th-order time stepper')
+# FIX: merely plot? check that the boundary conditions work? 
+#print('Verifying that discrete derivatives are consistent with the laminar flow')
+#runpy.run_path('./verification_tests/base_flow_test.py')
+
+
+print('\nVerifying the global truncation error curve for\n Runge-Kutta 4th-order time stepper:\n')
 runpy.run_path('./verification_tests/GTE_test.py')
 
-print('Verifying the local truncation error curve for Runge-Kutta 4th-order time stepper')
+print('\nVerifying the local truncation error curve for\n Runge-Kutta 4th-order time stepper:\n')
 runpy.run_path('./verification_tests/LTE_test.py')
-"""
 
+print('\nVerifying Runge-Kutta radian time step test:\n')
+runpy.run_path('./verification_tests/sinusoid_integration_test.py')
 
+print('\nVerifying spatial discrete derivatives are computed properly:\n')
+runpy.run_path('./verification_tests/discretization_test.py')
 
-
-
+# takes a long time:
+print('\nVerifying Floquet stability calculation using the Mathieu equation:\n')
+runpy.run_path('./verification_tests/Mathieu_test.py')
 
 

@@ -14,7 +14,7 @@ import scipy
 from scipy import signal
 import functions as fn
 
-figure_path = "./figures/"
+figure_path = "./figures/Mathieu_test/"
 
 
 # =============================================================================
@@ -32,10 +32,11 @@ strutt3 = np.zeros([Ngrid,Ngrid]); strutt4 = np.zeros([Ngrid,Ngrid])
 
 count = 1
 
+print('\nMathieu equation test running...\n')
 for i in range(0,Ngrid):
   for j in range(0,Ngrid):
  
-    print(count)
+    #print(count)
     count = count + 1
 
     paramsH = {'a': a[i], 'b': b[j]} 
@@ -60,6 +61,8 @@ for i in range(0,Ngrid):
     if modOPH[0] < 1. and modOPH[1] < 1.:
       strutt4[j,i] = 1.
 
+
+print('...Mathieu equation test complete!\nInspect output plots in /figures/Mathieu_test to determine \n if Mathieu equation stability was computed properly\n') 
 
 A,B = np.meshgrid(a,b)
 

@@ -99,6 +99,13 @@ def rk4( params , time , Phin , count , plot_flag , case_flag ):
     omg = params['omg']
     A = np.cos(omg*time)
 
+  if case_flag == 'forcing_test2':
+    ustoke = stokes_solution( params, time, 0 )/params['U']
+    #diag0 = np.zeros([int(params['Nz'])],dtype=complex)
+    #for q in range(0,params['Nz']):
+    #  diag0[q] = u[q]
+    A = time*ustoke[3] # solution log(u) = -2pi*np.exp(-z[3]/dS)*cos(z[3]/dS)
+
   if case_flag == 'diffusion': # buoyancy equation diffusion (i.e. the heat equation)
     A = ( partial_zz( params['z'], params['Nz'], params['H'], 'neumann' , 'neumann' )[0] ) / (params['Pr']*params['Re'])
     # non-dimensional diffusion
@@ -156,11 +163,11 @@ def rk4( params , time , Phin , count , plot_flag , case_flag ):
     #uzz = ( rotating_solution( params, time, 2 )[7] ) / params['U'] * params['L']**2. # non-dimensional advection
     #u = np.exp( -params['z']*params['Hd']/params['dS'] ) * np.cos( time - params['z']*params['Hd']/params['dS'] )
     #uzz = - 2.*(params['Hd']/params['dS'])**2. * np.exp( -params['z']*params['Hd']/params['dS'] ) * np.sin( time - params['z']*params['Hd']/params['dS'] )
-    u,uz,uzz = stokes_solution( params, time, 2 ) # dimensional
-    u = u / params['U']
-    uzz = uzz / (2.*params['U']) * params['dS']**2.
+    uS,uzS,uzzS = stokes_solution( params, time, 2 ) # dimensional solutions (input time is [0,2pi])
+    uS = uS / params['U'] # non-dimensional
+    uzzS = uzzS / (params['U']) * params['dS']**2. # non-dimensional
 
-    
+    """
     freq = 10000
     if np.floor(count/freq) == count/freq:
       plotname = params['u_path'] +'%i.png' %(count)
@@ -219,23 +226,15 @@ def rk4( params , time , Phin , count , plot_flag , case_flag ):
       #plt.axis([-1.05,1.05,0.,0.03]); plt.grid()
       plt.title(r"t/T = %.4f, step = %i" %(time/params['T'],count),fontsize=13)
       plt.savefig(plotname,format="png"); plt.close(fig);
+    """
 
-    dzz_zeta = fn.diff_matrix( params , 'open' , 'dirchlet' , diff_order=2 , stencil_size=3 ) 
-    # dzz_zeta: could try neumann LBC. Upper BC irrotational
-    inv_psi = np.linalg.inv( fn.diff_matrix( params , 'thom' , 'dirchlet' , diff_order=2 , stencil_size=3 ) )
-    # inv_psi: lower BCs are no-slip, impermiable, upper BC is impermiable.
-    eye_matrix = np.eye( params['Nz'] , params['Nz'] , 0 , dtype=complex )
+    dzz_zeta = diff_matrix( params , 'neumann' , 'dirchlet' , diff_order=2 , stencil_size=3 ) # non-dimensional
+    # dzz_zeta: could try neumann LBC. Upper BC irrotational (no-stress).
+    inv_psi = np.linalg.inv( diff_matrix( params , 'thom' , 'dirchlet' , diff_order=2 , stencil_size=3 ) ) # non-dimensional
+    # inv_psi: lower BCs are no-slip, impermiable, upper BC is impermiable, free-slip
+    eye_matrix = np.eye( int(params['Nz']) , int(params['Nz']) , 0 , dtype=complex )
     A = np.zeros( [int(params['Nz']),int(params['Nz'])] , dtype=complex ) 
-    #print(np.shape(u*1j*params['k0']* eye_matrix))
-    #print(np.shape(dzz_zeta))
-    #print(np.shape((params['k0']**2.) * eye_matrix))
-    #print(np.shape(uzz*1j*params['k0']* eye_matrix))
-    #print(np.shape(inv_psi))
-    #print(np.shape(A))
-    #A[0:int(params['Nz']),0:int(params['Nz'])] =  -u*1j*params['k0']*eye_matrix
-    
-    # non-dimensionalize dzz_zeta and uzz:
-    A[:,:] = -u*1j*params['k0']*eye_matrix + ( dzz_zeta - (params['k0']**2.) * eye_matrix ) / params['Re'] + np.dot(uzz*1j*params['k0']*eye_matrix,inv_psi)
+    A[:,:] = -uS*1j*params['a']*eye_matrix + ( dzz_zeta - (params['a']**2.) * eye_matrix ) / params['Re'] + np.dot(uzzS*1j*params['a']*eye_matrix,inv_psi)
 
   if case_flag == 'base_flow_test':
     b, u, v, bz, uz, vz, bzz, uzz, vzz = rotating_solution( params, time, 2 ) # dimensional
@@ -427,20 +426,27 @@ def nonrotating_solution( params, time ):
 
 def stokes_solution( params, time, order ):
  # all dimensional: 
- z = params['z']*params['Hd'] # m, dimensional grid
- timed = time*params['Td']/(2.*np.pi) # s, dimensional time
+ zd = params['z']*params['dS'] # m, dimensional grid, zmax ~ Hd
+ #z = params['z']
+ timed = time #*params['Td']/(2.*np.pi) # s, dimensional time
  U = params['U']
  omg = params['omg']
  Nz = params['Nz']
  nu = params['nu']
  #L = params['L']
  Re = params['Re']
-
- dS = np.sqrt(2.*nu/omg)
- u = U * np.exp( -z/dS ) * np.cos( omg*timed - z/dS )
- uz =  U/dS * np.exp( -z/dS ) * ( np.sin( omg*timed - z/dS ) - np.cos( omg*timed - z/dS ) )
- uzz = - 2.*U/(dS**2.) * np.exp( -z/dS ) * np.sin( omg*timed - z/dS ) 
-
+ dS = params['dS']
+ #dS = np.sqrt(2.*nu/omg)
+ #print(omg*timed)
+ #print(omg*timed)
+ u = U * np.exp( -zd/dS ) * np.cos( omg*timed - zd/dS )
+ uz =  U/dS * np.exp( -zd/dS ) * ( np.sin( omg*timed - zd/dS ) - np.cos( omg*timed - zd/dS ) )
+ uzz = - 2.*U/(dS**2.) * np.exp( -zd/dS ) * np.sin( omg*timed - zd/dS ) 
+ """
+ u = U * np.exp( -z ) * np.cos( omg*timed - z )
+ uz =  U/dS * np.exp( -z ) * ( np.sin( omg*timed - z ) - np.cos( omg*timed - z ) )
+ uzz = - 2.*U/(dS**2.) * np.exp( -z ) * np.sin( omg*timed - z ) 
+ """
  if order < 1:
    return np.real(u)
  if order == 1:
@@ -836,9 +842,9 @@ def diff_matrix( params , lower_BC_flag , upper_BC_flag , diff_order , stencil_s
  # uses ghost nodes for dirchlet/neumann/thom bcs.
  # make stencil size odd!
  # no interpolation
- z = params['z']*params['Hd']
+ z = params['z'] # non-dimensional
  Nz = params['Nz']
- H = params['Hd']
+ H = params['H'] #params['grid_scale']
  #wall_flag = params['wall_flag']
 
  if stencil_size == 3:

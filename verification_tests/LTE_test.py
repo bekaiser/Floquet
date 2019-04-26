@@ -62,6 +62,15 @@ for m in range(0,np.shape(M)[0]):
  percent_error_mu2OP = abs((wOP[1]-wa[1]))/abs(wa[1])*100.
  LinfOP[m] = np.amax([percent_error_mu1OP,percent_error_mu2OP])
 
+check_flag = 0
+if Linf[2] < 2.7e-12:
+    check_flag = check_flag + 1
+
+if check_flag == 1:
+     print('\n :) Local temporal discretization error sufficient \n for Mathieu equation & simple example\n') 
+else:
+     print('\n ERROR: Local temporal discretization not sufficient \n for Mathieu equation & simple example\n') 
+
 
 plotname = figure_path +'LTE_loglog.png' 
 plottitle = r"Floquet multiplier % LTE, for $\alpha=0.5,\beta=0.1$" 
