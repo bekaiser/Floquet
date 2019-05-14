@@ -35,7 +35,7 @@ for j in range(0,4):
 #print('Verifying that discrete derivatives are consistent with the laminar flow')
 #runpy.run_path('./verification_tests/base_flow_test.py')
 
-
+"""
 print('\nVerifying the global truncation error curve for\n Runge-Kutta 4th-order time stepper:\n')
 runpy.run_path('./verification_tests/GTE_test.py')
 
@@ -44,12 +44,12 @@ runpy.run_path('./verification_tests/LTE_test.py')
 
 print('\nVerifying Runge-Kutta radian time step test:\n')
 runpy.run_path('./verification_tests/sinusoid_integration_test.py')
-
+"""
 print('\nVerifying spatial discrete derivatives are computed properly:\n')
 runpy.run_path('./verification_tests/discretization_test.py')
-
+"""
 # takes a long time:
 print('\nVerifying Floquet stability calculation using the Mathieu equation:\n')
 runpy.run_path('./verification_tests/Mathieu_test.py')
-
+"""
 

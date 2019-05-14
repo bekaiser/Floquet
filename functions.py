@@ -1,7 +1,5 @@
 # functions for Floquet analysis
 
-
-
 #import h5py
 import numpy as np
 import math as ma
@@ -30,6 +28,7 @@ def rk4_time_step( params , Phin , dt, stop_time, case_flag ):
   output_period = 10
   output_count = 0
   
+  start_time_0 = datetime.now()
   while time < stop_time - dt: 
 
     #start_time_kcoeffs = datetime.now()
@@ -48,7 +47,11 @@ def rk4_time_step( params , Phin , dt, stop_time, case_flag ):
     #output_count = perturb_monitor( time , count , output_count , output_period , Phin , z , params , 'plot' )
     time = time + dt # non-dimensional time
     count = count + 1
-    print(count)
+    #freq = 100
+    if np.floor(count/params['freq']) == count/params['freq']:
+       print( '%.2f complete' %(count/params['Nt']) )
+       time_elapsed = datetime.now() - start_time_0
+       print('Wall time elapsed (hh:mm:ss.ms) {}'.format(time_elapsed))
     check_matrix(Phin,'Phin')
 
   dtf = stop_time - time
@@ -168,7 +171,7 @@ def rk4( params , time , Phin , count , plot_flag , case_flag ):
     uzzS = uzzS / (params['U']) * params['dS']**2. # non-dimensional
 
     """
-    freq = 10000
+    freq = 100
     if np.floor(count/freq) == count/freq:
       plotname = params['u_path'] +'%i.png' %(count)
       fig = plt.figure(figsize=(16,4.5))
@@ -228,13 +231,14 @@ def rk4( params , time , Phin , count , plot_flag , case_flag ):
       plt.savefig(plotname,format="png"); plt.close(fig);
     """
 
-    dzz_zeta = diff_matrix( params , 'neumann' , 'dirchlet' , diff_order=2 , stencil_size=3 ) # non-dimensional
-    # dzz_zeta: could try neumann LBC. Upper BC irrotational (no-stress).
-    inv_psi = np.linalg.inv( diff_matrix( params , 'thom' , 'dirchlet' , diff_order=2 , stencil_size=3 ) ) # non-dimensional
-    # inv_psi: lower BCs are no-slip, impermiable, upper BC is impermiable, free-slip
-    eye_matrix = np.eye( int(params['Nz']) , int(params['Nz']) , 0 , dtype=complex )
+    #zeta_0 = (np.dot(params['inv_psi'],Phin))[0] # zeta at the first location from the wall
+    #dzz_zeta = diff_matrix( params , 'neumann' , 'dirchlet' , diff_order=2 , stencil_size=3 )
+
+    # need to add an adjustment to the dzz_zeta on the bottom cell that is a function of the columns of Phi
+    # doesn't that mean that I get many unique As?
+              
     A = np.zeros( [int(params['Nz']),int(params['Nz'])] , dtype=complex ) 
-    A[:,:] = -uS*1j*params['a']*eye_matrix + ( dzz_zeta - (params['a']**2.) * eye_matrix ) / params['Re'] + np.dot(uzzS*1j*params['a']*eye_matrix,inv_psi)
+    A[:,:] = -uS*1j*params['a']*params['eye_matrix'] + ( params['dzz_zeta'] - (params['a']**2.*params['eye_matrix']) ) / params['Re'] + np.dot(uzzS*1j*params['a']*params['eye_matrix'],params['inv_psi'])
 
   if case_flag == 'base_flow_test':
     b, u, v, bz, uz, vz, bzz, uzz, vzz = rotating_solution( params, time, 2 ) # dimensional
@@ -884,6 +888,9 @@ def diff_matrix( params , lower_BC_flag , upper_BC_flag , diff_order , stencil_s
      l0, l1, l2, l3 = fornberg_weights(z[Nz-1], np.append(z[Nz-3:Nz],H + (H-z[Nz-1])) ,diff_order)[:,diff_order]
      l2 = l3 + l2 # Neumann for dz(phi)=0 at z=H (sets phi_ghost = phi_N)
      pzz[Nz-1,Nz-3:Nz] = [ l0 , l1 , l2 ]
+   if upper_BC_flag == 'open':
+     l0, l1, l2, l3, l4 = fornberg_weights(z[Nz-1], z[Nz-5:Nz], diff_order)[:, diff_order]
+     pzz[Nz-1,Nz-5:Nz] = [l0, l1, l2, l3, l4]
    if upper_BC_flag == 'thom':
      l0, l1, l2, l3, l4, l5, l6 = fornberg_weights(z[Nz-1], np.append(z[Nz-3:Nz],np.append(H,np.append(np.append(H + (H-z[Nz-1]),H+(H-z[Nz-2])),H+(H-z[Nz-3])))) ,diff_order)[:,diff_order]
      l3 = 0.

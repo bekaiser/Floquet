@@ -15,11 +15,12 @@ figure_path = './verification_tests/figures/discretization_test/'
 # =============================================================================
 # loop over Nz resolution Chebyshev node grid
 
-max_exp = 11 # power of two, must be equal to or greater than 5 (maximum N = 2^max)
+max_exp = 15 # power of two, must be equal to or greater than 5 (maximum N = 2^max)
 Nr = np.power(np.ones([max_exp-3])*2.,np.linspace(4.,max_exp,max_exp-3)) # resolution 
 Ng = int(np.shape(Nr)[0]) # number of resolutions to try
 
 # case 1:
+"""
 Linf1 = np.zeros([Ng]) # infinity norm, 1st derivative, uniform grid
 Linf1c = np.zeros([Ng]) # infinity norm, 1st derivative, cosine grid
 Linf2 = np.zeros([Ng]) # infinity norm, 2nd derivative, uniform grid 
@@ -53,11 +54,26 @@ Linfpc3FBf = np.zeros([Ng]) # infinity norm, Poisson solution, cosine grid
 
 Linf10a = np.zeros([Ng])
 Linf10b = np.zeros([Ng])
+"""
 
-output_plot_no = 6
+# case 1:
+La = np.zeros([Ng]); Lb = np.zeros([Ng]); Lc = np.zeros([Ng])
+Ld = np.zeros([Ng]); Le = np.zeros([Ng]); Lf = np.zeros([Ng])
+Lg = np.zeros([Ng]); Lh = np.zeros([Ng])
+"""
+Lg = np.zeros([Ng]); Lh = np.zeros([Ng]); Li = np.zeros([Ng])
+Lj = np.zeros([Ng]); Lk = np.zeros([Ng]); Ll = np.zeros([Ng])
+Lm = np.zeros([Ng]); Ln = np.zeros([Ng]); Lo = np.zeros([Ng])
+Lp = np.zeros([Ng]); Lq = np.zeros([Ng]); Lr = np.zeros([Ng])
+Ls = np.zeros([Ng]); Lt = np.zeros([Ng]); Lu = np.zeros([Ng])
+Lv = np.zeros([Ng]); Lw = np.zeros([Ng]); Lx = np.zeros([Ng])
+Ly = np.zeros([Ng]); Lz = np.zeros([Ng]); 
+"""
+
+output_plot_no = 4
  
-H = 1.0 # domain height
-Hd = H*3 # non-dimensional grid scale
+H = 6. #  non-dimensional domain height
+Hd = 1. # dimensional grid scale
 
 for n in range(0, Ng): 
       
@@ -79,6 +95,7 @@ for n in range(0, Ng):
 
     z = z*Hd
     zc = zc*Hd
+    #print(np.amax(z))
 
     if n == 0:
         plotname = figure_path + 'grid.png'
@@ -121,15 +138,17 @@ for n in range(0, Ng):
 
     # case 3:
 
-    p = np.zeros([Nz,1]); pz = np.zeros([Nz,1]); pzz = np.zeros([Nz,1])
+    p = np.zeros([Nz,1]); pz = np.zeros([Nz,1]); pzz = np.zeros([Nz,1]); pzzzz = np.zeros([Nz,1])
     p[:,0] = U0*np.cos(q*z) - U0
     pz[:,0] = -U0*q*np.sin(q*z) 
     pzz[:,0] = -U0*q**2.*np.cos(q*z) 
     #zetazz = np.zeros([Nz,1]); zeta[:,0] = U0*q**4.*np.cos(q*z)
-    pc = np.zeros([Nz,1]); pzc = np.zeros([Nz,1]); pzzc = np.zeros([Nz,1])
+    pzzzz[:,0] = U0*q**4.*np.cos(q*z)
+    pc = np.zeros([Nz,1]); pzc = np.zeros([Nz,1]); pzzc = np.zeros([Nz,1]); pzzzzc = np.zeros([Nz,1])
     pc[:,0] = U0*np.cos(q*zc) - U0
     pzc[:,0] = -U0*q*np.sin(q*zc) 
     pzzc[:,0] = -U0*q**2.*np.cos(q*zc)
+    pzzzzc[:,0] = U0*q**4.*np.cos(q*zc)
     #zetazzc = np.zeros([Nz,1]); zetac[:,0] = U0*q**4.*np.cos(q*zc)
     """
     p = np.zeros([Nz,1]); pz = np.zeros([Nz,1]); pzz = np.zeros([Nz,1])
@@ -159,7 +178,7 @@ for n in range(0, Ng):
         plt.plot(p/U0,z,'b',label=r"$\psi$")
         plt.plot(pz/(q*U0),z,'k',label=r"$\psi_z$")
         plt.plot(pzz/(q**2.*U0),z,'--r',label=r"$\psi_{zz}$")
-        #plt.plot(zetazz/(q**4.*U0),z,'--b',label=r"$\zeta_{zz}$")
+        plt.plot(pzzzz/(q**4.*U0),z,'--b',label=r"$\psi_{zzzz}$")
         plt.ylabel(r"$z$",fontsize=13)
         plt.title(r"uniform grid, case 3",fontsize=13)
         plt.grid(); plt.legend(loc=3,fontsize=13)
@@ -167,7 +186,7 @@ for n in range(0, Ng):
         plt.plot(pc/U0,zc,'b',label=r"$\psi$")
         plt.plot(pzc/(q*U0),zc,'k',label=r"$\psi_z$")
         plt.plot(pzzc/(q**2.*U0),zc,'--r',label=r"$\psi_{zz}$")
-        #plt.plot(zetazzc/(q**4.*U0),zc,'--b',label=r"$\zeta_{zz}$")
+        plt.plot(pzzzzc/(q**4.*U0),zc,'--b',label=r"$\psi_{zzzz}$")
         plt.ylabel(r"$z$",fontsize=13)
         plt.title(r"cosine grid, case 3",fontsize=13)
         plt.grid(); plt.legend(loc=3,fontsize=13)
@@ -215,13 +234,14 @@ for n in range(0, Ng):
         plt.savefig(plotname,format="png"); plt.close(fig);
 
     # case 1:
+    """
     # 1st derivatives:
     uz0 = np.dot( fn.partial_z( params , 'dirchlet' , 'neumann' ) , u ) # uniform grid  
     uz0c = np.dot( fn.partial_z( paramsc , 'dirchlet' , 'neumann' ) , uc ) # cosine grid
     # 2nd derivatives:
     uzz0 = np.dot( fn.partial_zz( params , 'dirchlet' , 'neumann' ) , u ) # uniform grid
     uzz0c = np.dot( fn.partial_zz( paramsc , 'dirchlet' , 'neumann' ) , uc ) # cosine grid
-
+    
     # Poisson equation solution:
     u0 =  np.dot( np.linalg.inv( fn.partial_zz(  params , 'dirchlet' , 'neumann' ) ) , uzz  ) # uniform grid
     u0c = np.dot( np.linalg.inv( fn.partial_zz( paramsc , 'dirchlet' , 'neumann' ) ) , uzzc ) # cosine grid
@@ -236,22 +256,47 @@ for n in range(0, Ng):
     bzz0 = np.dot( fn.partial_zz( params , 'neumann' , 'neumann' ) , b ) # uniform grid
     bzz0c = np.dot( fn.partial_zz( paramsc , 'neumann' , 'neumann' ) , bc ) # cosine grid
     # Poisson equation solution: both neumann: ERROR! the matrix is singular
+    """
 
+    
+    """
     # case 3:
     # 1st derivatives, case 3: (the forward derivative needs no mean information)
     pz0 = np.dot( fn.partial_z( params , 'neumann' , 'neumann'   ) , p ) # uniform grid
     pz0c = np.dot( fn.partial_z( paramsc , 'neumann' , 'neumann'   ) , pc ) # cosine grid 
     # 2nd derivatives, case 3:
-    case3_upper_BC = 'dirchlet'
     pzz0 = np.dot( fn.partial_zz( params , 'robin' , case3_upper_BC  ) , p ) # uniform grid
     pzz0c = np.dot( fn.partial_zz( paramsc , 'robin' , case3_upper_BC ) , pc ) # cosine grid   (use 'open','dirchlet' for vorticity)
-    pzz0f = np.dot( fn.diff_matrix( params , 'thom' , case3_upper_BC , diff_order=2 , stencil_size=3 ) , p ) # uniform grid
-    pzz0cf = np.dot( fn.diff_matrix( paramsc , 'thom' , case3_upper_BC , diff_order=2 , stencil_size=3 ) , pc ) # cosine grid
+    """
 
-    zetazz0 = np.dot( fn.diff_matrix( params , 'open' , case3_upper_BC , diff_order=2 , stencil_size=3 ) , zeta ) # uniform grid
-    zetazz0c = np.dot( fn.diff_matrix( paramsc , 'open' , case3_upper_BC , diff_order=2 , stencil_size=3 ) , zetac ) # cosine grid
+    # test for zeta: specify dirchlet at top and nothing on bottom
+    UZZ = np.dot( fn.diff_matrix( params , 'open' , 'dirchlet' , diff_order=2 , stencil_size=3 ) , u ) # uniform grid
+    UZZC = np.dot( fn.diff_matrix( paramsc , 'open' ,'dirchlet' , diff_order=2 , stencil_size=3 ) , uc ) # cosine grid
+    La[n] = np.amax(abs(uzz-UZZ)/abs(m**2.*U0)) 
+    Lb[n] = np.amax(abs(uzzc-UZZC)/abs(m**2.*U0)) 
 
+    # test for psi: thom bottom and dirchlet top 
+    PZZ = np.dot( fn.diff_matrix( params , 'thom' , 'dirchlet' , diff_order=2 , stencil_size=3 ) , p ) # uniform grid
+    PZZC = np.dot( fn.diff_matrix( paramsc , 'thom' , 'dirchlet' , diff_order=2 , stencil_size=3 ) , pc ) # cosine grid
+    Lc[n] = np.amax(abs(pzz-PZZ)/abs(q**2.*U0)) 
+    Ld[n] = np.amax(abs(pzzc-PZZC)/abs(q**2.*U0)) 
+
+    # second test for psi: get error for inversion
+    P =  np.dot( np.linalg.inv( fn.diff_matrix( params , 'thom' , 'dirchlet' , diff_order=2 , stencil_size=3 ) ) , pzz  ) # uniform grid
+    PC = np.dot( np.linalg.inv( fn.diff_matrix( paramsc , 'thom' , 'dirchlet' , diff_order=2 , stencil_size=3 ) ) , pzzc ) # cosine grid 
+    Le[n] = np.amax(abs(p-P)/abs(U0)) 
+    Lf[n] = np.amax(abs(pc-PC)/abs(U0))
+
+    # test for boundary condition scheme:
+    PZZZZ =  np.dot( fn.diff_matrix( params , 'neumann' , 'open' , diff_order=2 , stencil_size=3 ) , pzz )  # uniform grid
+    PZZZZC = np.dot( fn.diff_matrix( paramsc , 'neumann' , 'open' , diff_order=2 , stencil_size=3 ) , pzzc )  # cosine grid 
+    Lg[n] = np.amax(abs(pzzzz-PZZZZ)/abs(q**4.*U0)) 
+    Lh[n] = np.amax(abs(pzzzzc-PZZZZC)/abs(q**4.*U0))
+    # take the 2nd derivative with the streamfunction bcs to get zeta, then take another second derivative to zeta diffusion
+
+ 
     # Poisson equation solution: (the backward derivative needs mean information, hence the robin BC)
+    """
     p0 =  np.dot( np.linalg.inv( fn.partial_zz(  params , 'robin' , case3_upper_BC ) ) , pzz  ) # uniform grid
     p0c = np.dot( np.linalg.inv( fn.partial_zz( paramsc , 'robin' , case3_upper_BC ) ) , pzzc ) # cosine grid 
     p0f =  np.dot( np.linalg.inv( fn.diff_matrix( params , 'thom' , case3_upper_BC , diff_order=2 , stencil_size=3 ) ) , pzz  ) # uniform grid
@@ -260,9 +305,27 @@ for n in range(0, Ng):
     p0cFB = np.dot( np.linalg.inv( fn.partial_zz( paramsc , 'robin' , case3_upper_BC ) ) , pzz0c ) # cosine grid
     p0FBf =  np.dot( np.linalg.inv( fn.diff_matrix(  params , 'thom' , case3_upper_BC , diff_order=2 , stencil_size=3 ) ) , pzz0f  ) # uniform grid
     p0cFBf = np.dot( np.linalg.inv( fn.diff_matrix( paramsc , 'thom' , case3_upper_BC , diff_order=2 , stencil_size=3 ) ) , pzz0cf ) # cosine grid
+    """
 
     if n == output_plot_no:
 
+        plotname = figure_path + 'second_derivative_solutions_case4.png'
+        fig = plt.figure(figsize=(20,10))
+        plt.subplot(1,2,1)
+        plt.plot(pzzzz/abs(q**4.*U0),z,'k',label=r"analytical")
+        plt.plot(PZZZZ/abs(q**4.*U0),z,'--r',label=r"computed")
+        plt.ylabel(r"$z$",fontsize=13)
+        plt.title(r"uniform grid, case 4, N = %i" %(Nz),fontsize=13)
+        plt.grid(); plt.legend(loc=2,fontsize=13)
+        plt.subplot(1,2,2)
+        plt.plot(pzzzzc/abs(q**4.*U0),zc,'k',label=r"analytical")
+        plt.plot(PZZZZC/abs(q**4.*U0),zc,'--r',label=r"computed")
+        plt.ylabel(r"$z$",fontsize=13)
+        plt.title(r"cosine grid, case 4, N = %i" %(Nz),fontsize=13)
+        plt.grid(); plt.legend(loc=2,fontsize=13)
+        plt.savefig(plotname,format="png"); plt.close(fig); 
+
+        """
         plotname = figure_path + 'poisson_solutions_case3_robin.png'
         fig = plt.figure(figsize=(10,10))
         plt.subplot(2,2,1)
@@ -314,7 +377,6 @@ for n in range(0, Ng):
         plt.title(r"cosine grid, case 3, N = %i" %(Nz),fontsize=13)
         plt.grid(); 
         plt.savefig(plotname,format="png"); plt.close(fig);
-
 
         plotname = figure_path + 'poisson_solutions_case1.png'
         fig = plt.figure(figsize=(10,10))
@@ -542,8 +604,12 @@ for n in range(0, Ng):
         plt.title(r"cosine grid, case 3, Thom BC",fontsize=13)
         plt.grid(); #plt.legend(loc=1,fontsize=13)
         plt.savefig(plotname,format="png"); plt.close(fig);
+        """
 
 
+
+
+    """
     # case 1:
     Linf1[n] = np.amax(abs(uz-uz0)/abs(m*U0)) 
     Linf1c[n] = np.amax(abs(uzc-uz0c)/abs(m*U0))
@@ -559,8 +625,10 @@ for n in range(0, Ng):
     Linf1c2[n] = np.amax(abs(bzc-bz0c)/abs(q*U0))
     Linf22[n] = np.amax(abs(bzz-bzz0)/abs(q**2.*U0)) 
     Linf2c2[n] = np.amax(abs(bzzc-bzz0c)/abs(q**2.*U0))
+    """
 
     # case 3:
+    """
     Linf13[n] = np.amax(abs(pz-pz0)/abs(q*U0)) 
     Linf1c3[n] = np.amax(abs(pzc-pz0c)/abs(q*U0))
     Linf23[n] = np.amax(abs(pzz-pzz0)/abs(q**2.*U0)) 
@@ -578,6 +646,7 @@ for n in range(0, Ng):
 
     Linf10a[n] = np.amax(abs(zetazz-zetazz0)/abs(m2**2.*U0)) # dzz with Dirchlet at z=H, open at z=0
     Linf10b[n] = np.amax(abs(zetazzc-zetazz0c)/abs(m2**2.*U0))
+    """
 
 """
 print(Nr)
@@ -586,6 +655,122 @@ print(Linf10b)
 print(Linfp3f)
 print(Linfpc3f)
 """
+
+plotname = figure_path + 'zeta_test_error.png'
+fig = plt.figure(figsize=(8,8))
+#plt.subplot(1,3,1)
+plt.loglog(Nr,La,'r',label=r"uniform grid")
+plt.loglog(Nr,Lb,'b',label=r"cosine grid")
+plt.loglog(Nr,(La[0]*0.3/Nr[0]**(-2.))*Nr**(-2.),'k',label=r"$O(N^{-2})$")
+plt.xlabel(r"$N$ grid points",fontsize=13)
+plt.ylabel(r"L$_\infty$ error",fontsize=13)
+plt.title(r"2nd derivative of $\zeta$ : Dirchlet top & open bottom BCs",fontsize=13)
+plt.grid(); plt.legend(loc=1,fontsize=13)
+"""
+plt.subplot(1,3,2)
+plt.loglog(Nr,Linf12,'r',label=r"uniform")
+plt.loglog(Nr,Linf1c2,'b',label=r"cosine")
+plt.xlabel(r"$N$ grid points",fontsize=13)
+plt.ylabel(r"L$_\infty$ error",fontsize=13)
+plt.title(r"case 2",fontsize=13)
+plt.grid(); plt.legend(loc=1,fontsize=13)
+plt.subplot(1,3,3)
+plt.loglog(Nr,Linf13,'r',label=r"uniform")
+plt.loglog(Nr,Linf1c3,'b',label=r"cosine")
+plt.xlabel(r"$N$ grid points",fontsize=13)
+plt.ylabel(r"L$_\infty$ error",fontsize=13)
+plt.title(r"case 3",fontsize=13)
+plt.grid(); plt.legend(loc=1,fontsize=13)
+"""
+plt.savefig(plotname,format="png"); plt.close(fig);
+
+plotname = figure_path + 'psi_test_error.png'
+fig = plt.figure(figsize=(8,8))
+#plt.subplot(1,3,1)
+plt.loglog(Nr,Lc,'r',label=r"uniform grid")
+plt.loglog(Nr,Ld,'b',label=r"cosine grid")
+plt.loglog(Nr,(Lc[0]*0.5/Nr[0]**(-2.))*Nr**(-2.),'k',label=r"$O(N^{-2})$")
+plt.xlabel(r"$N$ grid points",fontsize=13)
+plt.ylabel(r"L$_\infty$ error",fontsize=13)
+plt.title(r"2nd derivative of $\psi$ : Dirchlet top & Thom bottom BCs",fontsize=13)
+plt.grid(); plt.legend(loc=1,fontsize=13)
+"""
+plt.subplot(1,3,2)
+plt.loglog(Nr,Linf12,'r',label=r"uniform")
+plt.loglog(Nr,Linf1c2,'b',label=r"cosine")
+plt.xlabel(r"$N$ grid points",fontsize=13)
+plt.ylabel(r"L$_\infty$ error",fontsize=13)
+plt.title(r"case 2",fontsize=13)
+plt.grid(); plt.legend(loc=1,fontsize=13)
+plt.subplot(1,3,3)
+plt.loglog(Nr,Linf13,'r',label=r"uniform")
+plt.loglog(Nr,Linf1c3,'b',label=r"cosine")
+plt.xlabel(r"$N$ grid points",fontsize=13)
+plt.ylabel(r"L$_\infty$ error",fontsize=13)
+plt.title(r"case 3",fontsize=13)
+plt.grid(); plt.legend(loc=1,fontsize=13)
+"""
+plt.savefig(plotname,format="png"); plt.close(fig);
+
+
+plotname = figure_path + 'psi_inversion_test_error.png'
+fig = plt.figure(figsize=(8,8))
+#plt.subplot(1,3,1)
+plt.loglog(Nr,Le,'r',label=r"uniform grid")
+plt.loglog(Nr,Lf,'b',label=r"cosine grid")
+plt.loglog(Nr,(Le[0]*0.5/Nr[0]**(-2.))*Nr**(-2.),'k',label=r"$O(N^{-2})$")
+plt.xlabel(r"$N$ grid points",fontsize=13)
+plt.ylabel(r"L$_\infty$ error",fontsize=13)
+plt.title(r"Inversion of $\psi$ : Dirchlet top & Thom bottom BCs",fontsize=13)
+plt.grid(); plt.legend(loc=1,fontsize=13)
+"""
+plt.subplot(1,3,2)
+plt.loglog(Nr,Linf12,'r',label=r"uniform")
+plt.loglog(Nr,Linf1c2,'b',label=r"cosine")
+plt.xlabel(r"$N$ grid points",fontsize=13)
+plt.ylabel(r"L$_\infty$ error",fontsize=13)
+plt.title(r"case 2",fontsize=13)
+plt.grid(); plt.legend(loc=1,fontsize=13)
+plt.subplot(1,3,3)
+plt.loglog(Nr,Linf13,'r',label=r"uniform")
+plt.loglog(Nr,Linf1c3,'b',label=r"cosine")
+plt.xlabel(r"$N$ grid points",fontsize=13)
+plt.ylabel(r"L$_\infty$ error",fontsize=13)
+plt.title(r"case 3",fontsize=13)
+plt.grid(); plt.legend(loc=1,fontsize=13)
+"""
+plt.savefig(plotname,format="png"); plt.close(fig);
+
+plotname = figure_path + 'boundary_condition_test_error.png'
+fig = plt.figure(figsize=(8,8))
+#plt.subplot(1,3,1)
+plt.loglog(Nr,Lg,'r',label=r"uniform grid")
+plt.loglog(Nr,Lh,'b',label=r"cosine grid")
+plt.loglog(Nr,(Lh[0]*0.5/Nr[0]**(-2.))*Nr**(-2.),'k',label=r"$O(N^{-2})$")
+plt.xlabel(r"$N$ grid points",fontsize=13)
+plt.ylabel(r"L$_\infty$ error",fontsize=13)
+plt.title(r"Error of $\partial_{zz}(\partial_{zz}\psi)=\partial_{zz}\zeta$",fontsize=13)
+plt.grid(); plt.legend(loc=1,fontsize=13)
+"""
+plt.subplot(1,3,2)
+plt.loglog(Nr,Linf12,'r',label=r"uniform")
+plt.loglog(Nr,Linf1c2,'b',label=r"cosine")
+plt.xlabel(r"$N$ grid points",fontsize=13)
+plt.ylabel(r"L$_\infty$ error",fontsize=13)
+plt.title(r"case 2",fontsize=13)
+plt.grid(); plt.legend(loc=1,fontsize=13)
+plt.subplot(1,3,3)
+plt.loglog(Nr,Linf13,'r',label=r"uniform")
+plt.loglog(Nr,Linf1c3,'b',label=r"cosine")
+plt.xlabel(r"$N$ grid points",fontsize=13)
+plt.ylabel(r"L$_\infty$ error",fontsize=13)
+plt.title(r"case 3",fontsize=13)
+plt.grid(); plt.legend(loc=1,fontsize=13)
+"""
+plt.savefig(plotname,format="png"); plt.close(fig);
+
+"""
+
 check_flag = 0
 if Linf10a[2] < 2e-3:
     if Linf10a[3] < 5e-4:
@@ -737,3 +922,5 @@ plt.ylabel(r"L$_\infty$ error",fontsize=13)
 plt.title(r"case 4, open z=0 BC",fontsize=13)
 plt.grid(); plt.legend(loc=1,fontsize=13)
 plt.savefig(plotname,format="png"); plt.close(fig);
+
+"""
