@@ -48,10 +48,11 @@ def rk4_time_step( params , Phin , dt, stop_time, case_flag ):
     time = time + dt # non-dimensional time
     count = count + 1
     #freq = 100
-    if np.floor(count/params['freq']) == count/params['freq']:
-       print( '%.2f complete' %(count/params['Nt']) )
-       time_elapsed = datetime.now() - start_time_0
-       print('Wall time elapsed (hh:mm:ss.ms) {}'.format(time_elapsed))
+    if params['freq'] != 0:
+        if np.floor(count/params['freq']) == count/params['freq']:
+            print( '%.2f complete' %(count/params['Nt']) )
+            time_elapsed = datetime.now() - start_time_0
+            print('Wall time elapsed (hh:mm:ss.ms) {}'.format(time_elapsed))
     check_matrix(Phin,'Phin')
 
   dtf = stop_time - time
@@ -65,6 +66,10 @@ def rk4_time_step( params , Phin , dt, stop_time, case_flag ):
 
   final_time = time + dtf # non-dimensional final time
   count = count + 1
+
+  if params['freq'] != 0:
+      print( '%.2f complete' %(count/params['Nt']) )
+      print('Wall time elapsed (hh:mm:ss.ms) {}'.format(time_elapsed))
 
   #print('RK4 method, final time = ', final_time)
   return Phin, final_time
@@ -238,7 +243,7 @@ def rk4( params , time , Phin , count , plot_flag , case_flag ):
     # doesn't that mean that I get many unique As?
               
     A = np.zeros( [int(params['Nz']),int(params['Nz'])] , dtype=complex ) 
-    A[:,:] = -uS*1j*params['a']*params['eye_matrix'] + ( params['dzz_zeta'] - (params['a']**2.*params['eye_matrix']) ) / params['Re'] + np.dot(uzzS*1j*params['a']*params['eye_matrix'],params['inv_psi'])
+    A[:,:] = -uS*1j*params['a']*params['eye_matrix'] + ( params['dzz_zeta'] - (params['a']**2.*params['eye_matrix']) ) / params['Re'] + np.dot(uzzS*1j*params['a']*params['eye_matrix'],params['inv_psi']) #- params['eye_matrix']*params['sigma_i']
 
   if case_flag == 'base_flow_test':
     b, u, v, bz, uz, vz, bzz, uzz, vzz = rotating_solution( params, time, 2 ) # dimensional
@@ -428,6 +433,22 @@ def nonrotating_solution( params, time ):
  return  b, u, bz, uz
 """
 
+def blank_stokes_solution( params, time, order ):
+
+ u = np.zeros([params['Nz']]); 
+ if order >= 1:
+   uz = np.zeros([params['Nz']]); 
+ if order == 2:
+   uzz = np.zeros([params['Nz']]); 
+
+ if order < 1:
+   return np.real(u)
+ if order == 1:
+   return np.real(u), np.real(uz)
+ if order == 2:
+   return np.real(u), np.real(uz), np.real(uzz)
+
+
 def stokes_solution( params, time, order ):
  # all dimensional: 
  zd = params['z']*params['dS'] # m, dimensional grid, zmax ~ Hd
@@ -457,6 +478,25 @@ def stokes_solution( params, time, order ):
    return np.real(u), np.real(uz)
  if order == 2:
    return np.real(u), np.real(uz), np.real(uzz)
+
+
+def blank_rotating_solution( params, time, order ):
+
+ b = np.zeros([params['Nz']]); u = np.zeros([params['Nz']]); v = np.zeros([params['Nz']]); 
+ if order >= 1:
+   bz = np.zeros([params['Nz']]); uz = np.zeros([params['Nz']]); vz = np.zeros([params['Nz']]);
+ if order == 2:
+   bzz = np.zeros([params['Nz']]); uzz = np.zeros([params['Nz']]); vzz = np.zeros([params['Nz']]);
+
+ # dimensional output:
+ if order < 1:
+   return np.real(b), np.real(u), np.real(v)
+ if order == 1:
+   return np.real(b), np.real(u), np.real(v), np.real(bz), np.real(uz), np.real(vz)
+ if order == 2:
+   return np.real(b), np.real(u), np.real(v), np.real(bz), np.real(uz), np.real(vz), np.real(bzz), np.real(uzz), np.real(vzz)
+
+
 
  
 def rotating_solution( params, time, order ):

@@ -93,6 +93,26 @@ can define them using (usually known) the initial conditions:
   %&=\boldsymbol{\Phi}_0\mathbf{c}
  \label{eq:x_IC}
 \end{flalign}
+% To demonstrate the generality of the decomposition, let $\mathbf{x}(0)=\mathbf{0}$ and 
+% $\boldsymbol{\Phi}(0)=\mathbf{I}$:
+% \begin{equation}
+%  \mathbf{x}(0)=\begin{bmatrix*}
+%   0 \\
+%   0
+%  \end{bmatrix*}=\boldsymbol{\Phi}(0)\mathbf{c}=\begin{bmatrix*}
+%  1 & 0 \\
+%  0 & 1
+%  \end{bmatrix*}
+%   \begin{bmatrix*}
+%   c_1 \\
+%   c_2
+%  \end{bmatrix*}
+%  =\begin{bmatrix*}
+% c_1 \\
+%   c_2
+%  \end{bmatrix*}
+%  \label{eq:x_IC_example}
+% \end{equation}
 Since the determinant of the initial fundamental solution matrix, $\text{det}[\Phi_0]$, 
 is the value at $t_0$ of the Wronskian of the 
 independent solutions $\mathbf{x}_1$ and
@@ -121,7 +141,8 @@ matrix must also satisfy the equation:
 Since $\boldsymbol{\Phi}(t)$ is a fundamental matrix, then it can be shown that 
 %so must be 
 $\mathbf{Y}(t)=\boldsymbol{\Phi}(t)\mathbf{C}$ is also a fundamental matrix, so long as
-$\mathbf{C}$ is a non-singular constant matrix. We can then 
+$\mathbf{C}$ is a non-singular constant matrix (note: for $\mathbf{C}$ to be non-singular, 
+$\mathbf{x}(0)\neq\mathbf{0}$). We can then 
 choose $\mathbf{Y}(t)=\boldsymbol{\Phi}(t+T)$ to obtain:
 \begin{equation}
  \boldsymbol{\Phi}(t+T)=\boldsymbol{\Phi}(t)\mathbf{C}
@@ -447,46 +468,46 @@ that if the real part of $\gamma_k$ is greater than unity growth will occur.
 %  \end{equation*}
 
 
-\newpage
-\section*{Verification of the time stepping algorithms}
-\begin{figure}[h!]
-\centering
-\includegraphics[width=4.1in]{LTE_loglog.png}
-\caption{$L_\infty$ norm of the local (i.e. one time step) Floquet multiplier percent error 
-($\max[|\lambda_{k,\text{computed}}-\lambda_{k,\text{analytical}}|/|-\lambda_{k,\text{analytical}}|]$) 
-due to temporal truncation
-for the system of equations 
-in Equation \ref{eq:example} as a function of time step divided by period. 
-The principal fundamental solution matrix $\boldsymbol{\Phi}^*(t)$
-was advanced in time explicitly using a 4th order Runge Kutta method (the 
-\textcolor{blue}{blue} line) one time step $\Delta{t}$ 
-and then the 
-percent error was computed between the
-eigenvalues 
-(i.e. Floquet multipliers) of 
-the computed matrix $\boldsymbol{\Phi}^*(t)$ and the exact analytical solutions (Equation \ref{eq:multipliers}). Machine precision is acheived at time step 
-size corresponding to about $3\cdot10^4$ time steps per period. The \textcolor{red}{red} line error was 
-computed by advancing in time using the ordered product in Equation \ref{eq:ordered_product}. A percent error 
-of $\mathcal{O}(10^{-13})$ is approximately machine precision.}
-\end{figure}
-\begin{figure}[h!]
-\centering
-\includegraphics[width=4.1in]{GTE_loglog.png}
-\caption{$L_\infty$ norm of the global (i.e. integrated one period) Floquet multiplier percent error 
-due to temporal truncation
-%($\max[|\lambda_{k,\text{computed}}-\lambda_{k,\text{analytical}}|/|-\lambda_{k,\text{analytical}}|]$) 
-for the system of equations 
-in Equation \ref{eq:example} as a function of time step divided by period. 
+% \newpage
+% \section*{Verification of the time stepping algorithms}
+% \begin{figure}[h!]
+% \centering
+% \includegraphics[width=4.1in]{LTE_loglog.png}
+% \caption{$L_\infty$ norm of the local (i.e. one time step) Floquet multiplier percent error 
+% ($\max[|\lambda_{k,\text{computed}}-\lambda_{k,\text{analytical}}|/|-\lambda_{k,\text{analytical}}|]$) 
+% due to temporal truncation
+% for the system of equations 
+% in Equation \ref{eq:example} as a function of time step divided by period. 
 % The principal fundamental solution matrix $\boldsymbol{\Phi}^*(t)$
-% was advanced in time explicitly using a 4th order Runge Kutta method (for which the local truncation error is $\mathcal{O}(\Delta{t}^4)$) one time step $\Delta{t}$ 
+% was advanced in time explicitly using a 4th order Runge Kutta method (the 
+% \textcolor{blue}{blue} line) one time step $\Delta{t}$ 
 % and then the 
 % percent error was computed between the
 % eigenvalues 
 % (i.e. Floquet multipliers) of 
 % the computed matrix $\boldsymbol{\Phi}^*(t)$ and the exact analytical solutions (Equation \ref{eq:multipliers}). Machine precision is acheived at time step 
-% size corresponding to about $3\cdot10^4$ time steps per period.
-}
-\end{figure}
+% size corresponding to about $3\cdot10^4$ time steps per period. The \textcolor{red}{red} line error was 
+% computed by advancing in time using the ordered product in Equation \ref{eq:ordered_product}. A percent error 
+% of $\mathcal{O}(10^{-13})$ is approximately machine precision.}
+% \end{figure}
+% \begin{figure}[h!]
+% \centering
+% \includegraphics[width=4.1in]{GTE_loglog.png}
+% \caption{$L_\infty$ norm of the global (i.e. integrated one period) Floquet multiplier percent error 
+% due to temporal truncation
+% %($\max[|\lambda_{k,\text{computed}}-\lambda_{k,\text{analytical}}|/|-\lambda_{k,\text{analytical}}|]$) 
+% for the system of equations 
+% in Equation \ref{eq:example} as a function of time step divided by period. 
+% % The principal fundamental solution matrix $\boldsymbol{\Phi}^*(t)$
+% % was advanced in time explicitly using a 4th order Runge Kutta method (for which the local truncation error is $\mathcal{O}(\Delta{t}^4)$) one time step $\Delta{t}$ 
+% % and then the 
+% % percent error was computed between the
+% % eigenvalues 
+% % (i.e. Floquet multipliers) of 
+% % the computed matrix $\boldsymbol{\Phi}^*(t)$ and the exact analytical solutions (Equation \ref{eq:multipliers}). Machine precision is acheived at time step 
+% % size corresponding to about $3\cdot10^4$ time steps per period.
+% }
+% \end{figure}
 
 
 \newpage
@@ -563,23 +584,24 @@ than unity, so this case the system is \textbf{unstable}.
 Here we verify the estimate of system stability obtained from the Floquet multipliers 
 with the stability obtained from the trace of the monodromy matrix for the Mathieu equation.
 
-\newpage
-\section*{Verification of the stability calculation}
-\begin{figure}[h!]
-\centering
-\includegraphics[width=4.5in]{strutt_eig_rk4.png}
-\caption{A Strutt diagram for the stability of Mathieu's equation (black is unstable, white is 
-stable) using the Floquet multiplier method. The results are consistent with analytical 
-and numerical solutions in the literature regarding Mathieu's equation (\citet{Kovacic18}).
-}
-\end{figure}
-\begin{figure}[h!]
-\centering
-\includegraphics[width=4.5in]{strutt_Tr_rk4.png}
-\caption{A Strutt diagram for the stability of Mathieu's equation (black is unstable, white is 
-stable) using the trace of the monodromy matrix method for Hill equations.
-}
-\end{figure}
+% 
+% \newpage
+% \section*{Verification of the stability calculation}
+% \begin{figure}[h!]
+% \centering
+% \includegraphics[width=4.5in]{strutt_eig_rk4.png}
+% \caption{A Strutt diagram for the stability of Mathieu's equation (black is unstable, white is 
+% stable) using the Floquet multiplier method. The results are consistent with analytical 
+% and numerical solutions in the literature regarding Mathieu's equation (\citet{Kovacic18}).
+% }
+% \end{figure}
+% \begin{figure}[h!]
+% \centering
+% \includegraphics[width=4.5in]{strutt_Tr_rk4.png}
+% \caption{A Strutt diagram for the stability of Mathieu's equation (black is unstable, white is 
+% stable) using the trace of the monodromy matrix method for Hill equations.
+% }
+% \end{figure}
 
 \newpage
 \bibliography{references} 

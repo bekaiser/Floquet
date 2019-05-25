@@ -2,6 +2,7 @@ This is BibTeX, Version 0.99d (TeX Live 2015/Debian)
 Capacity: max_strings=35307, hash_size=35307, hash_prime=30011
 The top-level auxiliary file: floquet_primer.aux
 The style file: plainnat.bst
+I found no \citation commands---while reading file floquet_primer.aux
 Database file #1: references.bib
 I was expecting a `,' or a `}'---line 344 of file references.bib
  :   
@@ -33,45 +34,45 @@ I was expecting a `,' or a `}'---line 1075 of file references.bib
  : @article {MeixnerEA2002,
 (Error may have been on previous line)
 I'm skipping whatever remains of this entry
-You've used 1 entry,
+You've used 0 entries,
             2773 wiz_defined-function locations,
-            768 strings with 6798 characters,
-and the built_in function-call counts, 455 in all, are:
-= -- 35
-> -- 30
+            760 strings with 6583 characters,
+and the built_in function-call counts, 33 in all, are:
+= -- 0
+> -- 0
 < -- 0
-+ -- 10
-- -- 9
-* -- 40
-:= -- 78
-add.period$ -- 3
-call.type$ -- 1
-change.case$ -- 6
-chr.to.int$ -- 1
-cite$ -- 2
-duplicate$ -- 20
-empty$ -- 33
-format.name$ -- 10
-if$ -- 87
++ -- 0
+- -- 0
+* -- 2
+:= -- 10
+add.period$ -- 0
+call.type$ -- 0
+change.case$ -- 0
+chr.to.int$ -- 0
+cite$ -- 0
+duplicate$ -- 0
+empty$ -- 1
+format.name$ -- 0
+if$ -- 1
 int.to.chr$ -- 1
 int.to.str$ -- 1
-missing$ -- 1
-newline$ -- 13
-num.names$ -- 4
-pop$ -- 10
+missing$ -- 0
+newline$ -- 8
+num.names$ -- 0
+pop$ -- 0
 preamble$ -- 1
-purify$ -- 5
+purify$ -- 0
 quote$ -- 0
-skip$ -- 17
+skip$ -- 1
 stack$ -- 0
-substring$ -- 2
-swap$ -- 1
+substring$ -- 0
+swap$ -- 0
 text.length$ -- 0
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 11
+type$ -- 0
 warning$ -- 0
-while$ -- 3
+while$ -- 0
 width$ -- 0
-write$ -- 20
-(There were 6 error messages)
+write$ -- 7
+(There were 7 error messages)
