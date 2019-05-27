@@ -59,7 +59,8 @@ Linf10b = np.zeros([Ng])
 # case 1:
 La = np.zeros([Ng]); Lb = np.zeros([Ng]); Lc = np.zeros([Ng])
 Ld = np.zeros([Ng]); Le = np.zeros([Ng]); Lf = np.zeros([Ng])
-Lg = np.zeros([Ng]); Lh = np.zeros([Ng])
+Lg = np.zeros([Ng]); Lh = np.zeros([Ng]); Li = np.zeros([Ng]);
+Lj = np.zeros([Ng]); Lk = np.zeros([Ng]); Ll = np.zeros([Ng]);
 """
 Lg = np.zeros([Ng]); Lh = np.zeros([Ng]); Li = np.zeros([Ng])
 Lj = np.zeros([Ng]); Lk = np.zeros([Ng]); Ll = np.zeros([Ng])
@@ -117,14 +118,16 @@ for n in range(0, Ng):
     q = 2.*np.pi/Hd
 
     # case 1:
-    u = np.zeros([Nz,1]); uz = np.zeros([Nz,1]); uzz = np.zeros([Nz,1])
+    u = np.zeros([Nz,1]); uz = np.zeros([Nz,1]); uzz = np.zeros([Nz,1]); uzzzz = np.zeros([Nz,1])
     u[:,0] = U0*np.sin(m*z) # signal velocity u
     uz[:,0] = U0*m*np.cos(m*z) # du/dz
     uzz[:,0] = -U0*m**2.*np.sin(m*z) # d^2u/dz^2
-    uc = np.zeros([Nz,1]); uzc = np.zeros([Nz,1]); uzzc = np.zeros([Nz,1])
+    uzzzz[:,0] = U0*m**4.*np.sin(m*z)
+    uc = np.zeros([Nz,1]); uzc = np.zeros([Nz,1]); uzzc = np.zeros([Nz,1]); uzzzzc = np.zeros([Nz,1])
     uc[:,0] = U0*np.sin(m*zc) 
     uzc[:,0] = U0*m*np.cos(m*zc) 
     uzzc[:,0] = -U0*m**2.*np.sin(m*zc)
+    uzzzzc[:,0] = U0*m**4.*np.sin(m*zc)
 
     # case 2:
     b = np.zeros([Nz,1]); bz = np.zeros([Nz,1]); bzz = np.zeros([Nz,1])
@@ -269,6 +272,18 @@ for n in range(0, Ng):
     pzz0c = np.dot( fn.partial_zz( paramsc , 'robin' , case3_upper_BC ) , pc ) # cosine grid   (use 'open','dirchlet' for vorticity)
     """
 
+    # 1st derivatives:
+    BZ = np.dot( fn.diff_matrix( params , 'neumann' , 'neumann' , diff_order=1 , stencil_size=3 ) , b ) # uniform grid  
+    BZC = np.dot( fn.diff_matrix( paramsc , 'neumann' , 'neumann' , diff_order=1 , stencil_size=3 ) , bc ) # cosine grid
+    Li[n] = np.amax(abs(bz-BZ)/abs(q*U0)) 
+    Lj[n] = np.amax(abs(bzc-BZC)/abs(q*U0))
+
+    # 2nd derivatives:
+    BZZ = np.dot( fn.diff_matrix( params , 'neumann' , 'neumann' , diff_order=2 , stencil_size=3 ) , b ) # uniform grid
+    BZZC = np.dot( fn.diff_matrix( paramsc , 'neumann' , 'neumann' , diff_order=2 , stencil_size=3 ) , bc ) # cosine grid
+    Lk[n] = np.amax(abs(bzz-BZZ)/abs(q**2.*U0)) 
+    Ll[n] = np.amax(abs(bzzc-BZZC)/abs(q**2.*U0))
+
     # test for zeta: specify dirchlet at top and nothing on bottom
     UZZ = np.dot( fn.diff_matrix( params , 'open' , 'dirchlet' , diff_order=2 , stencil_size=3 ) , u ) # uniform grid
     UZZC = np.dot( fn.diff_matrix( paramsc , 'open' ,'dirchlet' , diff_order=2 , stencil_size=3 ) , uc ) # cosine grid
@@ -288,10 +303,10 @@ for n in range(0, Ng):
     Lf[n] = np.amax(abs(pc-PC)/abs(U0))
 
     # test for boundary condition scheme:
-    PZZZZ =  np.dot( fn.diff_matrix( params , 'neumann' , 'open' , diff_order=2 , stencil_size=3 ) , pzz )  # uniform grid
-    PZZZZC = np.dot( fn.diff_matrix( paramsc , 'neumann' , 'open' , diff_order=2 , stencil_size=3 ) , pzzc )  # cosine grid 
-    Lg[n] = np.amax(abs(pzzzz-PZZZZ)/abs(q**4.*U0)) 
-    Lh[n] = np.amax(abs(pzzzzc-PZZZZC)/abs(q**4.*U0))
+    UZZZZ =  np.dot( fn.diff_matrix( params , 'dirchlet' , 'dirchlet' , diff_order=2 , stencil_size=3 ) , uzz )  # uniform grid
+    UZZZZC = np.dot( fn.diff_matrix( paramsc , 'dirchlet' , 'dirchlet' , diff_order=2 , stencil_size=3 ) , uzzc )  # cosine grid 
+    Lg[n] = np.amax(abs(uzzzz-UZZZZ)/abs(m**4.*U0)) 
+    Lh[n] = np.amax(abs(uzzzzc-UZZZZC)/abs(m**4.*U0))
     # take the 2nd derivative with the streamfunction bcs to get zeta, then take another second derivative to zeta diffusion
 
  
@@ -312,14 +327,14 @@ for n in range(0, Ng):
         plotname = figure_path + 'second_derivative_solutions_case4.png'
         fig = plt.figure(figsize=(20,10))
         plt.subplot(1,2,1)
-        plt.plot(pzzzz/abs(q**4.*U0),z,'k',label=r"analytical")
-        plt.plot(PZZZZ/abs(q**4.*U0),z,'--r',label=r"computed")
+        plt.plot(uzzzz/abs(m**4.*U0),z,'k',label=r"analytical")
+        plt.plot(UZZZZ/abs(m**4.*U0),z,'--r',label=r"computed")
         plt.ylabel(r"$z$",fontsize=13)
         plt.title(r"uniform grid, case 4, N = %i" %(Nz),fontsize=13)
         plt.grid(); plt.legend(loc=2,fontsize=13)
         plt.subplot(1,2,2)
-        plt.plot(pzzzzc/abs(q**4.*U0),zc,'k',label=r"analytical")
-        plt.plot(PZZZZC/abs(q**4.*U0),zc,'--r',label=r"computed")
+        plt.plot(uzzzzc/abs(m**4.*U0),zc,'k',label=r"analytical")
+        plt.plot(UZZZZC/abs(m**4.*U0),zc,'--r',label=r"computed")
         plt.ylabel(r"$z$",fontsize=13)
         plt.title(r"cosine grid, case 4, N = %i" %(Nz),fontsize=13)
         plt.grid(); plt.legend(loc=2,fontsize=13)
@@ -924,3 +939,50 @@ plt.grid(); plt.legend(loc=1,fontsize=13)
 plt.savefig(plotname,format="png"); plt.close(fig);
 
 """
+
+
+plotname = figure_path +'discretization_error.png' 
+#fig = plt.figure(figsize=(11, 5.5))
+fig = plt.figure(figsize=(11, 11))
+
+plt.subplot(221)
+plt.loglog(Nr,Le,'-ok',label=r"uniform grid")
+plt.loglog(Nr,Lf,'--k',label=r"cosine grid")
+plt.loglog(Nr,(Le[0]*0.5/Nr[0]**(-2.))*Nr**(-2.),'k',label=r"$O(N^{-2})$")
+plt.xlabel(r"$N$ grid points",fontsize=13)
+plt.ylabel(r"$L_\infty$",fontsize=15)
+plt.title(r"$\psi=\partial_{zz}^{-1}\zeta$ error",fontsize=13) # : Dirchlet top & Thom bottom BCs
+plt.grid(); plt.legend(loc=1,fontsize=13)
+
+plt.subplot(222)
+plt.loglog(Nr,Lg,'-ok',label=r"uniform grid")
+plt.loglog(Nr,Lh,'--k',label=r"cosine grid")
+plt.loglog(Nr,(Lh[0]*0.5/Nr[0]**(-2.))*Nr**(-2.),'k',label=r"$O(N^{-2})$")
+plt.xlabel(r"$N$ grid points",fontsize=13)
+plt.ylabel(r"$L_\infty$",fontsize=15)
+plt.title(r"$\partial_{zz}\zeta$ error",fontsize=13)
+plt.grid(); plt.legend(loc=1,fontsize=13)
+
+plt.subplot(223)
+plt.loglog(Nr,Li,'-ok',label=r"uniform grid")
+plt.loglog(Nr,Lj,'--k',label=r"cosine grid")
+plt.loglog(Nr,(Lj[0]*0.5/Nr[0]**(-2.))*Nr**(-2.),'k',label=r"$O(N^{-2})$")
+plt.xlabel(r"$N$ grid points",fontsize=13)
+plt.ylabel(r"$L_\infty$",fontsize=15)
+plt.title(r"$\partial_{z}b$ error",fontsize=13) # : Dirchlet top & Thom bottom BCs
+plt.grid(); plt.legend(loc=1,fontsize=13)
+
+plt.subplot(224)
+plt.loglog(Nr,Lk,'-ok',label=r"uniform grid")
+plt.loglog(Nr,Ll,'--k',label=r"cosine grid")
+plt.loglog(Nr,(Ll[0]*0.5/Nr[0]**(-2.))*Nr**(-2.),'k',label=r"$O(N^{-2})$")
+plt.xlabel(r"$N$ grid points",fontsize=13)
+plt.ylabel(r"$L_\infty$",fontsize=15)
+plt.title(r"$\partial_{zz}b$ error",fontsize=13) # : Dirchlet top & Thom bottom BCs
+plt.grid(); plt.legend(loc=1,fontsize=13)
+
+
+plt.subplots_adjust(top=0.95, bottom=0.1, left=0.07, right=0.95, hspace=0.25,
+                   wspace=0.2)
+
+plt.savefig(plotname,format="png"); plt.close(fig);

@@ -41,18 +41,19 @@ def count_points( params ):
 # need a resolution requirement. From the analytical solution?
 
 T = 2.*np.pi # s, period
-omg = 2.*np.pi/T # rads/s
+omg = 2.*np.pi/44700. # rads/s 
+#print(omg)
 nu = 1e-6
 dS = np.sqrt(2.*nu/omg) # Stokes' 2nd problem BL thickness
 
-Ngrid = 4 #46
-#Rej = np.array([2200])
-#ai = np.array([0.38])
-Rej = np.linspace(1000,2000,num=Ngrid,endpoint=True)
-ai = np.linspace(0.2,0.3,num=Ngrid,endpoint=True)
+Ngrid = 1 #46
+Rej = np.array([400])
+ai = np.array([0.38])
+#Rej = np.linspace(1000,2000,num=Ngrid,endpoint=True)
+#ai = np.linspace(0.2,0.3,num=Ngrid,endpoint=True)
 
 # grid
-grid_flag = 'uniform' #cosine' # 'uniform' #'  'cosine' # # 
+grid_flag = 'cosine' # 'uniform' #'  'cosine' # # 
 wall_flag = 'moving'
 #Nz = 300
 H = 20. # = Hd/dS, non-dimensional grid height
@@ -83,7 +84,7 @@ for i in range(0,Ngrid):
         a = ai[i]
         U = Re * (nu/dS) # Re = U*dS/nu, so ReB=Re/2
     
-        Nz2 = np.array([200,400])
+        Nz2 = np.array([50,100])
         mu_rn = np.zeros([2])
         mu_in = np.zeros([2])
         #print(mu_rn)
@@ -95,6 +96,7 @@ for i in range(0,Ngrid):
             Nz = Nz2[n]
             print(Nz)
             z,dz = fn.grid_choice( grid_flag , Nz , H ) # non-dimensional grid
+            #print(np.amin(z),np.amax(z))
             grid_params = {'H':H, 'Hd':Hd,'z':z,'dz':dz,'Nz':Nz} 
             # dzz_zeta: could try neumann LBC. Upper BC irrotational (no-stress).
             dzz_zeta = fn.diff_matrix( grid_params , 'dirchlet' , 'dirchlet' , diff_order=2 , stencil_size=3 ) # non-dimensional
@@ -102,17 +104,21 @@ for i in range(0,Ngrid):
             inv_psi = np.linalg.inv( fn.diff_matrix( grid_params , 'thom' , 'dirchlet' , diff_order=2 , stencil_size=3 ) ) # non-dimensional
             eye_matrix = np.eye( Nz , Nz , 0 , dtype=complex )
  
-            dt = CFL*(np.amin(dz*Hd)/U) 
-            Nt = int(T/dt)
+            #dt = CFL*(np.amin(dz*Hd)/U)  
+            #Nt = int(T/dt)
+
+            dt = CFL*(40.*np.amin(dz)/Re) 
+            Nt = int(2.*np.pi/dt)
+
             freq = int(Nt/5)
-            #print('number of time steps, Nt = ',Nt)
+            print('number of time steps, Nt = ',Nt)
 
             params = {'nu': nu, 'omg': omg, 'T': T, 'Td':T, 'U': U, 'inv_psi':inv_psi,  
               'Nz':Nz, 'Nt':Nt, 'Re':Re,'a':a, 'H':H, 'Hd':Hd, 'dzz_zeta':dzz_zeta,
               'dS':dS, 'z':z, 'dz':dz, 'eye_matrix':eye_matrix,'freq':freq} 
 
             Nc = count_points( params )
-            #print('number of points within delta = %i' %(Nc))
+            print('number of points within delta = %i' %(Nc))
 
             Phi0 = np.eye(int(Nz),int(Nz),0,dtype=complex) # initial condition (prinicipal fundamental solution matrix)
             Phin,final_time = fn.rk4_time_step( params, Phi0 , T/Nt, T , 'blennerhassett' )
@@ -128,7 +134,7 @@ for i in range(0,Ngrid):
         print('Wall time elapsed (hh:mm:ss.ms) {}'.format(time_elapsed))
        
         R = 2. # refinement ratio
-        P = 1. # order of convergence
+        P = 2. # order of convergence
         #P = rate_of_convergence(np.log(mu_r[4]),np.log(mu_r[2]),np.log(mu_r[1]),2.,4.)
         mu_r[j,i] = mu_rn[1] + (mu_rn[1] - mu_rn[0]) / ( R**P - 1. ) # CHECK
         mu_i[j,i] = mu_in[1] + (mu_in[1] - mu_in[0]) / ( R**P - 1. ) 

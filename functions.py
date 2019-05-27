@@ -146,18 +146,19 @@ def rk4( params , time , Phin , count , plot_flag , case_flag ):
     A[Nz:int(2*Nz),Nz:int(2*Nz)] = A22
    
   if case_flag == 'zeta2':
+    # rotating solutions:
     u = ( rotating_solution( params, time, 0 )[1] ) / params['U'] # non-dimensional advection
     uzz = ( rotating_solution( params, time, 2 )[7] ) / params['U'] * params['L']**2. # non-dimensional advection
-    bz = ( rotating_solution( params, time, 1 )[3] ) / (params['N']**2.)  
-    psi_inv = np.linalg.inv( partial_zz(  params['z'] , 'robin' , 'dirchlet' ) ) # non-dimensional
-    dzz_zeta = partial_zz( params['z'] , 'open' , 'dirchlet' ) # non-dimensional
-    dzz_b = partial_zz( params['z'] , 'neumann' , 'neumann' ) # non-dimensional
-    dz_b = partial_z( params['z'] , 'neumann' , 'neumann' ) # non-dimensional
-    eye_mat = np.eye( params['Nz'] , params['Nz'] , 0 , dtype=complex )
-    A11 = -u*1j*params['k0']*eye_mat + ( dzz_zeta - (params['k0']**2.) * eye_mat ) / params['Re'] + uzz*1j*params['k0'] * psi_inv
-    A12 = params['Ri'] * ( dz_b * np.sin(params['tht']) - (1j*params['k0']*np.cos(params['tht'])) * eye_mat )   
-    A21 = - bz * 1j * params['k0'] * psi_inv
-    A22 = - u * 1j * params['k0'] + ( dzz_b - (params['k0']**2.) * eye_mat ) / ( params['Re'] * params['Pr'] )
+    bz = ( rotating_solution( params, time, 1 )[3] ) / (params['N']**2.) 
+    #psi_inv = np.linalg.inv( partial_zz(  params['z'] , 'robin' , 'dirchlet' ) ) # non-dimensional
+    #dzz_zeta = partial_zz( params['z'] , 'open' , 'dirchlet' ) # non-dimensional
+    #dzz_b = partial_zz( params['z'] , 'neumann' , 'neumann' ) # non-dimensional
+    #dz_b = partial_z( params['z'] , 'neumann' , 'neumann' ) # non-dimensional
+    #eye_mat = np.eye( params['Nz'] , params['Nz'] , 0 , dtype=complex )
+    A11 = -u*1j*params['a']*params['eye_matrix'] + ( params['dzz_zeta'] - (params['a']**2.) * params['eye_matrix'] ) / params['Re'] + np.dot(uzz*1j*params['a']*params['eye_matrix'],params['inv_psi'])
+    A12 = params['Ri'] * ( params['dz_b'] * np.sin(params['tht']) - (1j*params['a']*np.cos(params['tht'])) * params['eye_matrix'] )   
+    A21 = - bz * 1j * params['a'] * params['inv_psi']
+    A22 = - u*1j*params['a']*params['eye_matrix'] + ( params['dzz_b'] - (params['a']**2.) * params['eye_matrix'] ) / ( params['Re'] * params['Pr'] )
     #A = np.matrix([[A11,A12],[A21,A22]],dtype=complex)  
     Nz = int(params['Nz'])
     A = np.zeros([int(2*params['Nz']),int(2*params['Nz'])],dtype=complex) 
@@ -174,6 +175,10 @@ def rk4( params , time , Phin , count , plot_flag , case_flag ):
     uS,uzS,uzzS = stokes_solution( params, time, 2 ) # dimensional solutions (input time is [0,2pi])
     uS = uS / params['U'] # non-dimensional
     uzzS = uzzS / (params['U']) * params['dS']**2. # non-dimensional
+
+    #u = U * np.exp( -zd/dS ) * np.cos( time - zd/dS )
+    #uz =  U/dS * np.exp( -zd/dS ) * ( np.sin( time - zd/dS ) - np.cos( time - zd/dS ) )
+    #uzz = - 2.*U/(dS**2.) * np.exp( -zd/dS ) * np.sin( time - zd/dS ) 
 
     """
     freq = 100
@@ -453,9 +458,11 @@ def stokes_solution( params, time, order ):
  # all dimensional: 
  zd = params['z']*params['dS'] # m, dimensional grid, zmax ~ Hd
  #z = params['z']
- timed = time #*params['Td']/(2.*np.pi) # s, dimensional time
+ #timed = time #*params['Td']/(2.*np.pi) # s, dimensional time
+ # time goes [0,2pi]
  U = params['U']
- omg = params['omg']
+ #time = params['
+ omg = params['omg'] # omg is 1
  Nz = params['Nz']
  nu = params['nu']
  #L = params['L']
@@ -464,9 +471,9 @@ def stokes_solution( params, time, order ):
  #dS = np.sqrt(2.*nu/omg)
  #print(omg*timed)
  #print(omg*timed)
- u = U * np.exp( -zd/dS ) * np.cos( omg*timed - zd/dS )
- uz =  U/dS * np.exp( -zd/dS ) * ( np.sin( omg*timed - zd/dS ) - np.cos( omg*timed - zd/dS ) )
- uzz = - 2.*U/(dS**2.) * np.exp( -zd/dS ) * np.sin( omg*timed - zd/dS ) 
+ u = U * np.exp( -zd/dS ) * np.cos( time - zd/dS )
+ uz =  U/dS * np.exp( -zd/dS ) * ( np.sin( time - zd/dS ) - np.cos( time - zd/dS ) )
+ uzz = - 2.*U/(dS**2.) * np.exp( -zd/dS ) * np.sin( time - zd/dS ) 
  """
  u = U * np.exp( -z ) * np.cos( omg*timed - z )
  uz =  U/dS * np.exp( -z ) * ( np.sin( omg*timed - z ) - np.cos( omg*timed - z ) )
@@ -501,8 +508,10 @@ def blank_rotating_solution( params, time, order ):
  
 def rotating_solution( params, time, order ):
 
+ # fix all of this for non-dim time, but retain omg:
+
  # all dimensional: 
- z = params['z']*params['Hd'] # m, dimensional grid
+ z = params['z']*params['dS'] # m, dimensional grid #<--------------------------------
  timed = time*params['Td']/(2.*np.pi) # s, dimensional time
  U = params['U']
  N = params['N'] 
