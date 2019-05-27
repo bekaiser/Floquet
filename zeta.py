@@ -46,18 +46,18 @@ omg = 2.*np.pi/44700. # rads/s
 nu = 1e-6
 dS = np.sqrt(2.*nu/omg) # Stokes' 2nd problem BL thickness
 
-Ngrid = 1 #46
-Rej = np.array([400])
-ai = np.array([0.38])
-#Rej = np.linspace(1000,2000,num=Ngrid,endpoint=True)
-#ai = np.linspace(0.2,0.3,num=Ngrid,endpoint=True)
+Ngrid = 10  #46
+#Rej = np.array([400])
+#ai = np.array([0.38])
+Rej = np.linspace(100,980,num=Ngrid,endpoint=True)
+ai = np.linspace(0.2,2.0,num=Ngrid,endpoint=True)
 
 # grid
 grid_flag = 'cosine' # 'uniform' #'  'cosine' # # 
 wall_flag = 'moving'
 #Nz = 300
 H = 20. # = Hd/dS, non-dimensional grid height
-CFL = 0.5
+CFL = 0.125
 #Nz = np.array([50,75,100,125,150,175,200,225,250,300,350,400,450,500,550,600,650])
 #H = np.array([2.,3.,4.,5.,6.,7.,8.,9.,10.,12.,14.,16.,18.,20.,22.,24.,26.])
 Hd = H*dS # m, dimensional domain height (arbitrary choice)
@@ -174,11 +174,22 @@ print('wavenumber = ', ai)
 
 
 if Ngrid >= 2:
-  aI,ReJ = np.meshgrid(ai,Rej)    
-  plotname = figure_path +'strutt1.png' 
-  plottitle = r"$\mu_r$ " #maximum modulus, $N_z$ = %i, $H/\delta_S$ = %.1f" %(int(Nz),H) #r"Re = %.1f a = %.2f Nt = %i" %(Re,a,Nt)
-  fig = plt.figure(figsize=(8, 8))
-  CS = plt.contourf(aI,ReJ,mu_r,cmap='gist_gray')
+  aI,ReJ = np.meshgrid(ai,Rej)  
+  
+  plotname = figure_path +'lmu_r1.png' 
+  plottitle = r"$\log(\mu_r)$ " 
+  fig = plt.figure(figsize=(16, 8))
+  CS = plt.contourf(aI,ReJ,np.log(mu_r),cmap='gist_gray')
+  plt.xlabel(r"a",fontsize=16);
+  plt.ylabel(r"Re",fontsize=16); 
+  plt.colorbar(CS)
+  plt.title(plottitle,fontsize=16);
+  plt.savefig(plotname,format="png"); plt.close(fig);
+
+  plotname = figure_path +'lmu_i1.png' 
+  plottitle = r"$\log(\mu_i)$ " 
+  fig = plt.figure(figsize=(16, 8))
+  CS = plt.contourf(aI,ReJ,np.log(mu_i),cmap='gist_gray')
   plt.xlabel(r"a",fontsize=16);
   plt.ylabel(r"Re",fontsize=16); 
   plt.colorbar(CS)
