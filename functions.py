@@ -16,6 +16,7 @@ from datetime import datetime
 import numpy.distutils.system_info as sysinfo
 sysinfo.get_info('atlas')
 
+
 # =============================================================================    
 # time-step functions functions
 
@@ -257,7 +258,19 @@ def rk4( params , time , Phin , count , plot_flag , case_flag ):
                   'vz':(vz/params['U']*params['L']) , 'vzz':(vzz/params['U']*params['L']**2.) ,
                   'b':(b/(params['N']**2.*params['L'])) , 'bz':(bz/(params['N']**2.)) ,
                   'bzz':(bzz/(params['N']**2.)*params['L']) }
-    base_flow_plots(  base_flow , params , time , count )
+    u_path = '/home/bryan/git_repos/Floquet/base_flow/u/'
+    uz_path = '/home/bryan/git_repos/Floquet/base_flow/uz/'
+    uzz_path = '/home/bryan/git_repos/Floquet/base_flow/uzz/'
+    v_path = '/home/bryan/git_repos/Floquet/base_flow/v/'
+    vz_path = '/home/bryan/git_repos/Floquet/base_flow/vz/'
+    vzz_path = '/home/bryan/git_repos/Floquet/base_flow/vzz/'
+    b_path = '/home/bryan/git_repos/Floquet/base_flow/b/'
+    bz_path = '/home/bryan/git_repos/Floquet/base_flow/bz/'
+    bzz_path = '/home/bryan/git_repos/Floquet/base_flow/bzz/'
+    paths = {'u_path':u_path, 'uz_path':uz_path, 'uzz_path':uzz_path, 
+             'v_path':v_path, 'vz_path':vz_path, 'vzz_path':vzz_path, 
+             'b_path':b_path, 'bz_path':bz_path, 'bzz_path':bzz_path}
+    base_flow_plots(  base_flow , params , time , count, paths )
     krk = np.ones(np.shape(Phin)) 
  
   #if case_flag == 'base_flow_test':
@@ -508,11 +521,12 @@ def blank_rotating_solution( params, time, order ):
  
 def rotating_solution( params, time, order ):
 
- # fix all of this for non-dim time, but retain omg:
+ # time = [0,2pi], non-dimensional (radians) time.
+ # alternative: do time = dimensional time * omega
 
  # all dimensional: 
- z = params['z']*params['dS'] # m, dimensional grid #<--------------------------------
- timed = time*params['Td']/(2.*np.pi) # s, dimensional time
+ z = params['z']*params['dS'] # m, dimensional grid 
+ #timed = time*params['Td']/(2.*np.pi) # s, dimensional time
  U = params['U']
  N = params['N'] 
  omg = params['omg']
@@ -520,7 +534,7 @@ def rotating_solution( params, time, order ):
  Pr = params['Pr']
  nu = params['nu']
  kap = params['kap']
- L = params['L']
+ L = params['L'] # U/omg
  f = params['f'] 
  tht = params['tht']
  Re = params['Re']
@@ -627,23 +641,23 @@ def rotating_solution( params, time, order ):
 
  for i in range(0,Nz):
    u[i] = np.real( ( u1*np.exp(-np.sqrt(phi1)*z[i]) + u2*np.exp(-np.sqrt(phi2)*z[i]) + \
-                     u3*np.exp(-np.sqrt(phi3)*z[i]) + ap*omg ) * np.exp(1j*omg*timed) ) / (N**2.*np.sin(tht))
+                     u3*np.exp(-np.sqrt(phi3)*z[i]) + ap*omg ) * np.exp(1j*time) ) / (N**2.*np.sin(tht))
    if order >= 1:
      uz[i] = np.real( ( - np.sqrt(phi1)*u1*np.exp(-np.sqrt(phi1)*z[i]) - np.sqrt(phi2)*u2*np.exp(-np.sqrt(phi2)*z[i]) - \
-                        np.sqrt(phi3)*u3*np.exp(-np.sqrt(phi3)*z[i]) ) * np.exp(1j*omg*timed) ) / (N**2.*np.sin(tht))
+                        np.sqrt(phi3)*u3*np.exp(-np.sqrt(phi3)*z[i]) ) * np.exp(1j*time) ) / (N**2.*np.sin(tht))
    if order == 2:
      uzz[i] = np.real( ( np.sqrt(phi1)**2.*u1*np.exp(-np.sqrt(phi1)*z[i]) + np.sqrt(phi2)**2.*u2*np.exp(-np.sqrt(phi2)*z[i]) + \
-                     + np.sqrt(phi3)**2.*u3*np.exp(-np.sqrt(phi3)*z[i]) ) * np.exp(1j*omg*timed) ) / (N**2.*np.sin(tht))
+                     + np.sqrt(phi3)**2.*u3*np.exp(-np.sqrt(phi3)*z[i]) ) * np.exp(1j*time) ) / (N**2.*np.sin(tht))
    if f > 0.:
      v[i] = np.real( ( v1*np.exp(-np.sqrt(phi1)*z[i]) + v2*np.exp(-np.sqrt(phi2)*z[i]) + \
                        v3*np.exp(-np.sqrt(phi3)*z[i]) + ap*(omg**2.-(N*np.sin(tht))**2 ) - \
-                       A*N**2.*np.sin(tht) ) * 1j * np.exp(1j*omg*timed) ) / (f * np.cos(tht) * N**2.*np.sin(tht)) 
+                       A*N**2.*np.sin(tht) ) * 1j * np.exp(1j*time) ) / (f * np.cos(tht) * N**2.*np.sin(tht)) 
      if order >= 1:
        vz[i] = np.real( ( - np.sqrt(phi1)*v1*np.exp(-np.sqrt(phi1)*z[i]) - np.sqrt(phi2)*v2*np.exp(-np.sqrt(phi2)*z[i]) - \
-                          np.sqrt(phi3)*v3*np.exp(-np.sqrt(phi3)*z[i]) ) * 1j * np.exp(1j*omg*timed) ) / (f * np.cos(tht) * N**2.*np.sin(tht)) 
+                          np.sqrt(phi3)*v3*np.exp(-np.sqrt(phi3)*z[i]) ) * 1j * np.exp(1j*time) ) / (f * np.cos(tht) * N**2.*np.sin(tht)) 
      if order == 2:
        vzz[i] = np.real( ( np.sqrt(phi1)**2.*v1*np.exp(-np.sqrt(phi1)*z[i]) + np.sqrt(phi2)**2.*v2*np.exp(-np.sqrt(phi2)*z[i]) + \
-                         np.sqrt(phi3)**2.*v3*np.exp(-np.sqrt(phi3)*z[i]) ) * 1j * np.exp(1j*omg*timed) ) / (f * np.cos(tht) * N**2.*np.sin(tht)) 
+                         np.sqrt(phi3)**2.*v3*np.exp(-np.sqrt(phi3)*z[i]) ) * 1j * np.exp(1j*time) ) / (f * np.cos(tht) * N**2.*np.sin(tht)) 
    if f <= 0.:
      v[i] = 0.
      if order >= 1:
@@ -651,19 +665,19 @@ def rotating_solution( params, time, order ):
      if order == 2:
        vzz[i] = 0.
    b[i] = np.real( ( c2*np.exp(-np.sqrt(phi1)*z[i]) + c4*np.exp(-np.sqrt(phi2)*z[i]) + \
-                     c6*np.exp(-np.sqrt(phi3)*z[i]) + ap ) * 1j * np.exp(1j*omg*timed) ) 
+                     c6*np.exp(-np.sqrt(phi3)*z[i]) + ap ) * 1j * np.exp(1j*time) )  #omg*timed) ) 
    if order >= 1:
      bz[i] = np.real( ( - np.sqrt(phi1)*c2*np.exp(-np.sqrt(phi1)*z[i]) - np.sqrt(phi2)*c4*np.exp(-np.sqrt(phi2)*z[i]) - \
-                        np.sqrt(phi3)*c6*np.exp(-np.sqrt(phi3)*z[i]) ) * 1j * np.exp(1j*omg*timed) ) 
+                        np.sqrt(phi3)*c6*np.exp(-np.sqrt(phi3)*z[i]) ) * 1j * np.exp(1j*time) )  #omg*timed) ) 
    if order == 2:
      bzz[i] = np.real( ( np.sqrt(phi1)**2.*c2*np.exp(-np.sqrt(phi1)*z[i]) + np.sqrt(phi2)**2.*c4*np.exp(-np.sqrt(phi2)*z[i]) + \
-                      np.sqrt(phi3)**2.*c6*np.exp(-np.sqrt(phi3)*z[i]) ) * 1j * np.exp(1j*omg*timed) ) 
+                      np.sqrt(phi3)**2.*c6*np.exp(-np.sqrt(phi3)*z[i]) ) * 1j * np.exp(1j*time) )  #omg*timed) )  
  
- if params['wall'] == 'moving':
-   u = u - np.real(U*np.exp(1j*omg*timed))
-   b = b - np.real(ap*1j*np.exp(1j*omg*timed)) # why is this the opposite sign from the non-rotating case? Which one is wrong?
+ if params['wall_flag'] == 'moving':
+   u = u - np.real(U*np.exp(1j*time))  #omg*timed) ) 
+   b = b - np.real(ap*1j*np.exp(1j*time))  #omg*timed) )  # why is this the opposite sign from the non-rotating case? Which one is wrong?
    if f > 0.:
-     v = v - np.real( ( ap*(omg**2.-(N*np.sin(tht))**2 ) - A*N**2.*np.sin(tht) ) * 1j * np.exp(1j*omg*timed) ) / (f * np.cos(tht) * N**2.*np.sin(tht))
+     v = v - np.real( ( ap*(omg**2.-(N*np.sin(tht))**2 ) - A*N**2.*np.sin(tht) ) * 1j * np.exp(1j*time) ) / (f * np.cos(tht) * N**2.*np.sin(tht))
      # subtract the geostropphic component of v; means the wall moves in the along-slope direction
 
  # dimensional output:
@@ -1017,160 +1031,163 @@ def check_matrix(self,string):
 #==============================================================================
 # plotting functions
 
-def base_flow_plots(  base_flow , params , time , count ):
+def base_flow_plots(  base_flow , params , time , count , paths ):
   freq = 1 #np.floor( (1./params['dt'])/200. )
   #print(np.shape(base_flow))
   #print('base_flow count: ',count)
- 
-  #u = base_flow['u']
-  if np.floor(count/freq) == count/freq:
 
-     plotname = params['u_path'] +'%i.png' %(count)
+  #u = base_flow['u']
+  if np.floor(count/params['freq']) == count/params['freq']:
+ 
+     yaxis1 = [-0.05,params['H']]
+     yaxis2 = [-0.05,1.]
+     yaxis3 = [0.,0.03]
+
+     plotname = paths['u_path'] +'%i.png' %(count)
      fig = plt.figure(figsize=(16,4.5))
      plt.subplot(131); plt.plot(base_flow['u'],params['z'],'b')
      plt.xlabel(r"$u/U_\infty$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13)
-     plt.ylim([-0.05,1.05]); plt.grid()
+     plt.ylim(yaxis1); plt.grid()
      plt.title(r"t/T = %.4f, step = %i" %(time,count),fontsize=13)
      plt.subplot(132); plt.plot(base_flow['u'],params['z'],'b')
      plt.xlabel(r"$u/U_\infty$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13) 
-     plt.ylim([-0.001,0.03]); plt.grid()
+     plt.ylim(yaxis2); plt.grid()
      plt.title(r"t/T = %.4f, step = %i" %(time,count),fontsize=13)
      plt.subplot(133); plt.semilogy(base_flow['u'],params['z'],'b')
      plt.xlabel(r"$u/U_\infty$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13)
-     plt.ylim([0.,0.03]); plt.grid()
+     plt.ylim(yaxis3); plt.grid()
      plt.title(r"t/T = %.4f, step = %i" %(time,count),fontsize=13)
      plt.savefig(plotname,format="png"); plt.close(fig);
 
-     plotname = params['uz_path'] +'%i.png' %(count)
+     plotname = paths['uz_path'] +'%i.png' %(count)
      fig = plt.figure(figsize=(16,4.5))
      plt.subplot(131); plt.plot(base_flow['uz'],params['z'],'b')
      plt.xlabel(r"$u_z/\omega$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13)
-     plt.ylim([-0.05,1.05]); plt.grid()
+     plt.ylim(yaxis1); plt.grid()
      plt.title(r"t/T = %.4f, step = %i" %(time,count),fontsize=13)
      plt.subplot(132); plt.plot(base_flow['uz'],params['z'],'b')
      plt.xlabel(r"$u_z/\omega$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13) 
-     plt.ylim([-0.001,0.03]); plt.grid()
+     plt.ylim(yaxis2); plt.grid()
      plt.title(r"t/T = %.4f, step = %i" %(time,count),fontsize=13)
      plt.subplot(133); plt.semilogy(base_flow['uz'],params['z'],'b')
      plt.xlabel(r"$u_z/\omega$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13)
-     plt.ylim([0.,0.03]); plt.grid()
+     plt.ylim(yaxis3); plt.grid()
      plt.title(r"t/T = %.4f, step = %i" %(time,count),fontsize=13)
      plt.savefig(plotname,format="png"); plt.close(fig);
 
-     plotname = params['uzz_path'] +'%i.png' %(count) # ( m/s 1/m^2 ) / ( 1/s * 1/m)  omg/L = omg**2/U  (1/s^2 * s/m) = 1/(ms)
+     plotname = paths['uzz_path'] +'%i.png' %(count) # ( m/s 1/m^2 ) / ( 1/s * 1/m)  omg/L = omg**2/U  (1/s^2 * s/m) = 1/(ms)
      fig = plt.figure(figsize=(16,4.5))
      plt.subplot(131); plt.plot(base_flow['uzz'],params['z'],'b')
      plt.xlabel(r"$u_{zz}L\omega^{-1}$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13)
-     plt.ylim([-0.05,1.05]); plt.grid()
+     plt.ylim(yaxis1); plt.grid()
      plt.title(r"t/T = %.4f, step = %i" %(time,count),fontsize=13)
      plt.subplot(132); plt.plot(base_flow['uzz'],params['z'],'b')
      plt.xlabel(r"$u_{zz}L\omega^{-1}$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13) 
-     plt.ylim([-0.001,0.03]); plt.grid()
+     plt.ylim(yaxis2); plt.grid()
      plt.title(r"t/T = %.4f, step = %i" %(time,count),fontsize=13)
      plt.subplot(133); plt.semilogy(base_flow['uzz'],params['z'],'b')
      plt.xlabel(r"$u_{zz}L\omega^{-1}$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13)
-     plt.ylim([0.,0.03]); plt.grid()
+     plt.ylim(yaxis3); plt.grid()
      plt.title(r"t/T = %.4f, step = %i" %(time,count),fontsize=13)
      plt.savefig(plotname,format="png"); plt.close(fig);
 
      
      if params['Ro'] < np.inf:
        print(params['Ro'])  
-
-       plotname = params['v_path'] +'%i.png' %(count)
+       plotname = paths['v_path'] +'%i.png' %(count)
        fig = plt.figure(figsize=(16,4.5))
        plt.subplot(131); plt.plot(base_flow['v'],params['z'],'b')
        plt.xlabel(r"$v/U_\infty$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13)
-       plt.ylim([-0.05,1.05]); plt.grid()
+       plt.ylim(yaxis1); plt.grid()
        plt.title(r"t/T = %.4f, step = %i" %(time,count),fontsize=13)
        plt.subplot(132); plt.plot(base_flow['v'],params['z'],'b')
        plt.xlabel(r"$v/U_\infty$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13) 
-       plt.ylim([-0.001,0.03]); plt.grid()
+       plt.ylim(yaxis2); plt.grid()
        plt.title(r"t/T = %.4f, step = %i" %(time,count),fontsize=13)
        plt.subplot(133); plt.semilogy(base_flow['v'],params['z'],'b')
        plt.xlabel(r"$v/U_\infty$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13)
-       plt.ylim([0.,0.03]); plt.grid()
+       plt.ylim(yaxis3); plt.grid()
        plt.title(r"t/T = %.4f, step = %i" %(time,count),fontsize=13)
        plt.savefig(plotname,format="png"); plt.close(fig);
 
-       plotname = params['vz_path'] +'%i.png' %(count)
+       plotname = paths['vz_path'] +'%i.png' %(count)
        fig = plt.figure(figsize=(16,4.5))
        plt.subplot(131); plt.plot(base_flow['vz'],params['z'],'b')
        plt.xlabel(r"$v_z/\omega$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13)
-       plt.ylim([-0.05,1.05]); plt.grid()
+       plt.ylim(yaxis1); plt.grid()
        plt.title(r"t/T = %.4f, step = %i" %(time,count),fontsize=13)
        plt.subplot(132); plt.plot(base_flow['vz'],params['z'],'b')
        plt.xlabel(r"$v_z/\omega$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13) 
-       plt.ylim([-0.001,0.03]); plt.grid()
+       plt.ylim(yaxis2); plt.grid()
        plt.title(r"t/T = %.4f, step = %i" %(time,count),fontsize=13)
        plt.subplot(133); plt.semilogy(base_flow['vz'],params['z'],'b')
        plt.xlabel(r"$v_z/\omega$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13)
-       plt.ylim([0.,0.03]); plt.grid()
+       plt.ylim(yaxis3); plt.grid()
        plt.title(r"t/T = %.4f, step = %i" %(time,count),fontsize=13)
        plt.savefig(plotname,format="png"); plt.close(fig);
 
-       plotname = params['vzz_path'] +'%i.png' %(count) # ( m/s 1/m^2 ) / ( 1/s * 1/m)  omg/L = omg**2/U  (1/s^2 * s/m) = 1/(ms)
+       plotname = paths['vzz_path'] +'%i.png' %(count) # ( m/s 1/m^2 ) / ( 1/s * 1/m)  omg/L = omg**2/U  (1/s^2 * s/m) = 1/(ms)
        fig = plt.figure(figsize=(16,4.5))
        plt.subplot(131); plt.plot(base_flow['vzz'],params['z'],'b')
        plt.xlabel(r"$v_{zz}L\omega^{-1}$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13)
-       plt.ylim([-0.05,1.05]); plt.grid()
+       plt.ylim(yaxis1); plt.grid()
        plt.title(r"t/T = %.4f, step = %i" %(time,count),fontsize=13)
        plt.subplot(132); plt.plot(base_flow['vzz'],params['z'],'b')
        plt.xlabel(r"$v_{zz}L\omega^{-1}$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13) 
-       plt.ylim([-0.001,0.03]); plt.grid()
+       plt.ylim(yaxis2); plt.grid()
        plt.title(r"t/T = %.4f, step = %i" %(time,count),fontsize=13)
        plt.subplot(133); plt.semilogy(base_flow['vzz'],params['z'],'b')
        plt.xlabel(r"$v_{zz}L\omega^{-1}$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13)
-       plt.ylim([0.,0.03]); plt.grid()
+       plt.ylim(yaxis3); plt.grid()
        plt.title(r"t/T = %.4f, step = %i" %(time,count),fontsize=13)
        plt.savefig(plotname,format="png"); plt.close(fig);
 
 
-     plotname = params['b_path'] +'%i.png' %(count)
+     plotname = paths['b_path'] +'%i.png' %(count)
      fig = plt.figure(figsize=(16,4.5))
      plt.subplot(131); plt.plot(base_flow['b'],params['z'],'b')
      plt.xlabel(r"$bL^{-1}N^{-2}$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13)
-     plt.ylim([-0.05,1.05]); plt.grid()
+     plt.ylim(yaxis1); plt.grid()
      plt.title(r"t/T = %.4f, step = %i" %(time,count),fontsize=13)
      plt.subplot(132); plt.plot(base_flow['b'],params['z'],'b')
      plt.xlabel(r"bL^{-1}N^{-2}",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13) 
-     plt.ylim([-0.001,0.03]); plt.grid()
+     plt.ylim(yaxis2); plt.grid()
      plt.title(r"t/T = %.4f, step = %i" %(time,count),fontsize=13)
      plt.subplot(133); plt.semilogy(base_flow['b'],params['z'],'b')
      plt.xlabel(r"bL^{-1}N^{-2}",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13)
-     plt.ylim([0.,0.03]); plt.grid()
+     plt.ylim(yaxis3); plt.grid()
      plt.title(r"t/T = %.4f, step = %i" %(time,count),fontsize=13)
      plt.savefig(plotname,format="png"); plt.close(fig);
 
-     plotname = params['bz_path'] +'%i.png' %(count)
+     plotname = paths['bz_path'] +'%i.png' %(count)
      fig = plt.figure(figsize=(16,4.5))
      plt.subplot(131); plt.plot(base_flow['bz'],params['z'],'b')
      plt.xlabel(r"$b_zN^{-2}$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13)
-     plt.ylim([-0.05,1.05]); plt.grid()
+     plt.ylim(yaxis1); plt.grid()
      plt.title(r"t/T = %.4f, step = %i" %(time,count),fontsize=13)
      plt.subplot(132); plt.plot(base_flow['bz'],params['z'],'b')
      plt.xlabel(r"$b_zN^{-2}$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13) 
-     plt.ylim([-0.001,0.03]); plt.grid()
+     plt.ylim(yaxis2); plt.grid()
      plt.title(r"t/T = %.4f, step = %i" %(time,count),fontsize=13)
      plt.subplot(133); plt.semilogy(base_flow['bz'],params['z'],'b')
      plt.xlabel(r"$b_zN^{-2}$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13)
-     plt.ylim([0.,0.03]); plt.grid()
+     plt.ylim(yaxis3); plt.grid()
      plt.title(r"t/T = %.4f, step = %i" %(time,count),fontsize=13)
      plt.savefig(plotname,format="png"); plt.close(fig);
 
-     plotname = params['bzz_path'] +'%i.png' %(count)
+     plotname = paths['bzz_path'] +'%i.png' %(count)
      fig = plt.figure(figsize=(16,4.5))
      plt.subplot(131); plt.plot(base_flow['bzz'],params['z'],'b')
      plt.xlabel(r"$b_{zz}LN^{-2}$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13)
-     plt.ylim([-0.05,1.05]); plt.grid()
+     plt.ylim(yaxis1); plt.grid()
      plt.title(r"t/T = %.4f, step = %i" %(time,count),fontsize=13)
      plt.subplot(132); plt.plot(base_flow['bzz'],params['z'],'b')
      plt.xlabel(r"$b_{zz}LN^{-2}$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13) 
-     plt.ylim([-0.001,0.03]); plt.grid()
+     plt.ylim(yaxis2); plt.grid()
      plt.title(r"t/T = %.4f, step = %i" %(time,count),fontsize=13)
      plt.subplot(133); plt.semilogy(base_flow['bzz'],params['z'],'b')
      plt.xlabel(r"$b_{zz}LN^{-2}$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13)
-     plt.ylim([0.,0.03]); plt.grid()
+     plt.ylim(yaxis3); plt.grid()
      plt.title(r"t/T = %.4f, step = %i" %(time,count),fontsize=13)
      plt.savefig(plotname,format="png"); plt.close(fig);
 

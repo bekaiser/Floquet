@@ -40,7 +40,7 @@ def count_points( params ):
 # need a resolution requirement. From the analytical solution?
 
 T = 2.*np.pi # s, period
-omg = 2.*np.pi/T # rads/s
+omg = 2.*np.pi/44700. # rads/s
 nu = 1e-6
 dS = np.sqrt(2.*nu/omg) # Stokes' 2nd problem BL thickness
 N = 1e-3
@@ -49,18 +49,19 @@ kap = nu/Pr
 f = 0.
 thtc= ma.asin(0.14056342969081848)
 tht = 1./4.*thtc
+Ro = np.inf #omg/(f*np.cos(tht))
 
 Ngrid = 1 #46
-Rej = np.array([1000])
-ai = np.array([0.3])
+Rej = np.array([400])
+ai = np.array([0.38])
 #Rej = np.linspace(200,300,num=Ngrid,endpoint=True)
 #ai = np.linspace(0.05,0.6,num=Ngrid,endpoint=True)
 
 # grid
 grid_flag = 'cosine' # # 
 wall_flag = 'moving'
-Nz = 50
-H = 10. # = Hd/dS, non-dimensional grid height
+Nz = 200
+H = 20. # = Hd/dS, non-dimensional grid height
 CFL = 0.5
 #Nz = np.array([50,75,100,125,150,175,200,225,250,300,350,400,450,500,550,600,650])
 #H = np.array([2.,3.,4.,5.,6.,7.,8.,9.,10.,12.,14.,16.,18.,20.,22.,24.,26.])
@@ -97,21 +98,24 @@ for i in range(0,Ngrid):
         U = Re * (nu/dS) # Re = U*dS/nu, so ReB=Re/2
         L = U/omg
         
-        dt = CFL*(np.amin(dz*Hd)/U) 
-        Nt = int(T/dt)
-        freq = int(Nt/100)
+        #dt = CFL*(40.*np.amin(dz)/Re) 
+        #Nt = int(2.*np.pi/dt)
+        Nt = 100
+
+        freq = int(Nt/10)
         print('number of time steps, Nt = ',Nt)
 
         params = {'nu': nu, 'omg': omg, 'T': T, 'Td':T, 'U': U, 'inv_psi':inv_psi,  
           'Nz':Nz, 'Nt':Nt, 'Re':Re,'a':a, 'H':H, 'Hd':Hd, 'dzz_zeta':dzz_zeta,
           'dS':dS, 'z':z, 'dz':dz, 'eye_matrix':eye_matrix,'freq':freq,
-          'dz_b':dz_b,'dzz_b':dzz_b, 'N':N, 'Pr':Pr, 'kap':kap, 'L':L, 'f':f, 'tht':tht} 
+          'dz_b':dz_b,'dzz_b':dzz_b, 'N':N, 'Pr':Pr, 'kap':kap, 'L':L, 'f':f, 
+          'tht':tht,'wall_flag':wall_flag, 'Ro':Ro} 
 
         Nc = count_points( params )
         print('number of points within delta = %i' %(Nc))
 
         Phi0 = np.eye(int(Nz),int(Nz),0,dtype=complex) # initial condition (prinicipal fundamental solution matrix)
-        Phin,final_time = fn.rk4_time_step( params, Phi0 , T/Nt, T , 'zeta2' )
+        Phin,final_time = fn.rk4_time_step( params, Phi0 , T/Nt, T , 'base_flow_test' )
         Fmult = np.linalg.eigvals(Phin)
         mu_r = np.real(Fmult)
         mu_i = np.imag(Fmult)
