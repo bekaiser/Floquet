@@ -932,12 +932,25 @@ def diff_matrix( params , lower_BC_flag , upper_BC_flag , diff_order , stencil_s
      l1 = l1 + l0 # Neumann for dz(phi)=0 at z=0 (sets phi_ghost = phi_0)
      pzz[0,0:3] = [ l1 , l2 , l3 ]
    if lower_BC_flag == 'thom':
+     """
      l0, l1, l2, l3, l4, l5, l6 = fornberg_weights(z[0], np.append(-z[2],np.append(-z[1],np.append(-z[0],np.append(0.,z[0:3])))), diff_order)[:, diff_order]
      l3 = 0.
      l4 = l4 + l2
      l5 = l5 + l1
      l6 = l6 + l0
      pzz[0,0:3] = [l4, l5, l6]
+     """
+     """
+     l2, l3, l4 = fornberg_weights(z[0], np.append(-z[0],np.append(0.,z[0])), diff_order)[:, diff_order]
+     l3 = 0.
+     l4 = l4 + l2
+     pzz[0,0] = l4
+     """
+     l0, l1, l2, l3, l4 = fornberg_weights(z[0], np.append(-z[0],np.append(0.,z[0:3])), diff_order)[:, diff_order]
+     l1 = 0.
+     l2 = l2 + l0
+     pzz[0,0:3] = [l2, l3, l4]
+
    if lower_BC_flag == 'open':
      l0, l1, l2, l3, l4 = fornberg_weights(z[0], z[0:5], diff_order)[:, diff_order]
      pzz[0,0:5] = [l0, l1, l2, l3, l4]
