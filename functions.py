@@ -249,7 +249,11 @@ def rk4( params , time , Phin , count , plot_flag , case_flag ):
     # doesn't that mean that I get many unique As?
               
     A = np.zeros( [int(params['Nz']),int(params['Nz'])] , dtype=complex ) 
-    A[:,:] = -uS*1j*params['a']*params['eye_matrix'] + ( params['dzz_zeta'] - (params['a']**2.*params['eye_matrix']) ) / params['Re'] + np.dot(uzzS*1j*params['a']*params['eye_matrix'],params['inv_psi']) #- params['eye_matrix']*params['sigma_i']
+    #A[:,:] = -uS*1j*params['a']*params['eye_matrix'] + ( params['dzz_zeta'] - (params['a']**2.*params['eye_matrix']) ) / params['Re'] + np.dot(uzzS*1j*params['a']*params['eye_matrix'],params['inv_psi']) #- params['eye_matrix']*params['sigma_i']
+
+    A[:,:] = - uS*1j*params['a']*params['eye_matrix']*params['Re']/2. \
+             + np.dot(uzzS*1j*params['a']*params['eye_matrix']*params['Re']/2.,params['inv_psi']) \
+             + ( params['dzz_zeta'] - (params['a']**2.*params['eye_matrix']) ) / 2. 
 
   if case_flag == 'base_flow_test':
     b, u, v, bz, uz, vz, bzz, uzz, vzz = rotating_solution( params, time, 2 ) # dimensional
@@ -338,8 +342,19 @@ def grid_choice( grid_flag , Nz , H ):
  # non-dimensional grid 
  if grid_flag == 'uniform': 
    z = np.linspace((H/Nz)/2. , H-(H/Nz)/2., num=Nz, endpoint=True) 
+
  if grid_flag == 'cosine': # half cosine grid
    z = -np.cos(((np.linspace(1., 2.*Nz, num=int(2*Nz)))*2.-1.)/(4.*Nz)*np.pi)*H+H
+  
+ if grid_flag == 'tanh':
+   if H > 5.:
+     alpha = 1.5 # lower alpha for more points near bot boundary
+     gam = 1./5.
+     z = H*np.tanh( gam*np.linspace(Nz/alpha, 0.125, num=int(Nz))) / np.tanh(-gam*((Nz+1)/alpha)) + np.ones([Nz])*H #/ np.tanh( gam ) ( np.ones([Nz]) + 
+     #dzh = zh[1:Nz] - zh[0:Nz-1]
+   else:
+     print('Error: H to low for tanh grid')
+
  z = z[0:Nz] #/ 2. 
  dz = z[1:Nz]-z[0:Nz-1]
  return z,dz

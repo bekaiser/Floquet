@@ -15,7 +15,7 @@ figure_path = './verification_tests/figures/discretization_test/'
 # =============================================================================
 # loop over Nz resolution Chebyshev node grid
 
-max_exp = 15 # power of two, must be equal to or greater than 5 (maximum N = 2^max)
+max_exp = 10 # power of two, must be equal to or greater than 5 (maximum N = 2^max)
 Nr = np.power(np.ones([max_exp-3])*2.,np.linspace(4.,max_exp,max_exp-3)) # resolution 
 Ng = int(np.shape(Nr)[0]) # number of resolutions to try
 
@@ -73,7 +73,7 @@ Ly = np.zeros([Ng]); Lz = np.zeros([Ng]);
 
 output_plot_no = 4
  
-H = 6. #  non-dimensional domain height
+H = 500. #  non-dimensional domain height
 Hd = 1. # dimensional grid scale
 
 for n in range(0, Ng): 
@@ -88,6 +88,15 @@ for n in range(0, Ng):
     zc = zc[0:Nz] # half cosine grid
     dzc = zc[1:Nz] - zc[0:Nz-1]
 
+
+
+    alpha = 1.5 # lower alpha for more points near bot boundary
+    gam = 1./5.
+    #print(np.tanh(gam))
+    zh = H*np.tanh( gam*np.linspace(Nz/alpha, 0.125, num=int(Nz))) / np.tanh(-gam*((Nz+1)/alpha)) + np.ones([Nz])*H #/ np.tanh( gam ) ( np.ones([Nz]) + 
+    dzh = zh[1:Nz] - zh[0:Nz-1]
+
+ 
     wall_flag = 'null'
     params = {'H': H, 'Hd': Hd, 'Nz':Nz, 'wall_flag':wall_flag, 
               'z':z, 'dz':dz, 'grid_scale':Hd} # non-dimensional grid for functions
@@ -98,19 +107,52 @@ for n in range(0, Ng):
     zc = zc*Hd
     #print(np.amax(z))
 
-    if n == 0:
-        plotname = figure_path + 'grid.png'
-        fig = plt.figure(figsize=(16,8)); plt.subplot(1,2,1)
+    if n == 1:
+        plotname = figure_path + 'grids.png'
+        fig = plt.figure(figsize=(24,16)); 
+        plt.subplot(2,3,1)
         plt.plot(np.linspace(0.5, Nz-0.5, num=Nz)/Nz, z, 'ob', label=r"centers")
         plt.xlabel(r"$i^{th}$ grid point divided by N where i={1,N}", fontsize=13)
         plt.ylabel(r"$z$",fontsize=13); plt.grid()
         plt.title(r"uniform grid N = %i" %(Nz),fontsize=13)
-        plt.legend(loc=2,fontsize=13); plt.subplot(1,2,2)
+        plt.legend(loc=2,fontsize=13); 
+        plt.subplot(2,3,2)
         plt.plot(np.linspace(0.5, Nz-0.5, num=Nz)/Nz, zc, 'ob', label=r"centers")
         plt.xlabel(r"$i^{th}$ grid point divided by N where i={1,N}", fontsize=13)
         plt.ylabel(r"$z$", fontsize=13); plt.grid()
         plt.title(r"cosine grid N = %i" %(Nz), fontsize=13)
-        plt.legend(loc=2, fontsize=13); plt.savefig(plotname,format="png")
+        plt.legend(loc=2, fontsize=13); 
+        plt.subplot(2,3,3)
+        plt.plot(np.linspace(0.5, Nz-0.5, num=Nz)/Nz, zh, 'ob', label=r"centers")
+        plt.xlabel(r"$i^{th}$ grid point divided by N where i={1,N}", fontsize=13)
+        plt.ylabel(r"$z$", fontsize=13); plt.grid()
+        plt.title(r"hyperbolics sine grid N = %i, $\alpha=1/5$" %(Nz), fontsize=13)
+        #plt.ylim([-0.1,10.])
+        plt.legend(loc=2, fontsize=13); 
+
+        plt.subplot(2,3,4)
+        plt.semilogy(np.linspace(0.5, Nz-0.5, num=Nz)/Nz, z, 'ob', label=r"centers")
+        plt.xlabel(r"$i^{th}$ grid point divided by N where i={1,N}", fontsize=13)
+        plt.ylabel(r"$z$",fontsize=13); plt.grid()
+        plt.title(r"uniform grid N = %i" %(Nz),fontsize=13)
+        plt.legend(loc=2,fontsize=13); 
+        #plt.ylim([-0.1,10.])
+        plt.subplot(2,3,5)
+        plt.semilogy(np.linspace(0.5, Nz-0.5, num=Nz)/Nz, zc, 'ob', label=r"centers")
+        plt.xlabel(r"$i^{th}$ grid point divided by N where i={1,N}", fontsize=13)
+        plt.ylabel(r"$z$", fontsize=13); plt.grid()
+        plt.title(r"cosine grid N = %i" %(Nz), fontsize=13)
+        plt.legend(loc=2, fontsize=13);
+        #plt.ylim([-0.1,10.]) 
+        plt.subplot(2,3,6)
+        plt.semilogy(np.linspace(0.5, Nz-0.5, num=Nz)/Nz, zh, 'ob', label=r"centers")
+        plt.xlabel(r"$i^{th}$ grid point divided by N where i={1,N}", fontsize=13)
+        plt.ylabel(r"$z$", fontsize=13); plt.grid()
+        plt.title(r"hyperbolics sine grid N = %i, $\alpha=1/5$" %(Nz), fontsize=13)
+        #plt.ylim([-0.1,10.])
+        plt.legend(loc=2, fontsize=13); 
+
+        plt.savefig(plotname,format="png")
         plt.close(fig);
 
     U0 = 2. # free stream velocity

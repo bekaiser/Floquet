@@ -547,13 +547,18 @@ can be obtained through the relationship:
  \label{eq:eigroots}
 \end{equation}
 So for Hill equations the stability can be determined either by the Floquet multipliers 
-or the trace of the monodromy matrix ($\text{tr}[(\Phi^*(T))^2]$). 
+or the trace of the monodromy matrix ($\text{tr}[(\Phi^*(T))^2]$).
+% The Floquet exponent $\gamma_j$ corresponding to the $j$th Floquet multipler can be obtained as:
+% \begin{equation}
+%  \gamma_j=\frac{1}{T}\log(\mu_j)+i\frac{2\pi{}n}{T} \qquad n\in\mathbb{Z}
+% \end{equation}
+% and therefore are not uniquely determined by the multiplier.
 The stability of the system in terms of Floquet multipliers is:
 \begin{enumerate}[label=(\alph*)]
 \item If $|\mu|<1$ (where $|\mu|$ is the complex modulus of $\mu$) then the real part of the corresponding
  Floquet exponent is negative ($\text{Real}[\gamma]<0$) and the Floquet mode is 
  damped. If all of the multipliers $\mu_k$ satisfy this property then the system is 
- \textbf{stable} and decays as $t\rightarrow\infty$.
+ \textbf{stable} and decays as $t\rightarrow\infty$. 
 \item If $|\mu|=1$ then the corresponding
  Floquet exponent is zero ($\text{Real}[\gamma]=0$) and the mode is 
  periodic, although not necessarily oscillating with the base period. 
