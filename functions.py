@@ -466,6 +466,40 @@ def nonrotating_solution( params, time ):
  return  b, u, bz, uz
 """
 
+def steady_rotating_solution( params, order ):
+ # Wunsch (1970) rotating, steady solution
+
+ # all dimensional: 
+ z = params['z']*params['dS'] # m, dimensional grid 
+ N = params['N'] 
+ Nz = params['Nz']
+ Pr = params['Pr']
+ nu = params['nu']
+ kap = params['kap']
+ f = params['f'] 
+ tht = params['tht']
+
+ Pr = nu / kap
+ cot = np.cos(tht) / np.sin(tht)
+
+ d0 = ( ( f*np.cos(tht) / (2.*nu) )**2. + ( N*np.sin(tht)/2. )**2./(nu*kap) )**(-1./4.)
+ vg = -Pr*d0*f*cot # geostrophic far field velocity
+
+ Z = z/d0
+ b0 = N**2.*d0*np.cos(tht)*np.exp(-Z)*np.cos(Z)
+ u0 = 2.*kap*cot/d0*np.exp(-Z)*np.sin(Z)
+ v0 = Pr*f*d0*cot*np.exp(-Z)*np.cos(Z) + vg
+
+ bz0 = -N**2.*np.cos(tht)*np.exp(-Z)*(np.cos(Z)+np.sin(Z))
+ uz0 = 2.*kap*cot*(d0**(-2.))*np.exp(-Z)*(np.cos(Z)-np.sin(Z))
+ vz0 = -Pr*f*cot*np.exp(-Z)*(np.cos(Z)+np.sin(Z)) 
+
+ if order < 1:
+   return np.real(b0), np.real(u0), np.real(v0)
+ if order == 1:
+   return return np.real(b0), np.real(u0), np.real(v0), np.real(bz0), np.real(uz0), np.real(vz0)
+
+
 def blank_stokes_solution( params, time, order ):
 
  u = np.zeros([params['Nz']]); 
