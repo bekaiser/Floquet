@@ -497,7 +497,7 @@ def steady_rotating_solution( params, order ):
  if order < 1:
    return np.real(b0), np.real(u0), np.real(v0)
  if order == 1:
-   return return np.real(b0), np.real(u0), np.real(v0), np.real(bz0), np.real(uz0), np.real(vz0)
+   return np.real(b0), np.real(u0), np.real(v0), np.real(bz0), np.real(uz0), np.real(vz0)
 
 
 def blank_stokes_solution( params, time, order ):
