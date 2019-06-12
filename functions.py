@@ -251,6 +251,14 @@ def rk4( params , time , Phin , count , plot_flag , case_flag ):
     A = np.zeros( [int(params['Nz']),int(params['Nz'])] , dtype=complex ) 
     #A[:,:] = -uS*1j*params['a']*params['eye_matrix'] + ( params['dzz_zeta'] - (params['a']**2.*params['eye_matrix']) ) / params['Re'] + np.dot(uzzS*1j*params['a']*params['eye_matrix'],params['inv_psi']) #- params['eye_matrix']*params['sigma_i']
 
+    # Insert a loop here, from 1:Nz, applied only to zeta. 
+    # In the loop, use inv_psi * phi to perform (dzz-k^2)^(-1)*zeta = psi to get the bottom most 
+    # (but cell centered: not at the boundary) value of psi. This means that there is an 
+    # A matrix for each column of Phi, so the operation A*Phi = krk must be computed Nz times.
+    # -> Need to split up Phi into colums. Then do loop over 
+    # (A_i=[NxN])*(Phi_i=[Nx1]) = krk_i where there are i=[1:N] columns. So all of A but the 
+    # bottom most row can be pre-made, and we're just looping over columns to construct krk=[NxN]
+
     A[:,:] = - uS*1j*params['a']*params['eye_matrix']*params['Re']/2. \
              + np.dot(uzzS*1j*params['a']*params['eye_matrix']*params['Re']/2.,params['inv_psi']) \
              + ( params['dzz_zeta'] - (params['a']**2.*params['eye_matrix']) ) / 2. 
