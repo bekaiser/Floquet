@@ -1,6 +1,12 @@
-#
+# Floquet stability of Stokes 2nd problem
 # Bryan Kaiser
+# 6/12/19
 
+# This code computes the maximum Floquet multiplier for a range of streamwise
+# wavenumbers "a" and Reynolds numbers "Re" using a finite differences,
+# a hyperbolic tangent grid, vorticity-streamfunction governing equations,
+# and a Richardson extrapolation to obtain an estimate of the multipliers
+# at infinite grid resolution.
 
 import h5py
 import numpy as np
@@ -11,6 +17,7 @@ import matplotlib.pyplot as plt
 import scipy   
 from scipy import signal
 import functions as fn
+from datetime import datetime
 
 figure_path = "./figures/"
 
@@ -37,7 +44,7 @@ omg = 2.*np.pi/44700. # rads/s
 nu = 1e-6
 dS = np.sqrt(2.*nu/omg) # Stokes' 2nd problem BL thickness
 
-Ngrid = 2 
+Ngrid = 3 
 #Rej = np.array([3000])
 #ai = np.array([0.36666666666666666])
 Rej = np.linspace(500,3000,num=Ngrid,endpoint=True)

@@ -39,15 +39,15 @@ nu = 1e-6
 dS = np.sqrt(2.*nu/omg) # Stokes' 2nd problem BL thickness
 
 Ngrid = 1 #46
-Rej = np.array([3000])
-ai = np.array([0.36666666666666666])
+Rej = np.array([500])
+ai = np.array([0.05]) #36666666666666666])
 #Rej = np.linspace(200,300,num=Ngrid,endpoint=True)
 #ai = np.linspace(0.05,0.6,num=Ngrid,endpoint=True)
 
 # grid
 grid_flag = 'tanh' # 'uniform' #'  'cosine' # # 
 wall_flag = 'moving'
-Nz = 45
+Nz = 33
 H = 500. # = Hd/dS, non-dimensional grid height
 CFL = 1.
 #Nz = np.array([50,75,100,125,150,175,200,225,250,300,350,400,450,500,550,600,650])
