@@ -259,21 +259,32 @@ def rk4( params , time , Phin , count , plot_flag , case_flag ):
     # (A_i=[NxN])*(Phi_i=[Nx1]) = krk_i where there are i=[1:N] columns. So all of A but the 
     # bottom most row can be pre-made, and we're just looping over columns to construct krk=[NxN]
 
-    A[:,:] = - uS*1j*params['a']*params['eye_matrix']*params['Re']/2. \
-             + np.dot(uzzS*1j*params['a']*params['eye_matrix']*params['Re']/2.,params['inv_psi']) # \
-             #+ ( params['dzz_zeta'] - (params['a']**2.*params['eye_matrix']) ) / 2. 
+    # check that uS and uzzS are multiplying across eye matrices properly
+    A[:,:] = - 0.*uS*1j*params['a']*params['eye_matrix']*params['Re']/2. \
+             + 0.*np.dot(uzzS*1j*params['a']*params['eye_matrix']*params['Re']/2.,params['inv_psi']) \
+             + ( params['dzz_zeta'] - (params['a']**2.*params['eye_matrix']) ) / 2.
+    krk = np.dot(A,Phin) # Runge-Kutta coefficient
 
-    PSI0 = (np.dot(params['inv_psi'],Phin))[params['Nz']-1,:] # psi at the wall-adjacent cell center for Nz solutions
-    krk = np.zeros(np.shape(Phin),dtype=complex)
+    # Thom (1933) 2nd order wall vorticity BC:
+    zeta_wall = ((np.dot(params['inv_psi'],Phin))[params['Nz']-1,:])*2./((params['z'][0])**2.) # check that this is done correctly.
+    # could plot the PSI as a function of time. Are the BCs satisfied?
+
+    for j in range(0,params['Nz']): 
+        # one zeta_wall solution for each column of the fundamental solution matrix 
+        #print(zeta_wall[j])
+        krk[params['Nz']-1,j] = krk[params['Nz']-1,j] - (params['lBC'] * zeta_wall[j]) 
+    """
+    # zeta_wall = 2*psi_0/dz^2, Thom (1933) at the wall-adjacent cell center for Nz solutions
+    #krk = np.zeros(np.shape(Phin),dtype=complex)
     #print((params['z'][0]))
     for j in range(0,params['Nz']): # Thom (1933) 2nd order wall vorticity BC 
-        #print(params['z'][0])
-        dzz = np.multiply(params['dzz_zeta'],np.ones(np.shape(params['dzz_zeta'])),dtype=complex) # makes dzz complex
-        dzz[params['Nz']-1,params['Nz']-5:params['Nz']] = [0.,0.,0.,0.,PSI0[j]*2./((params['z'][0])**2.)]
-        A2 = A + ( dzz - (params['a']**2.*params['eye_matrix']) ) / 2. 
-        krk[:,j] = np.dot(A2,Phin[:,j])
+        # one zeta_wall solution for each column of the fundamental solution matrix 
+        Aj = A
+        Aj[params['Nz']-1,j] = Aj[params['Nz']-1,j] - (lBC * zeta_wall[j]) 
+        krk[:,j] = np.dot(A2,Phin[:,j]) # each column of the RHS of dPhi/dt=A*Phi has 
         #krk = np.dot(A,Phin) 
     #check_matrix(krk,'krk')
+    """
 
   if case_flag == 'base_flow_test':
     b, u, v, bz, uz, vz, bzz, uzz, vzz = rotating_solution( params, time, 2 ) # dimensional
@@ -984,8 +995,8 @@ def diff_matrix( params , lower_BC_flag , upper_BC_flag , diff_order , stencil_s
  z = params['z'] # non-dimensional
  Nz = params['Nz']
  H = params['H'] #params['grid_scale']
- #wall_flag = params['wall_flag']
-
+ wall_BC_flag = params['wall_BC_flag']
+ 
  if stencil_size == 3:
    Dm1 = np.zeros([Nz-1])
    D0 = np.zeros([Nz])
@@ -997,6 +1008,8 @@ def diff_matrix( params , lower_BC_flag , upper_BC_flag , diff_order , stencil_s
    # lower (wall) BC sets variable to zero at the wall
    if lower_BC_flag == 'dirchlet':
      l0, l1, l2, l3 = fornberg_weights(z[0], np.append(-z[0],z[0:3]) ,diff_order)[:,diff_order]
+     lBC = l0
+     #print(lBC)
      l1 = l1 - l0 # Dirchlet phi=0 at z=0 (sets phi_ghost = -phi_0)
      pzz[0,0:3] = [ l1 , l2 , l3 ]
    if lower_BC_flag == 'neumann':
@@ -1089,11 +1102,12 @@ def diff_matrix( params , lower_BC_flag , upper_BC_flag , diff_order , stencil_s
      l4 = l4 + l5 # Neumann for dz(phi)=0 at z=H (sets phi_ghost = phi_N)
    pzz[Nz-2,Nz-5:Nz] = [ l0 , l1 , l2 , l3 , l4 ]
  """
-
+ #print(lBC)
  #pzz = np.multiply(pzz,np.ones(np.shape(pzz)),dtype=complex) # make pzz complex
- return pzz
-
-
+ if wall_BC_flag == 'Thom':
+   return pzz,lBC
+ else:
+   return pzz
 
 
 
