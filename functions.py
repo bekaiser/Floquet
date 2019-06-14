@@ -260,8 +260,20 @@ def rk4( params , time , Phin , count , plot_flag , case_flag ):
     # bottom most row can be pre-made, and we're just looping over columns to construct krk=[NxN]
 
     A[:,:] = - uS*1j*params['a']*params['eye_matrix']*params['Re']/2. \
-             + np.dot(uzzS*1j*params['a']*params['eye_matrix']*params['Re']/2.,params['inv_psi']) \
-             + ( params['dzz_zeta'] - (params['a']**2.*params['eye_matrix']) ) / 2. 
+             + np.dot(uzzS*1j*params['a']*params['eye_matrix']*params['Re']/2.,params['inv_psi']) # \
+             #+ ( params['dzz_zeta'] - (params['a']**2.*params['eye_matrix']) ) / 2. 
+
+    PSI0 = (np.dot(params['inv_psi'],Phin))[params['Nz']-1,:] # psi at the wall-adjacent cell center for Nz solutions
+    krk = np.zeros(np.shape(Phin),dtype=complex)
+    #print((params['z'][0]))
+    for j in range(0,params['Nz']): # Thom (1933) 2nd order wall vorticity BC 
+        #print(params['z'][0])
+        dzz = np.multiply(params['dzz_zeta'],np.ones(np.shape(params['dzz_zeta'])),dtype=complex) # makes dzz complex
+        dzz[params['Nz']-1,params['Nz']-5:params['Nz']] = [0.,0.,0.,0.,PSI0[j]*2./((params['z'][0])**2.)]
+        A2 = A + ( dzz - (params['a']**2.*params['eye_matrix']) ) / 2. 
+        krk[:,j] = np.dot(A2,Phin[:,j])
+        #krk = np.dot(A,Phin) 
+    #check_matrix(krk,'krk')
 
   if case_flag == 'base_flow_test':
     b, u, v, bz, uz, vz, bzz, uzz, vzz = rotating_solution( params, time, 2 ) # dimensional
@@ -286,7 +298,7 @@ def rk4( params , time , Phin , count , plot_flag , case_flag ):
     krk = np.ones(np.shape(Phin)) 
  
   #if case_flag == 'base_flow_test':
-  
+  """
   else:
     # to use ATLAS BLAS library, both arguments in np.dot should be C-ordered. Check with:
     #print(Am.flags,Phi.flags)
@@ -296,7 +308,7 @@ def rk4( params , time , Phin , count , plot_flag , case_flag ):
     #time_elapsed = datetime.now() - start_time_4
     #print('A dot Phi time elapsed (hh:mm:ss.ms) {}'.format(time_elapsed)) 
     check_matrix(krk,'krk')
-
+  """
   return krk
 
 
@@ -577,7 +589,10 @@ def blank_rotating_solution( params, time, order ):
 
  
 def rotating_solution( params, time, order ):
-
+ # phase: 
+ # farfield b = sin(time)
+ # farfield u = cos(time)
+ 
  # time = [0,2pi], non-dimensional (radians) time.
  # alternative: do time = dimensional time * omega
 
@@ -1075,6 +1090,7 @@ def diff_matrix( params , lower_BC_flag , upper_BC_flag , diff_order , stencil_s
    pzz[Nz-2,Nz-5:Nz] = [ l0 , l1 , l2 , l3 , l4 ]
  """
 
+ #pzz = np.multiply(pzz,np.ones(np.shape(pzz)),dtype=complex) # make pzz complex
  return pzz
 
 
