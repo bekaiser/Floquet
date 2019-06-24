@@ -181,9 +181,10 @@ def rk4( params , time , Phin , count , plot_flag , case_flag ):
     #uz =  U/dS * np.exp( -zd/dS ) * ( np.sin( time - zd/dS ) - np.cos( time - zd/dS ) )
     #uzz = - 2.*U/(dS**2.) * np.exp( -zd/dS ) * np.sin( time - zd/dS ) 
 
-    """
-    freq = 100
-    if np.floor(count/freq) == count/freq:
+    
+    pfreq = 2
+    if np.floor(count/pfreq) == count/pfreq:
+      """
       plotname = params['u_path'] +'%i.png' %(count)
       fig = plt.figure(figsize=(16,4.5))
       plt.subplot(131); plt.plot(u,params['z'],'b')
@@ -221,26 +222,49 @@ def rk4( params , time , Phin , count , plot_flag , case_flag ):
       plt.axis([-1.05,1.05,0.,0.03]); plt.grid()
       plt.title(r"t/T = %.4f, step = %i" %(time/params['T'],count),fontsize=13)
       plt.savefig(plotname,format="png"); plt.close(fig);
-
-      plotname = params['phi_path'] +'%i.png' %(count)
+      """
+      Psin = np.real(np.dot(params['inv_psi'],Phin))
+      H = params['H']
+      plotname = params['psi_path'] +'%i.png' %(count)
       fig = plt.figure(figsize=(16,4.5))
-      plt.subplot(131); plt.plot(np.amax(abs(Phin),0),params['z'],'b')
-      plt.xlabel(r"$\Phi$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13)
-      plt.ylim([-0.05,1.05]); plt.grid()
+      plt.subplot(131); plt.plot(Psin,params['z'],'b')
+      plt.xlabel(r"$\Psi$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13)
+      plt.ylim([-1.,H]); plt.grid()
       #plt.axis([-1.05,1.05,-0.05,1.05]); plt.grid()
       plt.title(r"t/T = %.4f, step = %i" %(time/params['T'],count),fontsize=13)
-      plt.subplot(132); plt.plot(np.amax(abs(Phin),0),params['z'],'b')
-      plt.xlabel(r"$\Phi$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13) 
-      plt.ylim([-0.001,0.03]); plt.grid()
-      #plt.axis([-1.05,1.05,-0.001,0.03]); plt.grid()
+      plt.subplot(132); plt.plot(Psin,params['z'],'b')
+      plt.xlabel(r"$\Psi$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13) 
+      #plt.ylim([-0.001,H/500.]); plt.grid()
+      plt.axis([-5.,5.,-0.001,H/500.]); plt.grid()
       plt.title(r"t/T = %.4f, step = %i" %(time/params['T'],count),fontsize=13)
-      plt.subplot(133); plt.semilogy(np.amax(abs(Phin),0),params['z'],'b')
-      plt.xlabel(r"$\Phi$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13)
-      plt.ylim([0.,0.03]); plt.grid()
-      #plt.axis([-1.05,1.05,0.,0.03]); plt.grid()
+      plt.subplot(133); plt.semilogy(Psin,params['z'],'b')
+      plt.xlabel(r"$\Psi$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13)
+      #plt.ylim([1e-2,H]); plt.grid()
+      plt.axis([-10,10,1e-2,H]); plt.grid()
       plt.title(r"t/T = %.4f, step = %i" %(time/params['T'],count),fontsize=13)
       plt.savefig(plotname,format="png"); plt.close(fig);
-    """
+
+      #Psin = np.real(np.dot(params['inv_psi'],Phin))
+      H = params['H']
+      plotname = params['phi_path'] +'%i.png' %(count)
+      fig = plt.figure(figsize=(16,4.5))
+      plt.subplot(131); plt.plot(np.real(Phin),params['z'],'b')
+      plt.xlabel(r"$\Phi$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13)
+      plt.ylim([-1.,H]); plt.grid()
+      #plt.axis([-1.05,1.05,-0.05,1.05]); plt.grid()
+      plt.title(r"t/T = %.4f, step = %i" %(time/params['T'],count),fontsize=13)
+      plt.subplot(132); plt.plot(np.real(Phin),params['z'],'b')
+      plt.xlabel(r"$\Phi$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13) 
+      #plt.ylim([-0.001,H/500.]); plt.grid()
+      plt.axis([-5.,5.,-0.001,H/500.]); plt.grid()
+      plt.title(r"t/T = %.4f, step = %i" %(time/params['T'],count),fontsize=13)
+      plt.subplot(133); plt.semilogy(np.real(Phin),params['z'],'b')
+      plt.xlabel(r"$\Phi$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13)
+      #plt.ylim([1e-2,H]); plt.grid()
+      plt.axis([-10,10,1e-2,H]); plt.grid()
+      plt.title(r"t/T = %.4f, step = %i" %(time/params['T'],count),fontsize=13)
+      plt.savefig(plotname,format="png"); plt.close(fig);
+  
 
     #zeta_0 = (np.dot(params['inv_psi'],Phin))[0] # zeta at the first location from the wall
     #dzz_zeta = diff_matrix( params , 'neumann' , 'dirchlet' , diff_order=2 , stencil_size=3 )
@@ -262,17 +286,23 @@ def rk4( params , time , Phin , count , plot_flag , case_flag ):
     # check that uS and uzzS are multiplying across eye matrices properly
     A[:,:] = - 0.*uS*1j*params['a']*params['eye_matrix']*params['Re']/2. \
              + 0.*np.dot(uzzS*1j*params['a']*params['eye_matrix']*params['Re']/2.,params['inv_psi']) \
-             + ( params['dzz_zeta'] - (params['a']**2.*params['eye_matrix']) ) / 2.
+             + ( params['dzz_zeta'] - (params['a']**2.*params['eye_matrix']) ) / 2. # CHECK !!!
     krk = np.dot(A,Phin) # Runge-Kutta coefficient
 
     # Thom (1933) 2nd order wall vorticity BC:
-    zeta_wall = ((np.dot(params['inv_psi'],Phin))[params['Nz']-1,:])*2./((params['z'][0])**2.) # check that this is done correctly.
+    zeta_wall = ((np.dot(params['inv_psi'],Phin))[params['Nz']-1,:])*2./((params['z'][0])**2.) # CHECK !!!! that this is done correctly.
     # could plot the PSI as a function of time. Are the BCs satisfied?
+ 
+    #if np.floor(count/pfreq) == count/pfreq:  
+    #    print(np.amax(zeta_wall))
+
+    #print('max psi_0 = ',np.amax( abs((np.dot(params['inv_psi'],Phin))[params['Nz']-1,:] ) ) )
+    # extrapolate to psi at the boundary?
 
     for j in range(0,params['Nz']): 
         # one zeta_wall solution for each column of the fundamental solution matrix 
         #print(zeta_wall[j])
-        krk[params['Nz']-1,j] = krk[params['Nz']-1,j] - (params['lBC'] * zeta_wall[j]) 
+        krk[params['Nz']-1,j] = krk[params['Nz']-1,j] + (params['lBC'] * zeta_wall[j]) # CHECK !!!
     """
     # zeta_wall = 2*psi_0/dz^2, Thom (1933) at the wall-adjacent cell center for Nz solutions
     #krk = np.zeros(np.shape(Phin),dtype=complex)

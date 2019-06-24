@@ -41,17 +41,17 @@ nu = 1e-6
 dS = np.sqrt(2.*nu/omg) # Stokes' 2nd problem BL thickness
 
 Ngrid = 1 #46
-Rej = np.array([3000])
+Rej = np.array([1000])
 ai = np.array([0.3]) #36666666666666666])
 #Rej = np.linspace(200,300,num=Ngrid,endpoint=True)
 #ai = np.linspace(0.05,0.6,num=Ngrid,endpoint=True)
 
 # grid
-grid_flag = 'uniform' # 'tanh' # 'uniform' #'  'cosine' # # 
+grid_flag = 'tanh' #'uniform' #'  'cosine' # # 
 wall_BC_flag = 'Thom'
 off_flag = ' '
-Nz = 100
-H = 10. # = Hd/dS, non-dimensional grid height
+Nz = 30
+H = 500. # = Hd/dS, non-dimensional grid height
 CFL = 0.5
 #Nz = np.array([50,75,100,125,150,175,200,225,250,300,350,400,450,500,550,600,650])
 #H = np.array([2.,3.,4.,5.,6.,7.,8.,9.,10.,12.,14.,16.,18.,20.,22.,24.,26.])
@@ -77,6 +77,8 @@ M = np.zeros([Ngrid,Ngrid]);
 Mr = np.zeros([Ngrid,Ngrid]);
 Mi = np.zeros([Ngrid,Ngrid]);
 
+#sf = 1000.
+
 print('\nGrid:',grid_flag)
 print('Nz/H:',Nz/H)
 for i in range(0,Ngrid):
@@ -97,13 +99,15 @@ for i in range(0,Ngrid):
         freq = int(Nt/100)
         print('number of time steps, Nt = ',Nt)
 
-        dzz_psi = fn.diff_matrix( grid_params_inv , 'dirchlet' , 'dirchlet' , diff_order=2 , stencil_size=3 )
+        dzz_psi = fn.diff_matrix( grid_params_inv , 'thom' , 'dirchlet' , diff_order=2 , stencil_size=3 )
         dzz_psi = np.multiply(dzz_psi,np.ones(np.shape(dzz_psi)),dtype=complex)
         inv_psi = np.linalg.inv( dzz_psi - (a**2.*eye_matrix) ) 
 
+        phi_path = '/home/bryan/Desktop/Floquet/figures/phi/'
+        psi_path = '/home/bryan/Desktop/Floquet/figures/psi/'
         params = {'nu': nu, 'omg': omg, 'T': T, 'Td':T, 'U': U, 'inv_psi':inv_psi,  
           'Nz':Nz, 'Nt':Nt, 'Re':Re,'a':a, 'H':H, 'Hd':Hd, 'dzz_zeta':dzz_zeta,
-          'dS':dS, 'z':z, 'dz':dz, 'eye_matrix':eye_matrix,'freq':freq, 'lBC':lBC} 
+          'dS':dS, 'z':z, 'dz':dz, 'eye_matrix':eye_matrix,'freq':freq, 'lBC':lBC, 'phi_path':phi_path, 'psi_path':psi_path} 
 
         Nc = count_points( params )
         print('number of points within delta = %i' %(Nc))
@@ -118,7 +122,7 @@ for i in range(0,Ngrid):
         print('\nmaximum real mu = ',Mr[j,i])      
         print('\nmaximum imag mu = ',Mi[j,i]) 
 
-
+        # add plots of psi final solutions
 
 print('Reynolds number = ',Rej)
 print('wavenumber = ', ai)
