@@ -50,7 +50,7 @@ ai = np.array([0.3]) #36666666666666666])
 grid_flag = 'tanh' #'uniform' #'  'cosine' # # 
 wall_BC_flag = 'Thom'
 off_flag = ' '
-Nz = 30
+Nz = 25
 H = 500. # = Hd/dS, non-dimensional grid height
 CFL = 0.5
 #Nz = np.array([50,75,100,125,150,175,200,225,250,300,350,400,450,500,550,600,650])
