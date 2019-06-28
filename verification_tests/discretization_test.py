@@ -19,7 +19,7 @@ max_exp = 10 # power of two, must be equal to or greater than 5 (maximum N = 2^m
 Nr = np.power(np.ones([max_exp-3])*2.,np.linspace(4.,max_exp,max_exp-3)) # resolution 
 Ng = int(np.shape(Nr)[0]) # number of resolutions to try
 
-Nr[4] = 50
+Nr[4] = 200
 # case 1:
 """
 Linf1 = np.zeros([Ng]) # infinity norm, 1st derivative, uniform grid
@@ -97,6 +97,8 @@ for n in range(0, Ng):
     zh = H*np.tanh( gam*np.linspace(Nz/alpha, 0.125, num=int(Nz))) / np.tanh(-gam*((Nz+1)/alpha)) + np.ones([Nz])*H #/ np.tanh( gam ) ( np.ones([Nz]) + 
     dzh = zh[1:Nz] - zh[0:Nz-1]
     """
+
+    """
     # hybrid tanh
     H1 = H/25.
     Nz1 = int(Nz*13/16)
@@ -121,6 +123,20 @@ for n in range(0, Ng):
     if zh[0] < 0.05:
          zplus = 0.05-zh[0]
          zh = zh + zplus
+    """
+
+    # same as hybrid tanh, but use cosine so that there is clustering again at the top
+    H1 = H/25.
+    Nz1 = int(Nz*13/16)
+    #Nz1 = int(Nz*7/8)
+    z1 = np.linspace((H1/Nz1)/2. , H1-(H1/Nz1)/2., num=Nz1, endpoint=True) 
+    H2 = H-H1
+    Nz2 = int(Nz-Nz1)
+    #z2 = np.zeros([Nz2])
+    z2 = -np.cos(((np.linspace(1., Nz2, num=Nz2))*2.-1.)/(2.*Nz2)*np.pi)*H2/2.+H2/2.
+    z2 = z2 + H1  
+    zh = np.concatenate([z1,z2])
+
 
 
     wall_flag = 'null'

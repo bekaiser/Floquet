@@ -182,9 +182,9 @@ def rk4( params , time , Phin , count , plot_flag , case_flag ):
     #uzz = - 2.*U/(dS**2.) * np.exp( -zd/dS ) * np.sin( time - zd/dS ) 
 
     
-    if params['plot_flag'] == 'on':
-        pfreq = 1000
-        #pfreq = 1000*int(1./params['CFL'])
+    if params['plot_freq'] != 0:
+        pfreq = params['plot_freq']
+        #pfreq = params['plot_freq']*int(1./params['CFL'])
 
         if np.floor(count/pfreq) == count/pfreq:
 
@@ -357,6 +357,19 @@ def grid_choice( grid_flag , Nz , H ):
     if z[0] < 0.05:
          zplus = 0.05-z[0]
          z = z + zplus
+
+ if grid_flag == 'hybrid cos':
+    # same as hybrid tanh, but use cosine so that there is clustering again at the top
+    H1 = H/25.
+    #Nz1 = int(Nz*3/4)
+    Nz1 = int(Nz*1/2)
+    z1 = np.linspace((H1/Nz1)/2. , H1-(H1/Nz1)/2., num=Nz1, endpoint=True) 
+    H2 = H-H1
+    Nz2 = int(Nz-Nz1)
+    #z2 = np.zeros([Nz2])
+    z2 = -np.cos(((np.linspace(1., Nz2, num=Nz2))*2.-1.)/(2.*Nz2)*np.pi)*H2/2.+H2/2.
+    z2 = z2 + H1  
+    z = np.concatenate([z1,z2])
 
  if grid_flag == 'cosine': # half cosine grid
    z = -np.cos(((np.linspace(1., 2.*Nz, num=int(2*Nz)))*2.-1.)/(4.*Nz)*np.pi)*H+H
