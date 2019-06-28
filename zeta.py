@@ -47,37 +47,35 @@ ai = np.array([0.3]) #36666666666666666])
 #ai = np.linspace(0.05,0.6,num=Ngrid,endpoint=True)
 
 # grid
-grid_flag = 'tanh' #'uniform' #'  'cosine' # # 
+grid_flag = 'hybrid tanh' #'uniform' #'  'cosine' # # 
 wall_BC_flag = 'Thom'
-off_flag = ' '
-Nz = 25
+wall_BC_off_flag = ' ' 
+plot_flag = ' ' #'on'
+Nz = 200 
 H = 500. # = Hd/dS, non-dimensional grid height
-CFL = 0.5
+CFL = 0.1 # 0.25 fine for 150, 0.1 for 200
 #Nz = np.array([50,75,100,125,150,175,200,225,250,300,350,400,450,500,550,600,650])
 #H = np.array([2.,3.,4.,5.,6.,7.,8.,9.,10.,12.,14.,16.,18.,20.,22.,24.,26.])
 Hd = H*dS # m, dimensional domain height (arbitrary choice)
 z,dz = fn.grid_choice( grid_flag , Nz , H ) # non-dimensional grid
 grid_params_dzz = {'H':H, 'Hd':Hd,'z':z,'dz':dz,'Nz':Nz, 'wall_BC_flag':wall_BC_flag} 
-grid_params_inv = {'H':H, 'Hd':Hd,'z':z,'dz':dz,'Nz':Nz, 'wall_BC_flag':off_flag} 
+grid_params_inv = {'H':H, 'Hd':Hd,'z':z,'dz':dz,'Nz':Nz, 'wall_BC_flag':wall_BC_off_flag} 
 # dzz_zeta: could try neumann LBC. Upper BC irrotational (no-stress).
 dzz_zeta,lBC = fn.diff_matrix( grid_params_dzz , 'dirchlet' , 'dirchlet' , diff_order=2 , stencil_size=3 ) # non-dimensional
 # inv_psi: lower BCs are no-slip, impermiable, upper BC is impermiable, free-slip
 eye_matrix = np.eye( Nz , Nz , 0 , dtype=complex ) #np.ones([Nz,Nz],dtype=complex) A BIG DIFFERENCE!
 
-# non-dimensional
-#eye_matrix = np.eye( Nz , Nz , 0 , dtype=complex )
 
 # all parts of the forcing need to be complex arrays:
 dzz_zeta = np.multiply(dzz_zeta,np.ones(np.shape(dzz_zeta)),dtype=complex)
 #inv_psi = np.multiply(inv_psi,np.ones(np.shape(inv_psi)),dtype=complex)
 lBC = lBC + 0.j
-#print(lBC)
+
 
 M = np.zeros([Ngrid,Ngrid]);
 Mr = np.zeros([Ngrid,Ngrid]);
 Mi = np.zeros([Ngrid,Ngrid]);
 
-#sf = 1000.
 
 print('\nGrid:',grid_flag)
 print('Nz/H:',Nz/H)
@@ -99,20 +97,56 @@ for i in range(0,Ngrid):
         freq = int(Nt/100)
         print('number of time steps, Nt = ',Nt)
 
+        # pre-constructed matrices:
         dzz_psi = fn.diff_matrix( grid_params_inv , 'thom' , 'dirchlet' , diff_order=2 , stencil_size=3 )
         dzz_psi = np.multiply(dzz_psi,np.ones(np.shape(dzz_psi)),dtype=complex)
         inv_psi = np.linalg.inv( dzz_psi - (a**2.*eye_matrix) ) 
+        A0 = np.zeros( [Nz,Nz] , dtype=complex ) # initial propogator matrix 
 
-        phi_path = '/home/bryan/Desktop/Floquet/figures/phi/'
-        psi_path = '/home/bryan/Desktop/Floquet/figures/psi/'
-        params = {'nu': nu, 'omg': omg, 'T': T, 'Td':T, 'U': U, 'inv_psi':inv_psi,  
-          'Nz':Nz, 'Nt':Nt, 'Re':Re,'a':a, 'H':H, 'Hd':Hd, 'dzz_zeta':dzz_zeta,
+        phi_path = '/home/bryan/git_repos/Floquet/figures/phi/'
+        psi_path = '/home/bryan/git_repos/Floquet/figures/psi/'
+        params = {'nu': nu, 'omg': omg, 'T': T, 'Td':T, 'U': U, 'inv_psi':inv_psi, 'plot_flag':plot_flag, 
+          'Nz':Nz, 'Nt':Nt, 'Re':Re,'a':a, 'H':H, 'Hd':Hd, 'dzz_zeta':dzz_zeta, 'CFL':CFL, 'A0':A0,
           'dS':dS, 'z':z, 'dz':dz, 'eye_matrix':eye_matrix,'freq':freq, 'lBC':lBC, 'phi_path':phi_path, 'psi_path':psi_path} 
 
         Nc = count_points( params )
         print('number of points within delta = %i' %(Nc))
 
         Phi0 = np.eye(int(Nz),int(Nz),0,dtype=complex) # initial condition (prinicipal fundamental solution matrix)
+
+
+        # Plot of initial streamfunction and vorticity
+        Psi0 = np.real(np.dot(params['inv_psi'],Phi0))
+        H = params['H']
+        plotname = params['psi_path'] +'ic.png' #%(count)
+        fig = plt.figure(figsize=(16,4.5))
+        plt.subplot(131); plt.plot(Psi0,params['z'],'b')
+        plt.xlabel(r"$\Psi$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13)
+        plt.ylim([-1.,H]); plt.grid()
+        plt.subplot(132); plt.plot(Psi0,params['z'],'b')
+        plt.xlabel(r"$\Psi$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13) 
+        plt.axis([-5.,5.,-0.001,H/500.]); plt.grid()
+        plt.subplot(133); plt.semilogy(Psi0,params['z'],'b')
+        plt.xlabel(r"$\Psi$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13)
+        plt.axis([-10,10,1e-2,H]); plt.grid()
+        plt.savefig(plotname,format="png"); plt.close(fig);
+
+        H = params['H']
+        plotname = params['phi_path'] +'ic.png' #%(count)
+        fig = plt.figure(figsize=(16,4.5))
+        plt.subplot(131); plt.plot(np.real(Phi0),params['z'],'b')
+        plt.xlabel(r"$\Phi$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13)
+        plt.ylim([-1.,H]); plt.grid()
+        plt.subplot(132); plt.plot(np.real(Phi0),params['z'],'b')
+        plt.xlabel(r"$\Phi$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13) 
+        plt.axis([-5.,5.,-0.001,H/500.]); plt.grid()
+        plt.subplot(133); plt.semilogy(np.real(Phi0),params['z'],'b')
+        plt.xlabel(r"$\Phi$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13)
+        plt.axis([-1.1*np.amax(abs(np.real(Phi0[0:10]))),1.1*np.amax(abs(np.real(Phi0[0:10]))),1e-2,H]); plt.grid()
+        plt.savefig(plotname,format="png"); plt.close(fig);
+
+
+
         Phin,final_time = fn.rk4_time_step( params, Phi0 , T/Nt, T , 'blennerhassett' )
         Fmult = np.linalg.eigvals(Phin)
         M[j,i] = np.amax(np.abs(Fmult)) # maximum modulus, eigenvals = floquet multipliers
