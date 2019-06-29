@@ -50,8 +50,8 @@ ai = np.array([0.3]) #36666666666666666])
 grid_flag = 'hybrid cos' #'uniform' #'  'cosine' # # 
 wall_BC_flag = 'Thom'
 wall_BC_off_flag = ' ' 
-plot_freq = 0
-Nz = 200 
+plot_freq = 0 #1000
+Nz = 100  # 100 has a slight spurious mode
 H = 500. # = Hd/dS, non-dimensional grid height
 CFL = 0.5 # 0.25 fine for 150, 0.1 for 200
 #Nz = np.array([50,75,100,125,150,175,200,225,250,300,350,400,450,500,550,600,650])
