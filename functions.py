@@ -189,49 +189,65 @@ def rk4( params , time , Phin , count , plot_flag , case_flag ):
         if np.floor(count/pfreq) == count/pfreq:
 
             Psin = np.real(np.dot(params['inv_psi'],Phin))
+            Psin0 = np.zeros([1,params['Nz']])
+            for j00 in range(0,params['Nz']):
+               Psin0[:,j00] = extrapolate_to_zero( Psin[:,j00] , params['z'] , 8 )
+            #print(Psin0)
+            #Psin0 = extrapolate_to_zero( Psin[:,1] , params['z'] , 8 )
             H = params['H']
             plotname = params['psi_path'] +'%i.png' %(count)
             fig = plt.figure(figsize=(21,4.75))
             plt.subplot(141); plt.plot(np.real(Psin),params['z'],'b')
+            plt.plot(Psin0,np.zeros([1,params['Nz']]),'or',linewidth=3)
             plt.xlabel(r"$\Psi$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13)
-            plt.ylim([-H*0.05,H*1.05]); plt.grid()
+            #plt.ylim([-H*0.05,H*1.05]); plt.grid()
+            plt.ylim([-0.005,0.5]); plt.grid()
             plt.title(r"t/T = %.4f, step = %i" %(time/params['T'],count),fontsize=13)
             plt.subplot(142); plt.plot(np.real(Psin),params['z'],'b')
+            plt.plot(Psin0,np.zeros([1,params['Nz']]),'or',linewidth=3)
             plt.xlabel(r"$\Psi$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13) 
-            plt.axis([-0.02*np.amax(abs(np.real(Psin))),0.02*np.amax(abs(np.real(Psin))),-0.01,1.1*H/25.]); plt.grid()
+            plt.axis([-0.02*np.amax(abs(np.real(Psin))),0.02*np.amax(abs(np.real(Psin))),-1.,1.1*H/25.]); plt.grid()
             plt.title(r"t/T = %.4f, step = %i" %(time/params['T'],count),fontsize=13)
             plt.subplot(143); plt.semilogy(np.real(Psin),params['z'],'b')
             plt.xlabel(r"$\Psi$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13)
             plt.axis([-0.02*np.amax(abs(np.real(Psin))),0.02*np.amax(abs(np.real(Psin))),4e-2,1.]); plt.grid()
             plt.title(r"t/T = %.4f, step = %i" %(time/params['T'],count),fontsize=13)
             plt.subplot(144); plt.semilogy(np.real(Psin),params['z'],'b')
-            plt.semilogy(np.real(Psin[params['Nz']-1,:]),params['z'],'r',linewidth=2)
+            #plt.semilogy(Psin0,np.zeros([1,params['Nz']]),'or',linewidth=3)
+            #plt.semilogy(np.real(Psin[params['Nz']-1,:]),params['z'],'r',linewidth=2)
             plt.xlabel(r"$\Psi$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13)
             plt.grid()
             #plt.title(r"t/T = %.4f, step = %i" %(time/params['T'],count),fontsize=13)
-            plt.title(r"$|\psi_1|$ = %.8f" %(np.amax(abs(Psin[0,:]))),fontsize=13)
+            plt.title(r"$|\psi_0|$ = %.8f" %(np.amax(abs(Psin0))),fontsize=13)
             plt.savefig(plotname,format="png"); plt.close(fig);
+
+            Phin0 = np.zeros([1,params['Nz']])
+            for j00 in range(0,params['Nz']):
+               Phin0[:,j00] = extrapolate_to_zero( np.real(Phin[:,j00]) , params['z'] , 8 )
 
             H = params['H']
             plotname = params['phi_path'] +'%i.png' %(count)
             fig = plt.figure(figsize=(21,4.75))
             plt.subplot(141); plt.plot(np.real(Phin),params['z'],'b')
+            plt.plot(Phin0,np.zeros([1,params['Nz']]),'or',linewidth=3)
             plt.xlabel(r"$\zeta$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13)
-            plt.ylim([-H*0.05,H*1.05]); plt.grid()
+            #plt.ylim([-H*0.05,H*1.05]); plt.grid()
+            plt.ylim([-0.005,0.5]); plt.grid()
             plt.title(r"t/T = %.4f, step = %i" %(time/params['T'],count),fontsize=13)
             plt.subplot(142); plt.plot(np.real(Phin),params['z'],'b')
+            plt.plot(Phin0,np.zeros([1,params['Nz']]),'or',linewidth=3)
             plt.xlabel(r"$\zeta$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13) 
-            plt.axis([-0.02*np.amax(abs(np.real(Psin))),0.02*np.amax(abs(np.real(Psin))),-0.01,1.1*H/25.]); plt.grid()
+            plt.axis([-0.02*np.amax(abs(np.real(Psin))),0.02*np.amax(abs(np.real(Psin))),-1.,1.1*H/25.]); plt.grid()
             plt.title(r"t/T = %.4f, step = %i" %(time/params['T'],count),fontsize=13)
             plt.subplot(143); plt.semilogy(np.real(Phin),params['z'],'b')
             plt.xlabel(r"$\zeta$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13)
             plt.axis([-0.02*np.amax(abs(np.real(Psin))),0.02*np.amax(abs(np.real(Psin))),4e-2,1.]); plt.grid()
             plt.title(r"t/T = %.4f, step = %i" %(time/params['T'],count),fontsize=13)
             plt.subplot(144); plt.semilogy(np.real(Phin),params['z'],'b');
-            plt.semilogy(np.real(Phin[0,:]),params['z'],'r',linewidth=2)
+            #plt.semilogy(np.real(Phin[0,:]),params['z'],'r',linewidth=2)
             plt.xlabel(r"$\zeta$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13)
             plt.grid()
-            plt.title(r"$|\zeta_1|$ = %.8f" %(np.amax(abs(Phin[0,:]))),fontsize=13)
+            plt.title(r"$|\zeta_0|$ = %.8f" %(np.amax(abs(Phin0))),fontsize=13)
             plt.savefig(plotname,format="png"); plt.close(fig);
   
 
@@ -243,8 +259,8 @@ def rk4( params , time , Phin , count , plot_flag , case_flag ):
              - 5000. * params['eye_matrix'] * np.exp( (params['z']-params['H']) / ( params['H'] / 100. ) )
     # last term is Rayleigh drag sponge 
 
+    # verify that this is done in the right order: <------------------------------------------------------------------------------------!!!
     krk = np.matmul(A,Phin) # Runge-Kutta coefficient
-
     # 1 zeta_wall solution for each column of the fundamental solution matrix, Thom (1933) 2nd order wall vorticity BC:
     zeta_wall = ((np.matmul(params['inv_psi'],Phin))[params['Nz']-1,:])*2./((params['z'][0])**2.) 
     for j in range(0,params['Nz']):  
@@ -1127,9 +1143,12 @@ def diff_matrix( params , lower_BC_flag , upper_BC_flag , diff_order , stencil_s
  else:
    return pzz
 
-
-
-
+def extrapolate_to_zero( data , z , Npoints ):
+    #print(np.shape(z[0:Npoints]))
+    #print(np.shape(np.transpose(fornberg_weights(0.,(z[0:Npoints]),0))))
+    #print(np.shape(data[0:Npoints]))
+    data0 = np.dot(np.transpose(fornberg_weights(0.,(z[0:Npoints]),0)),data[0:Npoints])
+    return data0
 
 
 

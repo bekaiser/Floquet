@@ -1,6 +1,8 @@
 #
 # Bryan Kaiser
 
+# 4 boundary conditions, 2 boundaries, 2 variables (4th order ODE)
+# check how krk is formed: should I matmul after BC?
 
 import h5py
 import numpy as np
@@ -13,9 +15,6 @@ from scipy import signal
 import functions as fn
 
 figure_path = "./figures/"
-
-# thom bot bc on psi gives the same as dirchlet and neumann (for no base flow case)! Something is wrong! 
-# eye matrix or ones somewhere?
 
 # =============================================================================
 
@@ -41,8 +40,8 @@ nu = 1e-6
 dS = np.sqrt(2.*nu/omg) # Stokes' 2nd problem BL thickness
 
 Ngrid = 1 #46
-Rej = np.array([1000])
-ai = np.array([0.3]) #36666666666666666])
+Rej = np.array([1415.68])
+ai = np.array([0.375]) #36666666666666666])
 #Rej = np.linspace(200,300,num=Ngrid,endpoint=True)
 #ai = np.linspace(0.05,0.6,num=Ngrid,endpoint=True)
 
@@ -50,8 +49,8 @@ ai = np.array([0.3]) #36666666666666666])
 grid_flag = 'hybrid cosine' #'  'cosine' # # 
 wall_BC_flag = 'Thom'
 wall_BC_off_flag = ' ' 
-plot_freq = 10000
-Nz = 250  # 100 has a slight spurious mode
+plot_freq = 1000
+Nz = 300  # 100 has a slight spurious mode
 H = 500. # = Hd/dS, non-dimensional grid height
 CFL = 0.5 # 0.25 fine for 150, 0.1 for 200
 #Nz = np.array([50,75,100,125,150,175,200,225,250,300,350,400,450,500,550,600,650])
@@ -103,8 +102,10 @@ for i in range(0,Ngrid):
         inv_psi = np.linalg.inv( dzz_psi - (a**2.*eye_matrix) ) 
         A0 = np.zeros( [Nz,Nz] , dtype=complex ) # initial propogator matrix 
 
-        phi_path = '/home/bryan/git_repos/Floquet/figures/phi/'
-        psi_path = '/home/bryan/git_repos/Floquet/figures/psi/'
+        #phi_path = '/home/bryan/git_repos/Floquet/figures/phi/'
+        #psi_path = '/home/bryan/git_repos/Floquet/figures/psi/'
+        phi_path = '/home/bryan/Desktop/Floquet/figures/phi/'
+        psi_path = '/home/bryan/Desktop/Floquet/figures/psi/'
         params = {'nu': nu, 'omg': omg, 'T': T, 'Td':T, 'U': U, 'inv_psi':inv_psi, 'plot_freq':plot_freq, 
           'Nz':Nz, 'Nt':Nt, 'Re':Re,'a':a, 'H':H, 'Hd':Hd, 'dzz_zeta':dzz_zeta, 'CFL':CFL, 'A0':A0,
           'dS':dS, 'z':z, 'dz':dz, 'eye_matrix':eye_matrix,'freq':freq, 'lBC':lBC, 'phi_path':phi_path, 'psi_path':psi_path} 
