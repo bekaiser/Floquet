@@ -40,7 +40,7 @@ nu = 1e-6
 dS = np.sqrt(2.*nu/omg) # Stokes' 2nd problem BL thickness
 
 Ngrid = 1 #46
-Rej = np.array([1415.68])
+Rej = np.array([1500])
 ai = np.array([0.375]) #36666666666666666])
 #Rej = np.linspace(200,300,num=Ngrid,endpoint=True)
 #ai = np.linspace(0.05,0.6,num=Ngrid,endpoint=True)
@@ -49,10 +49,10 @@ ai = np.array([0.375]) #36666666666666666])
 grid_flag = 'hybrid cosine' #'  'cosine' # # 
 wall_BC_flag = 'Thom'
 wall_BC_off_flag = ' ' 
-plot_freq = 1000
-Nz = 300  # 100 has a slight spurious mode
+plot_freq = 5000
+Nz = 250  # 100 has a slight spurious mode
 H = 500. # = Hd/dS, non-dimensional grid height
-CFL = 0.5 # 0.25 fine for 150, 0.1 for 200
+CFL = 0.1 # 0.25 fine for 150, 0.1 for 200
 #Nz = np.array([50,75,100,125,150,175,200,225,250,300,350,400,450,500,550,600,650])
 #H = np.array([2.,3.,4.,5.,6.,7.,8.,9.,10.,12.,14.,16.,18.,20.,22.,24.,26.])
 Hd = H*dS # m, dimensional domain height (arbitrary choice)
@@ -75,6 +75,9 @@ M = np.zeros([Ngrid,Ngrid]);
 Mr = np.zeros([Ngrid,Ngrid]);
 Mi = np.zeros([Ngrid,Ngrid]);
 
+MP = np.zeros([Ngrid,Ngrid]);
+MrP = np.zeros([Ngrid,Ngrid]);
+MiP = np.zeros([Ngrid,Ngrid]);
 
 print('\nGrid:',grid_flag)
 print('Nz/H:',Nz/H)
@@ -147,16 +150,23 @@ for i in range(0,Ngrid):
         plt.savefig(plotname,format="png"); plt.close(fig);
 
 
-
         Phin,final_time = fn.rk4_time_step( params, Phi0 , T/Nt, T , 'blennerhassett' )
         Fmult = np.linalg.eigvals(Phin)
         M[j,i] = np.amax(np.abs(Fmult)) # maximum modulus, eigenvals = floquet multipliers
         Mr[j,i] = np.amax(np.real(Fmult))
         Mi[j,i] = np.amax(np.imag(Fmult))
-        print('\nmaximum modulus = ',M[j,i])
-        print('\nmaximum real mu = ',Mr[j,i])      
-        print('\nmaximum imag mu = ',Mi[j,i]) 
+        print('\nmaximum modulus Phi = ',M[j,i])
+        print('\nmaximum real mu Phi = ',Mr[j,i])      
+        print('\nmaximum imag mu Phi = ',Mi[j,i]) 
 
+        #Psin = np.real(np.dot(params['inv_psi'],Phin))
+        Fmult_Psi = np.linalg.eigvals(np.real(np.dot(params['inv_psi'],Phin)))
+        MP[j,i] = np.amax(np.abs(Fmult_Psi)) # maximum modulus, eigenvals = floquet multipliers
+        MrP[j,i] = np.amax(np.real(Fmult_Psi))
+        MiP[j,i] = np.amax(np.imag(Fmult_Psi))
+        print('\nmaximum modulus Psi = ',MP[j,i])
+        print('\nmaximum real mu Psi = ',MrP[j,i])      
+        print('\nmaximum imag mu Psi = ',MiP[j,i]) 
         # add plots of psi final solutions
 
 print('Reynolds number = ',Rej)
