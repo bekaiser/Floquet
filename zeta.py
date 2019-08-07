@@ -45,18 +45,19 @@ omg = 2.*np.pi/44700. # rads/s
 nu = 1e-6
 dS = np.sqrt(2.*nu/omg) # Stokes' 2nd problem BL thickness
 
-Ngrid = 1 #46
-Rej = np.array([1500])
-ai = np.array([0.475]) #36666666666666666])
-#Rej = np.linspace(200,300,num=Ngrid,endpoint=True)
-#ai = np.linspace(0.05,0.6,num=Ngrid,endpoint=True)
+Nj = 3 #46
+Ni = 18 #46
+#Rej = np.array([1500])
+#ai = np.array([0.475]) #36666666666666666])
+Rej = np.linspace(1333.33333333333,1400,num=Nj,endpoint=True)
+ai = np.linspace(0.033333333333,0.6,num=Ni,endpoint=True)
 
 # grid
 grid_flag = 'hybrid cosine' #'  'cosine' # # 
 wall_BC_flag = 'Thom'
 wall_BC_off_flag = ' ' 
 plot_freq = 0
-Nz = 140 # 100 has a slight spurious mode
+Nz = 260 # 100 has a slight spurious mode
 H = 500. # = Hd/dS, non-dimensional grid height
 CFL = 0.5 # 0.25 fine for 150, 0.1 for 200
 #Nz = np.array([50,75,100,125,150,175,200,225,250,300,350,400,450,500,550,600,650])
@@ -77,18 +78,18 @@ dzz_zeta = np.multiply(dzz_zeta,np.ones(np.shape(dzz_zeta)),dtype=complex)
 lBC = lBC + 0.j
 
 
-M = np.zeros([Ngrid,Ngrid]);
-Mr = np.zeros([Ngrid,Ngrid]);
-Mi = np.zeros([Ngrid,Ngrid]);
+M = np.zeros([Nj,Ni]);
+Mr = np.zeros([Nj,Ni]);
+Mi = np.zeros([Nj,Ni]);
 
-MP = np.zeros([Ngrid,Ngrid]);
-MrP = np.zeros([Ngrid,Ngrid]);
-MiP = np.zeros([Ngrid,Ngrid]);
+MP = np.zeros([Nj,Ni]);
+MrP = np.zeros([Nj,Ni]);
+MiP = np.zeros([Nj,Ni]);
 
 print('\nGrid:',grid_flag)
 print('Nz/H:',Nz/H)
-for i in range(0,Ngrid):
-    for j in range(0,Ngrid):
+for i in range(0,Ni):
+    for j in range(0,Nj):
 
         print('\nReynolds number: %.1f' %(Rej[j]) )
         print('disturbance wavenumber: %.2f' %(ai[i]) )
