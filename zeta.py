@@ -10,6 +10,7 @@ from scipy import signal
 import functions as fn
 
 figure_path = "./figures/"
+stat_path = "./output/"
 email_flag = 1
 ic_plot_flag = 0
 
@@ -18,7 +19,7 @@ if email_flag == 1:
     port = 465  # For SSL
     smtp_server = "smtp.gmail.com"
     sender_email = "my.sent.data.kaiser@gmail.com"  # Enter your address
-    receiver_email = "bryankais@gmail.com"  # Enter receiver address
+    receiver_email = "my.sent.data.kaiser@gmail.com"  # Enter receiver address
     password = 'wh$0i1BTu' #input("Type your password and press enter: ")
 
 
@@ -103,7 +104,7 @@ for i in range(0,Ni):
         dt = CFL*(z[0]/Re) 
         Nt = int(2.*np.pi/dt)
       
-        freq = int(Nt/100)
+        freq = int(Nt/10)
         print('number of time steps, Nt = ',Nt)
 
         # pre-constructed matrices:
@@ -166,7 +167,7 @@ for i in range(0,Ni):
         print('\nmaximum imag mu Phi = ',Mi[j,i]) 
 
         #Psin = np.real(np.dot(params['inv_psi'],Phin))
-        Fmult_Psi = np.linalg.eigvals(np.real(np.dot(params['inv_psi'],Phin)))
+        Fmult_Psi = np.linalg.eigvals(np.dot(params['inv_psi'],Phin))
         MP[j,i] = np.amax(np.abs(Fmult_Psi)) # maximum modulus, eigenvals = floquet multipliers
         MrP[j,i] = np.amax(np.real(Fmult_Psi))
         MiP[j,i] = np.amax(np.imag(Fmult_Psi))
@@ -176,26 +177,40 @@ for i in range(0,Ni):
         # add plots of psi final solutions
 
         if email_flag == 1:
+            Fmult = np.array2string(Fmult, precision=6, separator=',',suppress_small=True)
+            Fmult_Psi = np.array2string(Fmult_Psi, precision=6, separator=',',suppress_small=True)
             message = """\
             Subject: data k = %.3f Re = %.1f
 
             Nz = %i\n
             CFL = %.3f\n
             maximum modulus zeta = %.3f\n 
-            maximum modulus psi = %.3f """ %(ai[i],Rej[j],Nz,CFL,M[j,i],MP[j,i])
+            maximum modulus psi = %.3f\n zeta multiplier:\n""" %(ai[i],Rej[j],Nz,CFL,M[j,i],MP[j,i])
+            message = message + Fmult + """\n psi multiplier:\n""" + Fmult_Psi
             context = ssl.create_default_context()
             with smtplib.SMTP_SSL(smtp_server, port, context=context) as server:
                 server.login(sender_email, password)
                 server.sendmail(sender_email, receiver_email, message)
 
 
-print('Reynolds number = ',Rej)
-print('wavenumber = ', ai)
+print('Reynolds number range = ',Rej)
+print('wavenumber range = ', ai)
 print('Nz = ',Nz)
 print('CFL = ',CFL)
-print('Nt = ',Nt)
 print('Grid = ',grid_flag)
 print('number of points within delta = %i' %(Nc))
-
-
+print('\nmaximum modulus Phi = ',M)
+print('\nmaximum modulus Psi = ',MP)
+h5_filename = stat_path + 'multiplier_Re%i_Re%i_a%i_a%i.h5' %(Re[0],Re[Ni-1],a[0],a[Nj-1])
+f2 = h5py.File(h5_filename, "w")
+dset = f2.create_dataset('CFL', data=CFL, dtype='f8')
+dset = f2.create_dataset('Nz', data=Nz, dtype='f8')
+dset = f2.create_dataset('H', data=H, dtype='f8')
+dset = f2.create_dataset('M', data=M, dtype='f8')
+dset = f2.create_dataset('MP', data=MP, dtype='f8')
+dset = f2.create_dataset('Mr', data=M, dtype='f8')
+dset = f2.create_dataset('MrP', data=MP, dtype='f8')
+dset = f2.create_dataset('Mi', data=M, dtype='f8')
+dset = f2.create_dataset('MiP', data=MP, dtype='f8')
+print('\nMultipliers computed and written to file' + h5_filename + '.\n')
 
