@@ -46,12 +46,12 @@ omg = 2.*np.pi/44700. # rads/s
 nu = 1e-6
 dS = np.sqrt(2.*nu/omg) # Stokes' 2nd problem BL thickness
 
-Nj = 3 #46
-Ni = 18 #46
+Nj = 3 # 3
+Ni = 3 # 18
 #Rej = np.array([1500])
 #ai = np.array([0.475]) #36666666666666666])
 Rej = np.linspace(1333.33333333333,1400,num=Nj,endpoint=True)
-ai = np.linspace(0.033333333333,0.6,num=Ni,endpoint=True)
+ai = np.linspace(0.033333333333,0.1,num=Ni,endpoint=True)
 
 # grid
 grid_flag = 'hybrid cosine' #'  'cosine' # # 
@@ -201,7 +201,8 @@ print('Grid = ',grid_flag)
 print('number of points within delta = %i' %(Nc))
 print('\nmaximum modulus Phi = ',M)
 print('\nmaximum modulus Psi = ',MP)
-h5_filename = stat_path + 'multiplier_Re%i_Re%i_a%i_a%i.h5' %(Re[0],Re[Ni-1],a[0],a[Nj-1])
+h5_filename = stat_path + "multiplier_Re%i_Re%i_a%i_a%i.h5" %(Rej[0],Rej[Ni-1],int(ai[0]*1000),int(ai[Nj-1]*1000))
+print(h5_filename)
 f2 = h5py.File(h5_filename, "w")
 dset = f2.create_dataset('CFL', data=CFL, dtype='f8')
 dset = f2.create_dataset('Nz', data=Nz, dtype='f8')
