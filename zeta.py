@@ -11,7 +11,7 @@ import functions as fn
 
 figure_path = "./figures/"
 stat_path = "./output/"
-email_flag = 1
+email_flag = 0
 ic_plot_flag = 0
 
 if email_flag == 1:
@@ -46,19 +46,19 @@ omg = 2.*np.pi/44700. # rads/s
 nu = 1e-6
 dS = np.sqrt(2.*nu/omg) # Stokes' 2nd problem BL thickness
 
-Nj = 3 # 3
-Ni = 3 # 18
-#Rej = np.array([1500])
-#ai = np.array([0.475]) #36666666666666666])
-Rej = np.linspace(1333.33333333333,1400,num=Nj,endpoint=True)
-ai = np.linspace(0.033333333333,0.1,num=Ni,endpoint=True)
+Nj = 1 # 3
+Ni = 1 # 18
+Rej = np.array([1500])
+ai = np.array([0.475]) #36666666666666666])
+#Rej = np.linspace(1333.33333333333,1400,num=Nj,endpoint=True)
+#ai = np.linspace(0.033333333333,0.1,num=Ni,endpoint=True)
 
 # grid
 grid_flag = 'hybrid cosine' #'  'cosine' # # 
 wall_BC_flag = 'Thom'
 wall_BC_off_flag = ' ' 
 plot_freq = 0
-Nz = 260 # 100 has a slight spurious mode
+Nz = 500 # 100 has a slight spurious mode
 H = 500. # = Hd/dS, non-dimensional grid height
 CFL = 0.5 # 0.25 fine for 150, 0.1 for 200
 #Nz = np.array([50,75,100,125,150,175,200,225,250,300,350,400,450,500,550,600,650])
@@ -104,7 +104,7 @@ for i in range(0,Ni):
         dt = CFL*(z[0]/Re) 
         Nt = int(2.*np.pi/dt)
       
-        freq = int(Nt/10)
+        freq = int(Nt/100)
         print('number of time steps, Nt = ',Nt)
 
         # pre-constructed matrices:
@@ -201,7 +201,7 @@ print('Grid = ',grid_flag)
 print('number of points within delta = %i' %(Nc))
 print('\nmaximum modulus Phi = ',M)
 print('\nmaximum modulus Psi = ',MP)
-h5_filename = stat_path + "multiplier_Re%i_Re%i_a%i_a%i.h5" %(Rej[0],Rej[Ni-1],int(ai[0]*1000),int(ai[Nj-1]*1000))
+h5_filename = stat_path + "multiplier_Re%i_Re%i_a%i_a%i.h5" %(Rej[0],Rej[Nj-1],int(ai[0]*1000),int(ai[Ni-1]*1000))
 print(h5_filename)
 f2 = h5py.File(h5_filename, "w")
 dset = f2.create_dataset('CFL', data=CFL, dtype='f8')

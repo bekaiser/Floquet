@@ -381,8 +381,8 @@ def grid_choice( grid_flag , Nz , H ):
 
  if grid_flag == 'hybrid cosine':
     # same as hybrid tanh, but use cosine so that there is clustering again at the top
-    H1 = H/12.5
-    Nz1 = int(Nz*7/8)
+    H1 = H/6.25
+    Nz1 = int(Nz*15/16)
     #Nz1 = int(Nz*3/4)
     print('Nz1 = ',Nz1)
     z1 = np.linspace((H1/Nz1)/2. , H1-(H1/Nz1)/2., num=Nz1, endpoint=True) 
