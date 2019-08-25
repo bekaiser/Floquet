@@ -46,23 +46,21 @@ omg = 2.*np.pi/44700. # rads/s
 nu = 1e-6
 dS = np.sqrt(2.*nu/omg) # Stokes' 2nd problem BL thickness
 
-Nj = 1 # 3
-Ni = 1 # 18
-Rej = np.array([1500])
-ai = np.array([0.475]) #36666666666666666])
-#Rej = np.linspace(1333.33333333333,1400,num=Nj,endpoint=True)
-#ai = np.linspace(0.033333333333,0.1,num=Ni,endpoint=True)
+Rej = np.array([1000])
+#ai = np.array([0.475]) 
+#Rej = np.linspace(1333.33333333333,1400,num=4,endpoint=True)
+ai = np.linspace(0.1,0.2,num=2,endpoint=True)
+Nj = np.shape(Rej)[0]
+Ni = np.shape(ai)[0]
 
 # grid
-grid_flag = 'hybrid cosine' #'  'cosine' # # 
+grid_flag = 'uniform' #'hybrid cosine' #'  'cosine' # # 
 wall_BC_flag = 'Thom'
 wall_BC_off_flag = ' ' 
-plot_freq = 0
-Nz = 500 # 100 has a slight spurious mode
-H = 500. # = Hd/dS, non-dimensional grid height
+plot_freq = 0 
+Nz = 50 # 100 has a slight spurious mode
+H = 10. # = Hd/dS, non-dimensional grid height
 CFL = 0.5 # 0.25 fine for 150, 0.1 for 200
-#Nz = np.array([50,75,100,125,150,175,200,225,250,300,350,400,450,500,550,600,650])
-#H = np.array([2.,3.,4.,5.,6.,7.,8.,9.,10.,12.,14.,16.,18.,20.,22.,24.,26.])
 Hd = H*dS # m, dimensional domain height (arbitrary choice)
 z,dz = fn.grid_choice( grid_flag , Nz , H ) # non-dimensional grid
 grid_params_dzz = {'H':H, 'Hd':Hd,'z':z,'dz':dz,'Nz':Nz, 'wall_BC_flag':wall_BC_flag} 
@@ -104,7 +102,7 @@ for i in range(0,Ni):
         dt = CFL*(z[0]/Re) 
         Nt = int(2.*np.pi/dt)
       
-        freq = int(Nt/100)
+        freq = int(Nt/10)
         print('number of time steps, Nt = ',Nt)
 
         # pre-constructed matrices:
@@ -175,6 +173,16 @@ for i in range(0,Ni):
         print('\nmaximum real mu Psi = ',MrP[j,i])      
         print('\nmaximum imag mu Psi = ',MiP[j,i]) 
         # add plots of psi final solutions
+
+        h5_filename = stat_path + "multiplier_Re%i_a%i.h5" %(Rej[j],int(ai[i]*1000))
+        f2 = h5py.File(h5_filename, "w")
+        dset = f2.create_dataset('CFL', data=CFL, dtype='f8')
+        dset = f2.create_dataset('Nz', data=Nz, dtype='f8')
+        dset = f2.create_dataset('H', data=H, dtype='f8')
+        dset = f2.create_dataset('multR', data=np.real(Fmult), dtype='f8')
+        dset = f2.create_dataset('multI', data=np.imag(Fmult), dtype='f8')
+        dset = f2.create_dataset('mult_psiR', data=np.real(Fmult_Psi), dtype='f8')
+        dset = f2.create_dataset('mult_psiI', data=np.imag(Fmult_Psi), dtype='f8')
 
         if email_flag == 1:
             Fmult = np.array2string(Fmult, precision=6, separator=',',suppress_small=True)

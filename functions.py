@@ -381,7 +381,7 @@ def grid_choice( grid_flag , Nz , H ):
 
  if grid_flag == 'hybrid cosine':
     # same as hybrid tanh, but use cosine so that there is clustering again at the top
-    H1 = H/6.25
+    H1 = H/5.
     Nz1 = int(Nz*15/16)
     #Nz1 = int(Nz*3/4)
     print('Nz1 = ',Nz1)
