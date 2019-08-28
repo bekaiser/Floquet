@@ -44,9 +44,12 @@ runpy.run_path('./verification_tests/LTE_test.py')
 
 print('\nVerifying Runge-Kutta radian time step test:\n')
 runpy.run_path('./verification_tests/sinusoid_integration_test.py')
-"""
+
 print('\nVerifying spatial discrete derivatives are computed properly:\n')
 runpy.run_path('./verification_tests/discretization_test.py')
+"""
+print('\nVerifying spatial discrete derivatives are computed properly:\n')
+runpy.run_path('./verification_tests/discretization_test2.py')
 """
 # takes a long time:
 print('\nVerifying Floquet stability calculation using the Mathieu equation:\n')

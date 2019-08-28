@@ -13,6 +13,9 @@ figure_path = "./figures/"
 stat_path = "./output/"
 email_flag = 0
 ic_plot_flag = 0
+damper_scale = 100. # off if set to 0.
+phi_path = '/home/bryan/git_repos/Floquet/figures/phi/'
+psi_path = '/home/bryan/git_repos/Floquet/figures/psi/'
 
 if email_flag == 1:
     import smtplib, ssl
@@ -46,35 +49,42 @@ omg = 2.*np.pi/44700. # rads/s
 nu = 1e-6
 dS = np.sqrt(2.*nu/omg) # Stokes' 2nd problem BL thickness
 
-Rej = np.array([1000])
-#ai = np.array([0.475]) 
-#Rej = np.linspace(1333.33333333333,1400,num=4,endpoint=True)
-ai = np.linspace(0.1,0.2,num=2,endpoint=True)
-Nj = np.shape(Rej)[0]
-Ni = np.shape(ai)[0]
+Rej = np.array([1500])
+ai = np.array([0.475]) 
+#Rej = np.linspace(1300.,1400.,num=4,endpoint=True)
+#ai = np.linspace(0.025,0.5,num=20,endpoint=True)
 
 # grid
 grid_flag = 'uniform' #'hybrid cosine' #'  'cosine' # # 
 wall_BC_flag = 'Thom'
 wall_BC_off_flag = ' ' 
-plot_freq = 0 
-Nz = 50 # 100 has a slight spurious mode
-H = 10. # = Hd/dS, non-dimensional grid height
-CFL = 0.5 # 0.25 fine for 150, 0.1 for 200
+plot_freq = 2000 
+Nz = 200 # 
+H = 32. # = Hd/dS, non-dimensional grid height
+CFL = 0.5 # 
 Hd = H*dS # m, dimensional domain height (arbitrary choice)
 z,dz = fn.grid_choice( grid_flag , Nz , H ) # non-dimensional grid
+
+
+# REVIEW: pre-constructed matrices:
+
 grid_params_dzz = {'H':H, 'Hd':Hd,'z':z,'dz':dz,'Nz':Nz, 'wall_BC_flag':wall_BC_flag} 
 grid_params_inv = {'H':H, 'Hd':Hd,'z':z,'dz':dz,'Nz':Nz, 'wall_BC_flag':wall_BC_off_flag} 
+
 # dzz_zeta: could try neumann LBC. Upper BC irrotational (no-stress).
 dzz_zeta,lBC = fn.diff_matrix( grid_params_dzz , 'dirchlet' , 'dirchlet' , diff_order=2 , stencil_size=3 ) # non-dimensional
 # inv_psi: lower BCs are no-slip, impermiable, upper BC is impermiable, free-slip
-eye_matrix = np.eye( Nz , Nz , 0 , dtype=complex ) #np.ones([Nz,Nz],dtype=complex) A BIG DIFFERENCE!
-
+eye_matrix = np.eye( Nz , Nz , 0 , dtype=complex ) # identity matrix
 
 # all parts of the forcing need to be complex arrays:
-dzz_zeta = np.multiply(dzz_zeta,np.ones(np.shape(dzz_zeta)),dtype=complex)
+dzz_zeta = np.multiply(dzz_zeta,np.ones(np.shape(dzz_zeta)),dtype=complex) # Checks!
 #inv_psi = np.multiply(inv_psi,np.ones(np.shape(inv_psi)),dtype=complex)
 lBC = lBC + 0.j
+
+dzz_psi = fn.diff_matrix( grid_params_inv , 'dirchlet' , 'dirchlet' , diff_order=2 , stencil_size=3 ) # CHANGE TO THOM BC?
+dzz_psi = np.multiply(dzz_psi,np.ones(np.shape(dzz_psi)),dtype=complex)
+inv_psi = np.linalg.inv( dzz_psi - (a**2.*eye_matrix) ) # CHECK THAT IT IS COMPLEX? Yes, checks!
+A0 = np.zeros( [Nz,Nz] , dtype=complex ) # initial propogator matrix 
 
 
 M = np.zeros([Nj,Ni]);
@@ -85,8 +95,11 @@ MP = np.zeros([Nj,Ni]);
 MrP = np.zeros([Nj,Ni]);
 MiP = np.zeros([Nj,Ni]);
 
+
 print('\nGrid:',grid_flag)
 print('Nz/H:',Nz/H)
+Nj = np.shape(Rej)[0]
+Ni = np.shape(ai)[0]
 for i in range(0,Ni):
     for j in range(0,Nj):
 
@@ -97,33 +110,22 @@ for i in range(0,Ni):
         Re = Rej[j]
         a = ai[i]
         U = Re * (nu/dS) # Re = U*dS/nu, so ReB=Re/2
-    
-        #dt = CFL*(np.amin(dz)/Re) 
-        dt = CFL*(z[0]/Re) 
+        dt = CFL*(z[0]/Re)  # = CFL*(np.amin(dz)/Re) 
         Nt = int(2.*np.pi/dt)
-      
         freq = int(Nt/10)
         print('number of time steps, Nt = ',Nt)
 
-        # pre-constructed matrices:
-        dzz_psi = fn.diff_matrix( grid_params_inv , 'dirchlet' , 'dirchlet' , diff_order=2 , stencil_size=3 )
-        dzz_psi = np.multiply(dzz_psi,np.ones(np.shape(dzz_psi)),dtype=complex)
-        inv_psi = np.linalg.inv( dzz_psi - (a**2.*eye_matrix) ) 
-        A0 = np.zeros( [Nz,Nz] , dtype=complex ) # initial propogator matrix 
-
-        phi_path = '/home/bryan/git_repos/Floquet/figures/phi/'
-        psi_path = '/home/bryan/git_repos/Floquet/figures/psi/'
-        #phi_path = '/home/bryan/Desktop/Floquet/figures/phi/'
-        #psi_path = '/home/bryan/Desktop/Floquet/figures/psi/'
+        # parameters for monodromy matrix computation:
         params = {'nu': nu, 'omg': omg, 'T': T, 'Td':T, 'U': U, 'inv_psi':inv_psi, 'plot_freq':plot_freq, 
-          'Nz':Nz, 'Nt':Nt, 'Re':Re,'a':a, 'H':H, 'Hd':Hd, 'dzz_zeta':dzz_zeta, 'CFL':CFL, 'A0':A0,
+          'Nz':Nz, 'Nt':Nt, 'Re':Re,'a':a, 'H':H, 'Hd':Hd, 'dzz_zeta':dzz_zeta, 'CFL':CFL, 'A0':A0, 'damper_scale':damper_scale,
           'dS':dS, 'z':z, 'dz':dz, 'eye_matrix':eye_matrix,'freq':freq, 'lBC':lBC, 'phi_path':phi_path, 'psi_path':psi_path} 
-
         Nc = count_points( params )
         print('number of points within delta = %i' %(Nc))
 
-        Phi0 = np.eye(int(Nz),int(Nz),0,dtype=complex) # initial condition (prinicipal fundamental solution matrix)
+        # initial conditions (prinicipal fundamental solution matrix):
+        Phi0 = np.eye(int(Nz),int(Nz),0,dtype=complex) 
 
+        # plots of initial conditions:
         if ic_plot_flag == 1.: 
             # Plot of initial streamfunction and vorticity
             Psi0 = np.real(np.dot(params['inv_psi'],Phi0))
@@ -155,7 +157,10 @@ for i in range(0,Ni):
             plt.axis([-1.1*np.amax(abs(np.real(Phi0[0:10]))),1.1*np.amax(abs(np.real(Phi0[0:10]))),1e-2,H]); plt.grid()
             plt.savefig(plotname,format="png"); plt.close(fig);
 
+        # compute monodromy matrix:
         Phin,final_time = fn.rk4_time_step( params, Phi0 , T/Nt, T , 'blennerhassett' )
+
+        # store maxima:
         Fmult = np.linalg.eigvals(Phin)
         M[j,i] = np.amax(np.abs(Fmult)) # maximum modulus, eigenvals = floquet multipliers
         Mr[j,i] = np.amax(np.real(Fmult))
@@ -163,7 +168,6 @@ for i in range(0,Ni):
         print('\nmaximum modulus Phi = ',M[j,i])
         print('\nmaximum real mu Phi = ',Mr[j,i])      
         print('\nmaximum imag mu Phi = ',Mi[j,i]) 
-
         #Psin = np.real(np.dot(params['inv_psi'],Phin))
         Fmult_Psi = np.linalg.eigvals(np.dot(params['inv_psi'],Phin))
         MP[j,i] = np.amax(np.abs(Fmult_Psi)) # maximum modulus, eigenvals = floquet multipliers
@@ -174,6 +178,7 @@ for i in range(0,Ni):
         print('\nmaximum imag mu Psi = ',MiP[j,i]) 
         # add plots of psi final solutions
 
+        # output file with all multipliers, not just maxima:
         h5_filename = stat_path + "multiplier_Re%i_a%i.h5" %(Rej[j],int(ai[i]*1000))
         f2 = h5py.File(h5_filename, "w")
         dset = f2.create_dataset('CFL', data=CFL, dtype='f8')
@@ -184,6 +189,7 @@ for i in range(0,Ni):
         dset = f2.create_dataset('mult_psiR', data=np.real(Fmult_Psi), dtype='f8')
         dset = f2.create_dataset('mult_psiI', data=np.imag(Fmult_Psi), dtype='f8')
 
+        # email with all multipliers, not just maxima:
         if email_flag == 1:
             Fmult = np.array2string(Fmult, precision=6, separator=',',suppress_small=True)
             Fmult_Psi = np.array2string(Fmult_Psi, precision=6, separator=',',suppress_small=True)
@@ -201,8 +207,10 @@ for i in range(0,Ni):
                 server.sendmail(sender_email, receiver_email, message)
 
 
+# output file with multiplier maxima from all Re,k:
 print('Reynolds number range = ',Rej)
 print('wavenumber range = ', ai)
+print('number of time steps, Nt = ',Nt)
 print('Nz = ',Nz)
 print('CFL = ',CFL)
 print('Grid = ',grid_flag)

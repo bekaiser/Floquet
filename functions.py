@@ -252,17 +252,23 @@ def rk4( params , time , Phin , count , plot_flag , case_flag ):
   
 
     A = params['A0'] #np.zeros( [int(params['Nz']),int(params['Nz'])] , dtype=complex ) 
+    if params['damper_scale'] = 0.: # no damper:
+        A[:,:] = - uS*1j*params['a']*params['eye_matrix']*params['Re']/2. \
+        + np.matmul(uzzS*1j*params['a']*params['eye_matrix']*params['Re']/2.,params['inv_psi']) \
+        + ( params['dzz_zeta'] - (params['a']**2.*params['eye_matrix']) ) / 2. 
+    elif params['damper_scale'] > 1.: 
+        A[:,:] = - uS*1j*params['a']*params['eye_matrix']*params['Re']/2. \
+        + np.matmul(uzzS*1j*params['a']*params['eye_matrix']*params['Re']/2.,params['inv_psi']) \
+        + ( params['dzz_zeta'] - (params['a']**2.*params['eye_matrix']) ) / 2. \
+        - 5000. * params['eye_matrix'] * np.exp( (params['z']-params['H']) / ( params['H'] / params['damper_scale'] ) )
+    else:
+        print('ERROR: incorrect damper scale specified')
 
-    A[:,:] = - uS*1j*params['a']*params['eye_matrix']*params['Re']/2. \
-             + np.matmul(uzzS*1j*params['a']*params['eye_matrix']*params['Re']/2.,params['inv_psi']) \
-             + ( params['dzz_zeta'] - (params['a']**2.*params['eye_matrix']) ) / 2. \
-             - 5000. * params['eye_matrix'] * np.exp( (params['z']-params['H']) / ( params['H'] / 100. ) )
-    # last term is Rayleigh drag sponge 
 
     # verify that this is done in the right order: <------------------------------------------------------------------------------------!!!
     krk = np.matmul(A,Phin) # Runge-Kutta coefficient
     # 1 zeta_wall solution for each column of the fundamental solution matrix, Thom (1933) 2nd order wall vorticity BC:
-    zeta_wall = ((np.matmul(params['inv_psi'],Phin))[params['Nz']-1,:])*2./((params['z'][0])**2.) 
+    zeta_wall = ((np.matmul(params['inv_psi'],Phin))[params['Nz']-1,:])*2./((params['z'][0])**2.)  # WHAT IS UP WITH THE INDEX???????????????????????? MATMUL????
     for j in range(0,params['Nz']):  
         krk[params['Nz']-1,j] = krk[params['Nz']-1,j] + (params['lBC'] * zeta_wall[j]) # CHECK CONSTANT OUT FRONT
     #check_matrix(krk,'krk')
@@ -916,7 +922,7 @@ def partial_z( params , lower_BC_flag , upper_BC_flag ):
  z = params['z']*params['Hd']
  Nz = params['Nz']
  H = params['Hd']
- wall_flag = params['wall_flag']
+ wall_flag = params['wall_BC_flag']
  #print(H,np.amax(z),np.amin(z))
 
  # interior points, variable grid
@@ -1036,29 +1042,90 @@ def diff_matrix( params , lower_BC_flag , upper_BC_flag , diff_order , stencil_s
      #print(lBC)
      l1 = l1 - l0 # Dirchlet phi=0 at z=0 (sets phi_ghost = -phi_0)
      pzz[0,0:3] = [ l1 , l2 , l3 ]
+   if lower_BC_flag == 'thom 2':
+     # do not use for zeta!
+     # uniform grid, second derivative, psi BC only
+     # five point stencil, centered at the first cell center, uniform grid
+     """
+     dz = 2.*z[0]
+     lm2 = -1./(12.*dz**2.)
+     lm1 = 4./(3.*dz**2.)
+     l0 = -5./(2.*dz**2.)
+     l1 = 4./(3.*dz**2.)
+     l2 = -1./(12.*dz**2.)
+     """
    if lower_BC_flag == 'neumann':
+     #print('here!')
+     # is their a problem here?
+     #l0, l1, l2, l3 = fornberg_weights(z[0], np.append(-z[0],z[0:3]) ,diff_order)[:,diff_order]
+
+     """
      l0, l1, l2, l3 = fornberg_weights(z[0], np.append(-z[0],z[0:3]) ,diff_order)[:,diff_order]
+     #l1 = l1 + l0 # Neumann for dz(phi)=0 at z=0 (sets phi_ghost = phi_0)
+     pzz[0,0:3] = np.array([ l1 + l0 , l2 , l3 ])
+     """
+     l0, l1, l2, l3, l4 = fornberg_weights(z[0], np.append(-z[0],z[0:4]) ,diff_order)[:,diff_order]
+     #l1 = l1 + l0 # Neumann for dz(phi)=0 at z=0 (sets phi_ghost = phi_0)
+     pzz[0,0:4] = np.array([ l1 + l0 , l2 , l3 , l4 ]) 
+
+
+     """
+     l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15 = fornberg_weights(z[0], np.append(-z[0],z[0:15]) ,diff_order)[:,diff_order]
      l1 = l1 + l0 # Neumann for dz(phi)=0 at z=0 (sets phi_ghost = phi_0)
-     pzz[0,0:3] = [ l1 , l2 , l3 ]
+     pzz[0,0:15] = [ l1 , l2 , l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15 ]
+     """
+
+     """
+     l0, l1, l2, l3, l4, l5, l6 = fornberg_weights(z[0], np.append(-z[0],z[0:6]) ,diff_order)[:,diff_order]
+     l1 = l1 + l0 # Neumann for dz(phi)=0 at z=0 (sets phi_ghost = phi_0)
+     pzz[0,0:6] = [ l1 , l2 , l3, l4, l5, l6 ]
+     l0, l1, l2, l3, l4, l5, l6 = fornberg_weights(z[1], np.append(-z[0],z[0:6]) ,diff_order)[:,diff_order]
+     pzz[1,0:6] = np.array([ l1 + l0 , l2 , l3, l4, l5, l6  ])
+     l0, l1, l2, l3, l4, l5, l6 = fornberg_weights(z[2], np.append(-z[0],z[0:6]) ,diff_order)[:,diff_order]
+     pzz[2,0:6] = np.array([ l1 + l0 , l2 , l3, l4, l5, l6  ])
+     l0, l1, l2, l3, l4, l5, l6 = fornberg_weights(z[3], np.append(-z[0],z[0:6]) ,diff_order)[:,diff_order]
+     pzz[3,0:6] = np.array([ l1 + l0 , l2 , l3, l4, l5, l6  ])
+     l0, l1, l2, l3, l4, l5, l6 = fornberg_weights(z[4], np.append(-z[0],z[0:6]) ,diff_order)[:,diff_order]
+     pzz[4,0:6] = np.array([ l1 + l0 , l2 , l3, l4, l5, l6  ])
+     l0, l1, l2, l3, l4, l5, l6 = fornberg_weights(z[5], np.append(-z[0],z[0:6]) ,diff_order)[:,diff_order]
+     pzz[5,0:6] = np.array([ l1 + l0 , l2 , l3, l4, l5, l6  ])
+     l0, l1, l2, l3, l4, l5, l6 = fornberg_weights(z[6], np.append(-z[0],z[0:6]) ,diff_order)[:,diff_order]
+     pzz[6,0:6] = np.array([ l1 + l0 , l2 , l3, l4, l5, l6  ])
+     """
+
+     """     
+     l0, l1, l2, l3, l4, l5, l6 = fornberg_weights(z[0], np.append(-z[0],z[0:6]) ,diff_order)[:,diff_order]
+     l1 = l1 + l0 # Neumann for dz(phi)=0 at z=0 (sets phi_ghost = phi_0)
+     pzz[0,0:6] = [ l1 , l2 , l3, l4, l5, l6 ]
+
+     # to do the Neumann BC, look for the derivative at z[0] = first center, which must be equal to -z[0]
+     l0, l1, l2 = fornberg_weights(z[0], z[0:3] ,diff_order)[:,diff_order]
+     l0 = 2.*l0
+     pzz[0,0:3] = [ l0 , l1 , l2 ]
+     """
+
    if lower_BC_flag == 'thom':
      """
-     l0, l1, l2, l3, l4, l5, l6 = fornberg_weights(z[0], np.append(-z[2],np.append(-z[1],np.append(-z[0],np.append(0.,z[0:3])))), diff_order)[:, diff_order]
-     l3 = 0.
-     l4 = l4 + l2
-     l5 = l5 + l1
-     l6 = l6 + l0
-     pzz[0,0:3] = [l4, l5, l6]
-     """
-     """
-     l2, l3, l4 = fornberg_weights(z[0], np.append(-z[0],np.append(0.,z[0])), diff_order)[:, diff_order]
-     l3 = 0.
-     l4 = l4 + l2
-     pzz[0,0] = l4
-     """
+     l0, l1, l2, l3, l4, l5 = fornberg_weights(z[0], np.append(-z[1],np.append(-z[0],np.append(0.,z[0:3]))), diff_order)[:, diff_order]
+     #l2 = 0.
+     l3 = l3 + l1
+     #l4 = l4 + l0
+     pzz[0,0:3] = [l3, l4, l5]
+     
+     l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12 = fornberg_weights(z[0], np.append(-z[1],np.append(-z[0],np.append(0.,z[0:10]))), diff_order)[:, diff_order]
+     #l2 = 0.
+     l3 = l3 + l1
+     #l4 = l4 + l0
+     pzz[0,0:10] = [l3, l4, l5, l6, l7, l8, l9, l10, l11, l12]
+     
      l0, l1, l2, l3, l4 = fornberg_weights(z[0], np.append(-z[0],np.append(0.,z[0:3])), diff_order)[:, diff_order]
-     l1 = 0.
+     #l1 = 0. # true but unecessary to specify
      l2 = l2 + l0
      pzz[0,0:3] = [l2, l3, l4]
+     """
+
+     l0, l1, l2, l3 = fornberg_weights(z[0], z[0:4] ,diff_order)[:,diff_order]
+     pzz[0,0:4] = np.array([1.,0.,0.,0.])
 
    if lower_BC_flag == 'open':
      l0, l1, l2, l3, l4 = fornberg_weights(z[0], z[0:5], diff_order)[:, diff_order]
