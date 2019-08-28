@@ -58,8 +58,8 @@ ai = np.array([0.475])
 grid_flag = 'uniform' #'hybrid cosine' #'  'cosine' # # 
 wall_BC_flag = 'Thom'
 wall_BC_off_flag = ' ' 
-plot_freq = 2000 
-Nz = 200 # 
+plot_freq = 0 
+Nz = 300 # 
 H = 32. # = Hd/dS, non-dimensional grid height
 CFL = 0.5 # 
 Hd = H*dS # m, dimensional domain height (arbitrary choice)
@@ -83,14 +83,14 @@ lBC = lBC + 0.j
 
 dzz_psi = fn.diff_matrix( grid_params_inv , 'dirchlet' , 'dirchlet' , diff_order=2 , stencil_size=3 ) # CHANGE TO THOM BC?
 dzz_psi = np.multiply(dzz_psi,np.ones(np.shape(dzz_psi)),dtype=complex)
-inv_psi = np.linalg.inv( dzz_psi - (a**2.*eye_matrix) ) # CHECK THAT IT IS COMPLEX? Yes, checks!
+
 A0 = np.zeros( [Nz,Nz] , dtype=complex ) # initial propogator matrix 
 
-
+Nj = np.shape(Rej)[0]
+Ni = np.shape(ai)[0]
 M = np.zeros([Nj,Ni]);
 Mr = np.zeros([Nj,Ni]);
 Mi = np.zeros([Nj,Ni]);
-
 MP = np.zeros([Nj,Ni]);
 MrP = np.zeros([Nj,Ni]);
 MiP = np.zeros([Nj,Ni]);
@@ -98,8 +98,6 @@ MiP = np.zeros([Nj,Ni]);
 
 print('\nGrid:',grid_flag)
 print('Nz/H:',Nz/H)
-Nj = np.shape(Rej)[0]
-Ni = np.shape(ai)[0]
 for i in range(0,Ni):
     for j in range(0,Nj):
 
@@ -112,8 +110,10 @@ for i in range(0,Ni):
         U = Re * (nu/dS) # Re = U*dS/nu, so ReB=Re/2
         dt = CFL*(z[0]/Re)  # = CFL*(np.amin(dz)/Re) 
         Nt = int(2.*np.pi/dt)
-        freq = int(Nt/10)
+        freq = int(Nt/100)
         print('number of time steps, Nt = ',Nt)
+
+        inv_psi = np.linalg.inv( dzz_psi - (a**2.*eye_matrix) ) 
 
         # parameters for monodromy matrix computation:
         params = {'nu': nu, 'omg': omg, 'T': T, 'Td':T, 'U': U, 'inv_psi':inv_psi, 'plot_freq':plot_freq, 
@@ -158,7 +158,7 @@ for i in range(0,Ni):
             plt.savefig(plotname,format="png"); plt.close(fig);
 
         # compute monodromy matrix:
-        Phin,final_time = fn.rk4_time_step( params, Phi0 , T/Nt, T , 'blennerhassett' )
+        Phin,final_time = fn.rk4_time_step( params, Phi0 , T/Nt, T/20. , 'blennerhassett' )
 
         # store maxima:
         Fmult = np.linalg.eigvals(Phin)

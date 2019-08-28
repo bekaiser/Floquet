@@ -188,6 +188,54 @@ def rk4( params , time , Phin , count , plot_flag , case_flag ):
 
         if np.floor(count/pfreq) == count/pfreq:
 
+            Phin0 = np.zeros([1,params['Nz']])
+            for j00 in range(0,params['Nz']):
+               Phin0[:,j00] = extrapolate_to_zero( np.real(Phin[:,j00]) , params['z'] , 8 )
+
+            #print(np.shape(Phin))
+            #print(np.shape(Phin[0,:]))
+            #print(np.shape(params['z']))
+
+            H = params['H']
+            plotname = params['phi_path'] +'%i.png' %(count)
+            fig = plt.figure(figsize=(21,4.75))
+            plt.subplot(141); 
+            plt.plot(np.real(Phin[0,:]),params['z'],'b')
+            plt.plot(Phin0[0,0],np.zeros([1,params['Nz']]),'ob',linewidth=3)
+            plt.plot(np.real(Phin[1,:]),params['z'],'r')
+            plt.plot(Phin0[0,1],np.zeros([1,params['Nz']]),'or',linewidth=3)
+            plt.plot(np.real(Phin[2,:]),params['z'],'g')
+            plt.plot(Phin0[0,2],np.zeros([1,params['Nz']]),'og',linewidth=3)
+            plt.xlabel(r"$\zeta$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13)
+            #plt.ylim([-H*0.05,H*1.05]); plt.grid()
+            plt.ylim([-0.005,0.5]); plt.grid()
+            plt.title(r"t/T = %.4f, step = %i" %(time/params['T'],count),fontsize=13)
+            plt.subplot(142); 
+            #plt.plot(np.real(Phin[0,:]),params['z'],'b')
+            #plt.plot(Phin0,np.zeros([1,params['Nz']]),'or',linewidth=3)
+            plt.plot(Phin0[0,0],np.zeros([1,params['Nz']]),'ob',linewidth=3)
+            plt.plot(np.real(Phin[1,:]),params['z'],'r')
+            plt.plot(Phin0[0,1],np.zeros([1,params['Nz']]),'or',linewidth=3)
+            plt.plot(np.real(Phin[2,:]),params['z'],'g')
+            plt.plot(Phin0[0,2],np.zeros([1,params['Nz']]),'og',linewidth=3)
+            plt.xlabel(r"$\zeta$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13) 
+            plt.axis([-0.02*np.amax(abs(np.real(Phin))),0.02*np.amax(abs(np.real(Phin))),-1.,1.1*H/25.]); plt.grid()
+            plt.title(r"t/T = %.4f, step = %i" %(time/params['T'],count),fontsize=13)
+            plt.subplot(143); 
+            plt.semilogy(np.real(Phin),params['z'],'b')
+            plt.xlabel(r"$\zeta$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13)
+            plt.axis([-0.02*np.amax(abs(np.real(Phin))),0.02*np.amax(abs(np.real(Phin))),4e-2,1.]); plt.grid()
+            plt.title(r"t/T = %.4f, step = %i" %(time/params['T'],count),fontsize=13)
+            plt.subplot(144); 
+            plt.semilogy(np.real(Phin[0,:]),params['z'],'b');
+            #plt.semilogy(np.real(Phin[0,:]),params['z'],'r',linewidth=2)
+            plt.xlabel(r"$\zeta$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13)
+            plt.grid()
+            plt.title(r"$|\zeta_0|$ = %.8f" %(np.amax(abs(Phin0))),fontsize=13)
+            plt.savefig(plotname,format="png"); plt.close(fig);
+
+
+            """
             Psin = np.real(np.dot(params['inv_psi'],Phin))
             Psin0 = np.zeros([1,params['Nz']])
             for j00 in range(0,params['Nz']):
@@ -249,14 +297,15 @@ def rk4( params , time , Phin , count , plot_flag , case_flag ):
             plt.grid()
             plt.title(r"$|\zeta_0|$ = %.8f" %(np.amax(abs(Phin0))),fontsize=13)
             plt.savefig(plotname,format="png"); plt.close(fig);
+            """
   
 
     A = params['A0'] #np.zeros( [int(params['Nz']),int(params['Nz'])] , dtype=complex ) 
-    if params['damper_scale'] = 0.: # no damper:
+    if params['damper_scale'] == 0.: # no damper:
         A[:,:] = - uS*1j*params['a']*params['eye_matrix']*params['Re']/2. \
         + np.matmul(uzzS*1j*params['a']*params['eye_matrix']*params['Re']/2.,params['inv_psi']) \
         + ( params['dzz_zeta'] - (params['a']**2.*params['eye_matrix']) ) / 2. 
-    elif params['damper_scale'] > 1.: 
+    elif params['damper_scale'] >= 1.: 
         A[:,:] = - uS*1j*params['a']*params['eye_matrix']*params['Re']/2. \
         + np.matmul(uzzS*1j*params['a']*params['eye_matrix']*params['Re']/2.,params['inv_psi']) \
         + ( params['dzz_zeta'] - (params['a']**2.*params['eye_matrix']) ) / 2. \
@@ -265,12 +314,13 @@ def rk4( params , time , Phin , count , plot_flag , case_flag ):
         print('ERROR: incorrect damper scale specified')
 
 
-    # verify that this is done in the right order: <------------------------------------------------------------------------------------!!!
-    krk = np.matmul(A,Phin) # Runge-Kutta coefficient
-    # 1 zeta_wall solution for each column of the fundamental solution matrix, Thom (1933) 2nd order wall vorticity BC:
-    zeta_wall = ((np.matmul(params['inv_psi'],Phin))[params['Nz']-1,:])*2./((params['z'][0])**2.)  # WHAT IS UP WITH THE INDEX???????????????????????? MATMUL????
-    for j in range(0,params['Nz']):  
-        krk[params['Nz']-1,j] = krk[params['Nz']-1,j] + (params['lBC'] * zeta_wall[j]) # CHECK CONSTANT OUT FRONT
+    # Phin = [ modes (one per IC) , z location ]
+    krk = np.matmul(A,Phin) # Runge-Kutta coefficient (dot product of A operator and Phi)
+
+    # get zeta_wall using the psi value from the first cell center, adjacent to the boundary (Thom 1933):
+    zeta_wall = ((np.matmul(params['inv_psi'],Phin))[:,0])*2./((params['z'][0])**2.) 
+    for j in range(0,params['Nz']): # for each mode:
+        krk[j,0] = krk[j,0] + (params['lBC'] * zeta_wall[j]) # can I remove this from a loop?
     #check_matrix(krk,'krk')
 
 
