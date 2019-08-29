@@ -195,7 +195,7 @@ def rk4( params , time , Phin , count , plot_flag , case_flag ):
             #print(np.shape(Phin))
             #print(np.shape(Phin[0,:]))
             #print(np.shape(params['z']))
-
+            """
             H = params['H']
             plotname = params['phi_path'] +'%i.png' %(count)
             fig = plt.figure(figsize=(21,4.75))
@@ -297,7 +297,7 @@ def rk4( params , time , Phin , count , plot_flag , case_flag ):
             plt.grid()
             plt.title(r"$|\zeta_0|$ = %.8f" %(np.amax(abs(Phin0))),fontsize=13)
             plt.savefig(plotname,format="png"); plt.close(fig);
-            """
+   
   
 
     A = params['A0'] #np.zeros( [int(params['Nz']),int(params['Nz'])] , dtype=complex ) 
@@ -319,10 +319,14 @@ def rk4( params , time , Phin , count , plot_flag , case_flag ):
 
     # get zeta_wall using the psi value from the first cell center, adjacent to the boundary (Thom 1933):
     zeta_wall = ((np.matmul(params['inv_psi'],Phin))[:,0])*2./((params['z'][0])**2.) 
+    # zeta_wall has no k^2 term because -k^2*psi_wall = 0 as psi_wall = 0
+    """
     for j in range(0,params['Nz']): # for each mode:
-        krk[j,0] = krk[j,0] + (params['lBC'] * zeta_wall[j]) # can I remove this from a loop?
-    #check_matrix(krk,'krk')
-
+        krk[j,0] = krk[j,0] + (params['lBC'] * zeta_wall[j]) # can I remove this from a loop? YES!
+    """
+    krk[:,0] = krk[:,0] + (params['lBC'] * zeta_wall)
+    #print(np.linalg.norm(krk))
+    #print(count)
 
   if case_flag == 'base_flow_test':
     b, u, v, bz, uz, vz, bzz, uzz, vzz = rotating_solution( params, time, 2 ) # dimensional
@@ -411,6 +415,12 @@ def grid_choice( grid_flag , Nz , H ):
  # non-dimensional grid 
  if grid_flag == 'uniform': 
    z = np.linspace((H/Nz)/2. , H-(H/Nz)/2., num=Nz, endpoint=True) 
+
+ if grid_flag == 'uniform 2': 
+   z = np.linspace((H/(Nz-1))/2. , H-(H/(Nz-1))/2., num=int(Nz-1), endpoint=True)
+   z1 = z[0]/2.
+   z = np.append(z1,z) 
+   #print(z)
 
  if grid_flag == 'hybrid tanh':
     H1 = H/25.
@@ -1104,12 +1114,22 @@ def diff_matrix( params , lower_BC_flag , upper_BC_flag , diff_order , stencil_s
      l1 = 4./(3.*dz**2.)
      l2 = -1./(12.*dz**2.)
      """
+     """
+     l0, l1, l2, l3, l4 = fornberg_weights(z[0], np.append(-z[0],z[0:4]) ,diff_order)[:,diff_order]
+     #l1 = l1 + l0 # Neumann for dz(phi)=0 at z=0 (sets phi_ghost = phi_0)
+     pzz[0,0:4] = np.array([ 0. , l2 , l3 , l4 ])
+     """
+     l0, l1, l2, l3 = fornberg_weights(z[0], np.append(-z[1],np.append(-z[0],z[0:2])), diff_order)[:, diff_order]
+     l2 = l2 - l1
+     l3 = l3 + l0
+     pzz[0,0:2] = np.array([ l2 , l3 ])    
+     # try with high order inside?
+
    if lower_BC_flag == 'neumann':
      #print('here!')
      # is their a problem here?
      #l0, l1, l2, l3 = fornberg_weights(z[0], np.append(-z[0],z[0:3]) ,diff_order)[:,diff_order]
 
-     """
      l0, l1, l2, l3 = fornberg_weights(z[0], np.append(-z[0],z[0:3]) ,diff_order)[:,diff_order]
      #l1 = l1 + l0 # Neumann for dz(phi)=0 at z=0 (sets phi_ghost = phi_0)
      pzz[0,0:3] = np.array([ l1 + l0 , l2 , l3 ])
@@ -1117,7 +1137,7 @@ def diff_matrix( params , lower_BC_flag , upper_BC_flag , diff_order , stencil_s
      l0, l1, l2, l3, l4 = fornberg_weights(z[0], np.append(-z[0],z[0:4]) ,diff_order)[:,diff_order]
      #l1 = l1 + l0 # Neumann for dz(phi)=0 at z=0 (sets phi_ghost = phi_0)
      pzz[0,0:4] = np.array([ l1 + l0 , l2 , l3 , l4 ]) 
-
+     """
 
      """
      l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15 = fornberg_weights(z[0], np.append(-z[0],z[0:15]) ,diff_order)[:,diff_order]

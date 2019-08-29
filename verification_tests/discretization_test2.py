@@ -59,9 +59,18 @@ for n in range(0, Ng):
 
     # test signals:
     #u = np.zeros([Nz,1]); uz = np.zeros([Nz,1]); uzz = np.zeros([Nz,1]);
+    """
     u = np.sin(2.*np.pi/H*z)-z*(2.*np.pi/H)
     uz = 2.*np.pi/H*np.cos(2.*np.pi/H*z)-np.ones(np.shape(z))*(2.*np.pi/H)
     uzz = -np.sin(2.*np.pi/H*z)*(2.*np.pi/H)**2.
+    
+    u = np.cos(2.*np.pi/H*z)
+    uz = -2.*np.pi/H*np.sin(2.*np.pi/H*z)
+    uzz = -np.cos(2.*np.pi/H*z)*(2.*np.pi/H)**2.
+    """
+    u = np.cos(2.*np.pi/H*z)-np.ones(np.shape(z))
+    uz = -2.*np.pi/H*np.sin(2.*np.pi/H*z)
+    uzz = -np.cos(2.*np.pi/H*z)*(2.*np.pi/H)**2.
 
     if n == 4:
         plotname = figure_path + 'solutions.png'
@@ -92,7 +101,7 @@ for n in range(0, Ng):
         plt.close(fig);
 
     # derivatives:
-    uzDa = np.dot( fn.diff_matrix( params , 'open' , 'neumann' , diff_order=1 , stencil_size=3 ) , u ) 
+    uzDa = np.dot( fn.diff_matrix( params , 'neumann' , 'neumann' , diff_order=1 , stencil_size=3 ) , u ) 
     #uzDb = np.dot( fn.partial_z( params , 'dirchlet' , 'neumann' ) , u ) 
     uzDb = np.dot( fn.diff_matrix( params , 'dirchlet' , 'neumann' , diff_order=1 , stencil_size=3 ) , u ) 
     uzzDa = np.dot( fn.diff_matrix( params , 'neumann' , 'neumann' , diff_order=2 , stencil_size=3 ) , u ) 

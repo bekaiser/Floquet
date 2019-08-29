@@ -55,13 +55,13 @@ ai = np.array([0.475])
 #ai = np.linspace(0.025,0.5,num=20,endpoint=True)
 
 # grid
-grid_flag = 'uniform' #'hybrid cosine' #'  'cosine' # # 
+grid_flag = 'uniform 2' #'hybrid cosine' #'  'cosine' # # 
 wall_BC_flag = 'Thom'
 wall_BC_off_flag = ' ' 
-plot_freq = 0 
-Nz = 300 # 
+plot_freq = 100 
+Nz = 200 # 
 H = 32. # = Hd/dS, non-dimensional grid height
-CFL = 0.5 # 
+CFL = 0.1 # 
 Hd = H*dS # m, dimensional domain height (arbitrary choice)
 z,dz = fn.grid_choice( grid_flag , Nz , H ) # non-dimensional grid
 
@@ -81,8 +81,9 @@ dzz_zeta = np.multiply(dzz_zeta,np.ones(np.shape(dzz_zeta)),dtype=complex) # Che
 #inv_psi = np.multiply(inv_psi,np.ones(np.shape(inv_psi)),dtype=complex)
 lBC = lBC + 0.j
 
-dzz_psi = fn.diff_matrix( grid_params_inv , 'dirchlet' , 'dirchlet' , diff_order=2 , stencil_size=3 ) # CHANGE TO THOM BC?
+dzz_psi = fn.diff_matrix( grid_params_inv , 'thom 2' , 'dirchlet' , diff_order=2 , stencil_size=3 ) # CHANGE TO THOM BC?
 dzz_psi = np.multiply(dzz_psi,np.ones(np.shape(dzz_psi)),dtype=complex)
+# maybe need to get dzz_psi at each step: interpolate from dzz_psi 1 to zeta_wall to get dzz_psi 0?
 
 A0 = np.zeros( [Nz,Nz] , dtype=complex ) # initial propogator matrix 
 
@@ -108,6 +109,7 @@ for i in range(0,Ni):
         Re = Rej[j]
         a = ai[i]
         U = Re * (nu/dS) # Re = U*dS/nu, so ReB=Re/2
+        #print(z[0])
         dt = CFL*(z[0]/Re)  # = CFL*(np.amin(dz)/Re) 
         Nt = int(2.*np.pi/dt)
         freq = int(Nt/100)
