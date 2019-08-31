@@ -55,35 +55,39 @@ ai = np.array([0.475])
 #ai = np.linspace(0.025,0.5,num=20,endpoint=True)
 
 # grid
-grid_flag = 'uniform 2' #'hybrid cosine' #'  'cosine' # # 
-wall_BC_flag = 'Thom'
-wall_BC_off_flag = ' ' 
-plot_freq = 100 
-Nz = 200 # 
+grid_flag = 'uniform' #'hybrid cosine' #'  'cosine' # # 
+wall_BC_flag = 'BC'
+plot_freq = 1000 
+Nz = 120 # 
 H = 32. # = Hd/dS, non-dimensional grid height
-CFL = 0.1 # 
+CFL = 0.5 # 
 Hd = H*dS # m, dimensional domain height (arbitrary choice)
 z,dz = fn.grid_choice( grid_flag , Nz , H ) # non-dimensional grid
 
 
-# REVIEW: pre-constructed matrices:
+# pre-constructed matrices:
 
 grid_params_dzz = {'H':H, 'Hd':Hd,'z':z,'dz':dz,'Nz':Nz, 'wall_BC_flag':wall_BC_flag} 
-grid_params_inv = {'H':H, 'Hd':Hd,'z':z,'dz':dz,'Nz':Nz, 'wall_BC_flag':wall_BC_off_flag} 
-
-# dzz_zeta: could try neumann LBC. Upper BC irrotational (no-stress).
-dzz_zeta,lBC = fn.diff_matrix( grid_params_dzz , 'dirchlet' , 'dirchlet' , diff_order=2 , stencil_size=3 ) # non-dimensional
-# inv_psi: lower BCs are no-slip, impermiable, upper BC is impermiable, free-slip
+grid_params_inv = {'H':H, 'Hd':Hd,'z':z,'dz':dz,'Nz':Nz, 'wall_BC_flag':' '} 
 eye_matrix = np.eye( Nz , Nz , 0 , dtype=complex ) # identity matrix
 
-# all parts of the forcing need to be complex arrays:
-dzz_zeta = np.multiply(dzz_zeta,np.ones(np.shape(dzz_zeta)),dtype=complex) # Checks!
-#inv_psi = np.multiply(inv_psi,np.ones(np.shape(inv_psi)),dtype=complex)
-lBC = lBC + 0.j
-
-dzz_psi = fn.diff_matrix( grid_params_inv , 'thom 2' , 'dirchlet' , diff_order=2 , stencil_size=3 ) # CHANGE TO THOM BC?
+"""
+# dzz_zeta: could try neumann LBC. Upper BC irrotational (no-stress).
+dzz_zeta = fn.diff_matrix( grid_params_dzz , ' ' , 'dirchlet' , diff_order=2 , stencil_size=3 ) # non-dimensional
+dzz_zeta = np.multiply(dzz_zeta,np.ones(np.shape(dzz_zeta)),dtype=complex) 
+#lBC = lBC + 0.j
+dzz_psi,lBC = fn.diff_matrix( grid_params_inv , 'dirchlet' , 'dirchlet' , diff_order=2 , stencil_size=3 ) 
 dzz_psi = np.multiply(dzz_psi,np.ones(np.shape(dzz_psi)),dtype=complex)
 # maybe need to get dzz_psi at each step: interpolate from dzz_psi 1 to zeta_wall to get dzz_psi 0?
+"""
+
+dzz_zeta,lBC = fn.diff_matrix( grid_params_dzz , 'dirchlet 2' , 'dirchlet' , diff_order=2 , stencil_size=3 ) 
+dzz_psi = fn.diff_matrix( grid_params_inv , 'dirchlet' , 'dirchlet' , diff_order=2 , stencil_size=3 ) 
+
+dzz_zeta = np.multiply(dzz_zeta,np.ones(np.shape(dzz_zeta)),dtype=complex) 
+dzz_psi = np.multiply(dzz_psi,np.ones(np.shape(dzz_psi)),dtype=complex)
+
+
 
 A0 = np.zeros( [Nz,Nz] , dtype=complex ) # initial propogator matrix 
 
@@ -116,6 +120,7 @@ for i in range(0,Ni):
         print('number of time steps, Nt = ',Nt)
 
         inv_psi = np.linalg.inv( dzz_psi - (a**2.*eye_matrix) ) 
+        inv_psi = np.multiply(inv_psi,np.ones(np.shape(inv_psi)),dtype=complex)
 
         # parameters for monodromy matrix computation:
         params = {'nu': nu, 'omg': omg, 'T': T, 'Td':T, 'U': U, 'inv_psi':inv_psi, 'plot_freq':plot_freq, 
@@ -160,7 +165,7 @@ for i in range(0,Ni):
             plt.savefig(plotname,format="png"); plt.close(fig);
 
         # compute monodromy matrix:
-        Phin,final_time = fn.rk4_time_step( params, Phi0 , T/Nt, T/20. , 'blennerhassett' )
+        Phin,final_time = fn.rk4_time_step( params, Phi0 , T/Nt, T , 'blennerhassett' )
 
         # store maxima:
         Fmult = np.linalg.eigvals(Phin)

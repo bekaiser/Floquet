@@ -318,15 +318,18 @@ def rk4( params , time , Phin , count , plot_flag , case_flag ):
     krk = np.matmul(A,Phin) # Runge-Kutta coefficient (dot product of A operator and Phi)
 
     # get zeta_wall using the psi value from the first cell center, adjacent to the boundary (Thom 1933):
-    zeta_wall = ((np.matmul(params['inv_psi'],Phin))[:,0])*2./((params['z'][0])**2.) 
-    # zeta_wall has no k^2 term because -k^2*psi_wall = 0 as psi_wall = 0
+    #zeta_wall = ((np.matmul(params['inv_psi'],Phin))[:,0])*2./((params['z'][0])**2.) 
     """
     for j in range(0,params['Nz']): # for each mode:
         krk[j,0] = krk[j,0] + (params['lBC'] * zeta_wall[j]) # can I remove this from a loop? YES!
     """
-    krk[:,0] = krk[:,0] + (params['lBC'] * zeta_wall)
-    #print(np.linalg.norm(krk))
-    #print(count)
+    zeta_wall = np.zeros([params['Nz']],dtype=complex)
+    for j in range(0,params['Nz']):
+        #print(((extrapolate_to_zero( Phin[j,:] , params['z'] , 6 ))[0]))
+        zeta_wall[j] = (extrapolate_to_zero( Phin[j,:] , params['z'] , 6 ))[0]
+    krk[:,0] = krk[:,0] + (params['lBC'] * zeta_wall) / 2. # forward difference to the wall, for the first cell center 
+    # (divide by 2 from the vorticity equation)
+
 
   if case_flag == 'base_flow_test':
     b, u, v, bz, uz, vz, bzz, uzz, vzz = rotating_solution( params, time, 2 ) # dimensional
@@ -1096,12 +1099,32 @@ def diff_matrix( params , lower_BC_flag , upper_BC_flag , diff_order , stencil_s
    pzz = np.diag(Dp1,k=1) + np.diag(Dm1,k=-1) + np.diag(D0,k=0) 
 
    # lower (wall) BC sets variable to zero at the wall
+   if lower_BC_flag == 'dirchlet 2':
+     lw, l0, l1, l2 = fornberg_weights(z[0], np.append(0.,z[0:3]) ,diff_order)[:,diff_order]
+     lBC = lw
+     pzz[0,0:3] = [ l0 , l1 , l2 ]
    if lower_BC_flag == 'dirchlet':
      l0, l1, l2, l3 = fornberg_weights(z[0], np.append(-z[0],z[0:3]) ,diff_order)[:,diff_order]
      lBC = l0
      #print(lBC)
      l1 = l1 - l0 # Dirchlet phi=0 at z=0 (sets phi_ghost = -phi_0)
      pzz[0,0:3] = [ l1 , l2 , l3 ]
+     """
+     lm1, lm0, l0, l1, l2 = fornberg_weights(z[0], np.append(-z[1],np.append(-z[0],z[0:3])) ,diff_order)[:,diff_order]
+     l0 = l0 - lm0
+     l1 = l1 - lm1
+     lBC1 = lm0
+     lBC2 = lm1
+     pzz[0,0:3] = [ l0 , l1 , l2 ]
+     """
+     """
+     l0, l1 = fornberg_weights(z[0], np.append(-z[0],z[0:1]) ,diff_order)[:,diff_order]
+     lBC = l0
+     #print(lBC)
+     l1 = l1 - l0 # Dirchlet phi=0 at z=0 (sets phi_ghost = -phi_0)
+     pzz[0,0] = l1
+     """
+
    if lower_BC_flag == 'thom 2':
      # do not use for zeta!
      # uniform grid, second derivative, psi BC only
@@ -1275,7 +1298,7 @@ def diff_matrix( params , lower_BC_flag , upper_BC_flag , diff_order , stencil_s
  """
  #print(lBC)
  #pzz = np.multiply(pzz,np.ones(np.shape(pzz)),dtype=complex) # make pzz complex
- if wall_BC_flag == 'Thom':
+ if wall_BC_flag == 'BC':
    return pzz,lBC
  else:
    return pzz
