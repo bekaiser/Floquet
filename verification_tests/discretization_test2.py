@@ -12,8 +12,8 @@ figure_path = './verification_tests/figures/discretization_test/'
 
 
 
-# all that I need to work properly is zeta_wall (does!), dzz_zeta, and the inversion!
-
+# VERIFY IN MATRIX FORM
+# COMBINE THOM AND EXTRAP METHODS
 
 
 
@@ -26,7 +26,7 @@ Ng = int(np.shape(Nr)[0]) # number of resolutions to try
 
 L_zeta_wall = np.zeros([Ng])
 L_zeta_wall2 = np.zeros([Ng])
-
+L_zeta_wall3 = np.zeros([Ng])
 L_psi_zz = np.zeros([Ng])
 
 L_zeta_zz = np.zeros([Ng])
@@ -47,7 +47,7 @@ for n in range(0, Ng):
     Nz = int(Nr[n]) # resolution
     #print('Number of grid points: ',Nz)
  
-    grid_flag = 'uniform' #'uniform 2'
+    grid_flag = 'uniform' #'cosine' # 'uniform' #'uniform 2'
     z,dz = fn.grid_choice( grid_flag , Nz , H ) # non-dimensional grid
 
     if n == 5:
@@ -102,49 +102,54 @@ for n in range(0, Ng):
 
     if n == Ng-1:
         plotname = figure_path + 'solutions.png'
-        fig = plt.figure(figsize=(32,8)); 
+        fig = plt.figure(figsize=(16,4.5)); 
         plt.subplot(1,4,1)
-        plt.plot(psi, z/H, 'b') #, label=r"u")
+        plt.plot(psi, z/H,color='goldenrod',linewidth=2) #, label=r"u")
         #plt.plot(abs(uzz-uzzD)/abs(uzz)*100.,z/H,'b')
-        plt.xlabel(r"$\psi$", fontsize=13)
-        plt.ylabel(r"$z/H$",fontsize=13); plt.grid()
+        plt.xlabel(r"$\psi$", fontsize=16)
+        plt.ylabel(r"$z/H$",fontsize=16); plt.grid()
         #plt.ylim([-0.001,0.05])
-        plt.title(r"uniform grid N = %i" %(Nz),fontsize=13)
+        #plt.title(r"uniform grid N = %i" %(Nz),fontsize=13)
         #plt.legend(loc=2,fontsize=13); 
         #plt.axis([0.,20./H,0.,1./(2.*H)])
         plt.subplot(1,4,2)
-        plt.plot(psi_z, z/H, 'b') #, label=r"analytical")
+        plt.plot(psi_z, z/H,color='goldenrod',linewidth=2) #, label=r"analytical")
         #plt.plot(abs(uzz-uzzD)/abs(uzz)*100.,z/H,'b')
-        plt.xlabel(r"$\partial_{z}\psi$", fontsize=13)
-        plt.ylabel(r"$z/H$",fontsize=13); plt.grid()
-        plt.title(r"uniform grid N = %i" %(Nz),fontsize=13)
+        plt.xlabel(r"$\partial_{z}\psi$", fontsize=16); plt.grid()
+        #plt.ylabel(r"$z/H$",fontsize=16)
+        #plt.title(r"uniform grid N = %i" %(Nz),fontsize=13)
         plt.subplot(1,4,3)
-        plt.plot(psi_zz, z/H, 'b') #, label=r"analytical")
+        plt.plot(psi_zz, z/H,color='goldenrod',linewidth=2) #, label=r"analytical")
         #plt.plot(abs(uzz-uzzD)/abs(uzz)*100.,z/H,'b')
-        plt.xlabel(r"$\zeta=\partial_{zz}\psi$", fontsize=13)
-        plt.ylabel(r"$z/H$",fontsize=13); plt.grid()
-        plt.title(r"uniform grid N = %i" %(Nz),fontsize=13)
+        plt.xlabel(r"$\zeta=\partial_{zz}\psi$", fontsize=16); plt.grid()
+        #plt.ylabel(r"$z/H$",fontsize=16); plt.grid()
+        #plt.title(r"uniform grid N = %i" %(Nz),fontsize=13)
         plt.subplot(1,4,4)
-        plt.plot(psi_zzzz, z/H, 'b') #, label=r"analytical")
+        plt.plot(psi_zzzz, z/H,color='goldenrod',linewidth=2) #, label=r"analytical")
         #plt.plot(abs(uzz-uzzD)/abs(uzz)*100.,z/H,'b')
-        plt.xlabel(r"$\partial_{zz}\zeta=\partial_{zzzz}\psi$", fontsize=13)
-        plt.ylabel(r"$z/H$",fontsize=13); plt.grid()
-        plt.title(r"uniform grid N = %i" %(Nz),fontsize=13)
+        plt.xlabel(r"$\partial_{zz}\zeta=\partial_{zzzz}\psi$", fontsize=16); plt.grid()
+        #plt.ylabel(r"$z/H$",fontsize=16); plt.grid()
+        #plt.title(r"uniform grid N = %i" %(Nz),fontsize=13)
         #plt.legend(loc=2,fontsize=13); 
+        plt.subplots_adjust(top=0.97, bottom=0.15, left=0.05, right=0.98, hspace=0.08, wspace=0.2)
         plt.savefig(plotname,format="png")
         plt.close(fig);
 
 
-
     # do zeta_wall error:
-    zeta_wallC = psi[0]*(2./(z[0]**2.)) # works for variable grid
+    #zeta_wallC = psi[0]*(2./((z[0])**2.)) # Thom (1933)
+    #zeta_wallC0 = (psi[0]*8./3.)/((z[0])**2.) - (psi[1]*1./6.)/((z[0])**2.) # 2nd derivative, 4th order
+    zeta_wallC = (psi[0]*3.)/((z[0])**2.) - psi_zz[0]/2.  # Woods (1954)
     zeta_wallE = abs(zeta_wall-zeta_wallC)/abs(zeta_wall)*100.
     L_zeta_wall[n] = zeta_wallE
-
-    zeta_wallC2 = fn.extrapolate_to_zero( psi_zz , z , 6 )
+  
+    zeta_wallC2 = fn.extrapolate_to_zero( psi_zz , z , 6 ) 
     zeta_wallE2 = abs(zeta_wall-zeta_wallC2)/abs(zeta_wall)*100.
     L_zeta_wall2[n] = zeta_wallE2
 
+    zeta_wallC3 = (108.*psi[0]-27.*psi[1]+4.*psi[2]) / (18.*(2.*z[0])**2.) # Briley (1971) 4th order
+    zeta_wallE3 = abs(zeta_wall-zeta_wallC2)/abs(zeta_wall)*100.
+    L_zeta_wall3[n] = zeta_wallE3
 
     # now do exactly as in the solutions:
     wall_BC_flag = 'BC'
@@ -156,11 +161,10 @@ for n in range(0, Ng):
     inv_psi = np.linalg.inv( dzz_psi )
 
 
-
     # first, check dzz_psi:
     psi_zzC = np.dot( dzz_psi , psi )
-    psi_zzC[0] = psi_zzC[0] + lpsi*(z[0]**2.*zeta_wall) # sets psi_wall=d/dz(psi_wall)=0 to 2nd order accuracy
-    psi_zzE = abs(psi_zz-psi_zzC)#/abs(psi_zz)*100.
+    psi_zzC[0] = psi_zzC[0] + lpsi*(z[0]**2.*zeta_wall) # sets psi_wall=d/dz(psi_wall)=0 with 2nd order accuracy (2nd order dirchlet)
+    psi_zzE = abs(psi_zz-psi_zzC) 
     L_psi_zz[n] = np.amax(psi_zzE)
 
     plotname = figure_path + '/computed_solutions/psi_dzz_Nz%i.png' %(int(Nz))
@@ -252,6 +256,40 @@ for n in range(0, Ng):
     L_psi[n] = np.amax(psiE)
 
 
+    # error going forwards and backward:
+    zetaC2 = np.dot( dzz_psi , psi ) 
+    psiC2 = np.matmul( inv_psi , zetaC2 )
+    
+    plotname = figure_path + '/computed_solutions/zeta_inv_Nz%i.png' %(int(Nz))
+    fig = plt.figure(figsize=(16,8)); 
+    plt.subplot(1,2,1)
+    plt.plot(psi, z/H, color='red', linewidth=2, label=r"analytical")
+    plt.plot(psiC2, z/H, linestyle='dashed',color='olive',linewidth=2, label=r"computed")
+    #plt.plot(uzzDb, z/H, '--g', label=r"dirchlet")
+    #plt.plot(abs(uzz-uzzD)/abs(uzz)*100.,z/H,'b')
+    plt.xlabel(r"$\psi=(\partial_{zz})^{-1}\zeta$", fontsize=13) # $\mathrm{percent}$ $\mathrm{error}$", fontsize=13)
+    plt.ylabel(r"$z/H$",fontsize=13); plt.grid()
+    plt.title(r"uniform grid N = %i" %(Nz),fontsize=13)
+    plt.legend(loc=1,fontsize=13); 
+    #plt.ylim([-0.005,5.])
+    #plt.axis([-0.005,1000.,-0.005,10.]) 
+    #plt.axis([0.,20./H,0.,1./(2.*H)])
+    #plt.axis([-0.005,1000.,-0.005,10.])
+    plt.subplot(1,2,2)
+    plt.plot(psi, z/H, color='red', linewidth=2, label=r"analytical")
+    plt.plot(psiC2, z/H, linestyle='dashed',color='olive',linewidth=2, label=r"computed")
+    #plt.plot(uzzDb, z/H, '--g', label=r"dirchlet")
+    #plt.plot(abs(uzz-uzzD)/abs(uzz)*100.,z/H,'b')
+    plt.xlabel(r"$\psi=(\partial_{zz})^{-1}\zeta$", fontsize=13) # $\mathrm{percent}$ $\mathrm{error}$", fontsize=13)
+    plt.ylabel(r"$z/H$",fontsize=13); plt.grid()
+    plt.title(r"uniform grid N = %i" %(Nz),fontsize=13)
+    plt.legend(loc=1,fontsize=13); 
+    plt.ylim([-0.005,0.1])
+    plt.savefig(plotname,format="png")
+    plt.close(fig);
+
+
+"""
 plotname = figure_path + 'zeta_inv_convergence.png'
 fig = plt.figure(figsize=(8,8))
 plt.subplot(1,1,1)
@@ -305,31 +343,38 @@ plt.ylabel(r"L$_\infty$ error",fontsize=13)
 plt.grid(); plt.legend(loc=1,fontsize=13)
 plt.savefig(plotname,format="png")
 plt.close(fig);
-
 """
+
 
 plotname = figure_path + 'grid_convergence.png'
-fig = plt.figure(figsize=(16,8))
-plt.subplot(1,2,1)
-plt.loglog(Nr,L1a,'r',label=r"neumann")
-plt.loglog(Nr,L1b,'b',label=r"dirchlet")
+fig = plt.figure(figsize=(15,5)); 
+plt.subplot(1,3,1)
+plt.loglog(Nr,L_zeta_wall,color='goldenrod',linewidth=2.,label=r"$\mathrm{Woods}$ (1954) 2$^{nd}$ $\mathrm{order}$")
+plt.loglog(Nr,(L_zeta_wall[0]*0.5/Nr[0]**(-2.))*Nr**(-2.),'k',label=r"$O(N^{-2})$")
+#plt.loglog(Nr,L_zeta_wall3,color='olive',linewidth=2.,label=r"$\mathrm{Briley}$ (1971) 4$^{th}$ $\mathrm{order}$")
+#plt.loglog(Nr,(L_zeta_wall3[0]*100./Nr[0]**(-4.))*Nr**(-4.),'--k',label=r"$O(N^{-4})$")
+#plt.loglog(Nr,L_zeta_wall2,color='olive',linewidth=2.,label=r"6$^{th}$ $\mathrm{order}$ $\mathrm{extrapolation}$")
+#plt.loglog(Nr,(L_zeta_wall2[0]*0.5/Nr[0]**(-6.))*Nr**(-6.),'k',label=r"$O(N^{-6})$")
+plt.xlabel(r"$N$ $\mathrm{grid}$ $\mathrm{points}$",fontsize=14)
+plt.ylabel(r"L$_\infty$ $\mathrm{error}$",fontsize=14)
+plt.title(r"$\mathrm{Wall}$ $\mathrm{vorticity}$ $\zeta_0$ $\mathrm{error}$",fontsize=13) #: Dirchlet top & open bottom BCs",fontsize=13)
+plt.grid(); plt.legend(loc=3,fontsize=13)
+plt.subplot(1,3,2)
+plt.loglog(Nr,L_zeta_zz,color='goldenrod',linewidth=2.,label=r"$\partial_{zz}\zeta$")
 #plt.loglog(Nr,Lb,'b',label=r"cosine grid")
-plt.loglog(Nr,(L1a[0]*0.3/Nr[0]**(-2.))*Nr**(-2.),'k',label=r"$O(N^{-2})$")
-plt.xlabel(r"$N$ grid points",fontsize=13)
-plt.ylabel(r"L$_\infty$ error",fontsize=13)
-plt.title(r"1st derivative of $\zeta$",fontsize=13) #: Dirchlet top & open bottom BCs",fontsize=13)
-plt.grid(); plt.legend(loc=1,fontsize=13)
-plt.subplot(1,2,2)
-plt.loglog(Nr,L2a,'r',label=r"neumann")
-plt.loglog(Nr,L2b,'b',label=r"dirchlet")
+plt.loglog(Nr,(L_zeta_zz[0]*0.5/Nr[0]**(-2.))*Nr**(-2.),'k',label=r"$O(N^{-2})$")
+plt.xlabel(r"$N$ $\mathrm{grid}$ $\mathrm{points}$",fontsize=14)
+#plt.ylabel(r"L$_\infty$ $\mathrm{error}$",fontsize=16)
+plt.title(r"$\mathrm{Vorticity}$ 2$^{nd}$ $\mathrm{derivative}$ $\mathrm{error}$",fontsize=13)
+plt.grid(); plt.legend(loc=3,fontsize=13)
+plt.subplot(1,3,3)
+plt.loglog(Nr,L_psi,color='goldenrod',linewidth=2.,label=r"$\psi=(\partial_{zz})^{-1}\zeta$")
 #plt.loglog(Nr,Lb,'b',label=r"cosine grid")
-plt.loglog(Nr,(L2a[0]*0.3/Nr[0]**(-2.))*Nr**(-2.),'k',label=r"$O(N^{-2})$")
-plt.xlabel(r"$N$ grid points",fontsize=13)
-plt.ylabel(r"L$_\infty$ error",fontsize=13)
-plt.title(r"2nd derivative of $\zeta$",fontsize=13) #: Dirchlet top & open bottom BCs",fontsize=13)
-plt.grid(); plt.legend(loc=1,fontsize=13)
+plt.loglog(Nr,(L_psi[0]*0.5/Nr[0]**(-2.))*Nr**(-2.),'k',label=r"$O(N^{-2})$")
+plt.xlabel(r"$N$ $\mathrm{grid}$ $\mathrm{points}$",fontsize=14)
+#plt.ylabel(r"L$_\infty$ $\mathrm{error}$",fontsize=16)
+plt.title(r"$\mathrm{Vorticity}$-$\mathrm{streamfunction}$ $\mathrm{inversion}$ $\mathrm{error}$",fontsize=13)
+plt.grid(); plt.legend(loc=3,fontsize=13)
+plt.subplots_adjust(top=0.925, bottom=0.125, left=0.075, right=0.98, hspace=0.08, wspace=0.2)
 plt.savefig(plotname,format="png")
 plt.close(fig);
-
-
-"""

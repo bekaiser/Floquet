@@ -1,4 +1,13 @@
 
+# if the problem arises from spurious IC modes, add a relaxer initially.
+
+# add an iterator that makes sure that psi_wall -> 0. So, if psi_wall is larger than some threshold, repeat the step with 
+# the damper on
+
+# add something that sets dz( (inv)*zeta ) = (inv)*zeta = 0
+# add relaxation function to psi.
+# figure out what the inversion should be.
+
 import h5py
 import numpy as np
 import math as ma
@@ -55,10 +64,10 @@ ai = np.array([0.475])
 #ai = np.linspace(0.025,0.5,num=20,endpoint=True)
 
 # grid
-grid_flag = 'uniform' #'hybrid cosine' #'  'cosine' # # 
+grid_flag = 'uniform' #'  'cosine' # # 
 wall_BC_flag = 'BC'
-plot_freq = 1000 
-Nz = 120 # 
+plot_freq = 100
+Nz = 200 # 
 H = 32. # = Hd/dS, non-dimensional grid height
 CFL = 0.5 # 
 Hd = H*dS # m, dimensional domain height (arbitrary choice)
@@ -68,7 +77,7 @@ z,dz = fn.grid_choice( grid_flag , Nz , H ) # non-dimensional grid
 # pre-constructed matrices:
 
 grid_params_dzz = {'H':H, 'Hd':Hd,'z':z,'dz':dz,'Nz':Nz, 'wall_BC_flag':wall_BC_flag} 
-grid_params_inv = {'H':H, 'Hd':Hd,'z':z,'dz':dz,'Nz':Nz, 'wall_BC_flag':' '} 
+grid_params_inv = {'H':H, 'Hd':Hd,'z':z,'dz':dz,'Nz':Nz, 'wall_BC_flag':wall_BC_flag} 
 eye_matrix = np.eye( Nz , Nz , 0 , dtype=complex ) # identity matrix
 
 """
@@ -82,7 +91,7 @@ dzz_psi = np.multiply(dzz_psi,np.ones(np.shape(dzz_psi)),dtype=complex)
 """
 
 dzz_zeta,lBC = fn.diff_matrix( grid_params_dzz , 'dirchlet 2' , 'dirchlet' , diff_order=2 , stencil_size=3 ) 
-dzz_psi = fn.diff_matrix( grid_params_inv , 'dirchlet' , 'dirchlet' , diff_order=2 , stencil_size=3 ) 
+dzz_psi,lBC2 = fn.diff_matrix( grid_params_inv , 'dirchlet' , 'dirchlet' , diff_order=2 , stencil_size=3 ) 
 
 dzz_zeta = np.multiply(dzz_zeta,np.ones(np.shape(dzz_zeta)),dtype=complex) 
 dzz_psi = np.multiply(dzz_psi,np.ones(np.shape(dzz_psi)),dtype=complex)
@@ -125,44 +134,12 @@ for i in range(0,Ni):
         # parameters for monodromy matrix computation:
         params = {'nu': nu, 'omg': omg, 'T': T, 'Td':T, 'U': U, 'inv_psi':inv_psi, 'plot_freq':plot_freq, 
           'Nz':Nz, 'Nt':Nt, 'Re':Re,'a':a, 'H':H, 'Hd':Hd, 'dzz_zeta':dzz_zeta, 'CFL':CFL, 'A0':A0, 'damper_scale':damper_scale,
-          'dS':dS, 'z':z, 'dz':dz, 'eye_matrix':eye_matrix,'freq':freq, 'lBC':lBC, 'phi_path':phi_path, 'psi_path':psi_path} 
+          'dS':dS, 'z':z, 'dz':dz, 'eye_matrix':eye_matrix,'freq':freq, 'lBC':lBC, 'lBC2':lBC2, 'phi_path':phi_path, 'psi_path':psi_path} 
         Nc = count_points( params )
         print('number of points within delta = %i' %(Nc))
 
         # initial conditions (prinicipal fundamental solution matrix):
         Phi0 = np.eye(int(Nz),int(Nz),0,dtype=complex) 
-
-        # plots of initial conditions:
-        if ic_plot_flag == 1.: 
-            # Plot of initial streamfunction and vorticity
-            Psi0 = np.real(np.dot(params['inv_psi'],Phi0))
-            H = params['H']
-            plotname = params['psi_path'] +'ic.png' #%(count)
-            fig = plt.figure(figsize=(16,4.5))
-            plt.subplot(131); plt.plot(Psi0,params['z'],'b')
-            plt.xlabel(r"$\Psi$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13)
-            plt.ylim([-1.,H]); plt.grid()
-            plt.subplot(132); plt.plot(Psi0,params['z'],'b')
-            plt.xlabel(r"$\Psi$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13) 
-            plt.axis([-5.,5.,-0.001,H/500.]); plt.grid()
-            plt.subplot(133); plt.semilogy(Psi0,params['z'],'b')
-            plt.xlabel(r"$\Psi$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13)
-            plt.axis([-10,10,1e-2,H]); plt.grid()
-            plt.savefig(plotname,format="png"); plt.close(fig);
-
-            H = params['H']
-            plotname = params['phi_path'] +'ic.png' #%(count)
-            fig = plt.figure(figsize=(16,4.5))
-            plt.subplot(131); plt.plot(np.real(Phi0),params['z'],'b')
-            plt.xlabel(r"$\Phi$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13)
-            plt.ylim([-1.,H]); plt.grid()
-            plt.subplot(132); plt.plot(np.real(Phi0),params['z'],'b')
-            plt.xlabel(r"$\Phi$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13) 
-            plt.axis([-5.,5.,-0.001,H/500.]); plt.grid()
-            plt.subplot(133); plt.semilogy(np.real(Phi0),params['z'],'b')
-            plt.xlabel(r"$\Phi$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13)
-            plt.axis([-1.1*np.amax(abs(np.real(Phi0[0:10]))),1.1*np.amax(abs(np.real(Phi0[0:10]))),1e-2,H]); plt.grid()
-            plt.savefig(plotname,format="png"); plt.close(fig);
 
         # compute monodromy matrix:
         Phin,final_time = fn.rk4_time_step( params, Phi0 , T/Nt, T , 'blennerhassett' )

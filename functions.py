@@ -236,31 +236,49 @@ def rk4( params , time , Phin , count , plot_flag , case_flag ):
 
 
             """
+            mode = 0
+
             Psin = np.real(np.dot(params['inv_psi'],Phin))
             Psin0 = np.zeros([1,params['Nz']])
             for j00 in range(0,params['Nz']):
-               Psin0[:,j00] = extrapolate_to_zero( Psin[:,j00] , params['z'] , 8 )
-            #print(Psin0)
-            #Psin0 = extrapolate_to_zero( Psin[:,1] , params['z'] , 8 )
+               Psin0[:,j00] = extrapolate_to_zero( Psin[:,j00] , params['z'] , 6 )
+
+            Psi_mode = np.append(np.real(Psin0[:,mode]),np.real(Psin[:,mode]))
+            z_mode = np.append(0.,params['z'])
+            
+            Psi_mode2 = np.append(np.real(Psin0[:,mode+1]),np.real(Psin[:,mode+1]))
+            z_mode2 = np.append(0.,params['z'])
+
+            Psi_plot = np.concatenate((np.real(Psin0),np.real(Psin)),axis=0)
+            z_plot = z_mode
+
+
             H = params['H']
             plotname = params['psi_path'] +'%i.png' %(count)
-            fig = plt.figure(figsize=(21,4.75))
-            plt.subplot(141); plt.plot(np.real(Psin),params['z'],'b')
+            #fig = plt.figure(figsize=(21,4.75))
+            fig = plt.figure(figsize=(10,4.75))
+            plt.subplot(121); plt.plot(Psi_plot,z_plot,'b')
+            plt.plot(Psi_mode2,z_mode2,color='cyan',linewidth=2)
+            plt.plot(Psi_mode,z_mode,color='goldenrod',linewidth=2)
             plt.plot(Psin0,np.zeros([1,params['Nz']]),'or',linewidth=3)
             plt.xlabel(r"$\Psi$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13)
             #plt.ylim([-H*0.05,H*1.05]); plt.grid()
-            plt.ylim([-0.005,0.5]); plt.grid()
+            plt.ylim([-0.2,1.]); plt.grid()
+            """
             plt.title(r"t/T = %.4f, step = %i" %(time/params['T'],count),fontsize=13)
-            plt.subplot(142); plt.plot(np.real(Psin),params['z'],'b')
+            plt.subplot(142); plt.plot(Psi_plot,z_plot,'b')
             plt.plot(Psin0,np.zeros([1,params['Nz']]),'or',linewidth=3)
             plt.xlabel(r"$\Psi$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13) 
             plt.axis([-0.02*np.amax(abs(np.real(Psin))),0.02*np.amax(abs(np.real(Psin))),-1.,1.1*H/25.]); plt.grid()
             plt.title(r"t/T = %.4f, step = %i" %(time/params['T'],count),fontsize=13)
-            plt.subplot(143); plt.semilogy(np.real(Psin),params['z'],'b')
+            plt.subplot(143); plt.semilogy(Psi_plot,z_plot,'b')
             plt.xlabel(r"$\Psi$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13)
             plt.axis([-0.02*np.amax(abs(np.real(Psin))),0.02*np.amax(abs(np.real(Psin))),4e-2,1.]); plt.grid()
             plt.title(r"t/T = %.4f, step = %i" %(time/params['T'],count),fontsize=13)
-            plt.subplot(144); plt.semilogy(np.real(Psin),params['z'],'b')
+            """
+            plt.subplot(122); plt.semilogy(Psi_plot,z_plot,'b')
+            plt.semilogy(Psi_mode2,z_mode2,color='cyan',linewidth=2,linestyle='dashed')
+            plt.semilogy(Psi_mode,z_mode,color='goldenrod',linewidth=2,linestyle='dashed')
             #plt.semilogy(Psin0,np.zeros([1,params['Nz']]),'or',linewidth=3)
             #plt.semilogy(np.real(Psin[params['Nz']-1,:]),params['z'],'r',linewidth=2)
             plt.xlabel(r"$\Psi$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13)
@@ -269,29 +287,62 @@ def rk4( params , time , Phin , count , plot_flag , case_flag ):
             plt.title(r"$|\psi_0|$ = %.8f" %(np.amax(abs(Psin0))),fontsize=13)
             plt.savefig(plotname,format="png"); plt.close(fig);
 
-            Phin0 = np.zeros([1,params['Nz']])
-            for j00 in range(0,params['Nz']):
-               Phin0[:,j00] = extrapolate_to_zero( np.real(Phin[:,j00]) , params['z'] , 8 )
+            # extrapolation BC:
 
+            Phin0 = np.zeros([1,params['Nz']])
+            for j in range(0,params['Nz']):
+                Phin0[0,j] = np.real( (extrapolate_to_zero( Phin[:,j] , params['z'] , 6 ))[0] )
+
+            Phi_mode = np.append(np.real(Phin0[0,mode]),np.real(Phin[:,mode]))
+            z_mode = np.append(0.,params['z'])
+
+            Phi_mode2 = np.append(np.real(Phin0[0,mode+1]),np.real(Phin[:,mode+1]))
+            z_mode2 = np.append(0.,params['z'])
+
+            # Thom BC:
+
+            #Phin0_Thom = np.zeros([1,params['Nz']])
+            #Phin0_Thom[0,:] = np.real((np.matmul(params['inv_psi'],Phin))[0,:])*2./((params['z'][0])**2.) 
+            Phin0_Thom = np.zeros([1,params['Nz']])
+            Phin0_Thom[0,:] = np.real ( ((np.matmul(params['inv_psi'],Phin))[0,:])*3./((params['z'][0])**2.) - Phin[0,:]/2. ) # Woods (1954)
+
+            Phi_mode = np.append(np.real(Phin0_Thom[0,mode]),np.real(Phin[:,mode]))
+            z_mode = np.append(0.,params['z'])
+
+            Phi_mode2 = np.append(np.real(Phin0_Thom[0,mode+1]),np.real(Phin[:,mode+1]))
+            z_mode2 = np.append(0.,params['z'])
+
+            Phi_plot = np.concatenate((np.real(Phin0_Thom),np.real(Phin)),axis=0)
+            z_plot = z_mode
+            
             H = params['H']
             plotname = params['phi_path'] +'%i.png' %(count)
-            fig = plt.figure(figsize=(21,4.75))
-            plt.subplot(141); plt.plot(np.real(Phin),params['z'],'b')
-            plt.plot(Phin0,np.zeros([1,params['Nz']]),'or',linewidth=3)
+            #fig = plt.figure(figsize=(21,4.75))
+            fig = plt.figure(figsize=(10,4.75))
+            plt.subplot(121); plt.plot(Phi_plot,z_plot,'b')
+            plt.plot(Phi_mode2,z_mode2,color='cyan',linewidth=2)
+            plt.plot(Phi_mode,z_mode,color='goldenrod',linewidth=2)
+            #plt.plot(Phin0,np.zeros([1,params['Nz']]),'or',linewidth=3)
+            plt.plot(Phin0_Thom,np.zeros([1,params['Nz']]),color='purple',linestyle='None',marker='o',linewidth=3)
             plt.xlabel(r"$\zeta$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13)
             #plt.ylim([-H*0.05,H*1.05]); plt.grid()
-            plt.ylim([-0.005,0.5]); plt.grid()
+            plt.ylim([-0.2,1.]); plt.grid()
             plt.title(r"t/T = %.4f, step = %i" %(time/params['T'],count),fontsize=13)
-            plt.subplot(142); plt.plot(np.real(Phin),params['z'],'b')
+            """
+            plt.subplot(142); plt.plot(Phi_plot,z_plot,'b')
             plt.plot(Phin0,np.zeros([1,params['Nz']]),'or',linewidth=3)
             plt.xlabel(r"$\zeta$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13) 
-            plt.axis([-0.02*np.amax(abs(np.real(Psin))),0.02*np.amax(abs(np.real(Psin))),-1.,1.1*H/25.]); plt.grid()
+            plt.axis([-0.02*np.amax(abs(np.real(Phin))),0.02*np.amax(abs(np.real(Phin))),-1.,1.1*H/25.]); plt.grid()
             plt.title(r"t/T = %.4f, step = %i" %(time/params['T'],count),fontsize=13)
             plt.subplot(143); plt.semilogy(np.real(Phin),params['z'],'b')
             plt.xlabel(r"$\zeta$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13)
-            plt.axis([-0.02*np.amax(abs(np.real(Psin))),0.02*np.amax(abs(np.real(Psin))),4e-2,1.]); plt.grid()
+            plt.axis([-0.02*np.amax(abs(np.real(Phin))),0.02*np.amax(abs(np.real(Phin))),4e-2,1.]); plt.grid()
             plt.title(r"t/T = %.4f, step = %i" %(time/params['T'],count),fontsize=13)
-            plt.subplot(144); plt.semilogy(np.real(Phin),params['z'],'b');
+            """
+            plt.subplot(122); plt.semilogy(Phi_plot,z_plot,'b');
+            plt.semilogy(Phi_mode2,z_mode2,color='cyan',linewidth=2,linestyle='dashed')
+            plt.semilogy(Phi_mode,z_mode,color='goldenrod',linewidth=2,linestyle='dashed')
+            #plt.semilogy(np.real(Phin[:,mode]),((params['z'])[0])*np.ones(np.shape(params['z'])),color='red',linewidth=2,linestyle='dashed')
             #plt.semilogy(np.real(Phin[0,:]),params['z'],'r',linewidth=2)
             plt.xlabel(r"$\zeta$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13)
             plt.grid()
@@ -314,22 +365,35 @@ def rk4( params , time , Phin , count , plot_flag , case_flag ):
         print('ERROR: incorrect damper scale specified')
 
 
-    # Phin = [ modes (one per IC) , z location ]
+    # Phin = [ modes (one per IC) , z location ] rows = solutions? Needs to be columns. PROBLEM!!!!!
     krk = np.matmul(A,Phin) # Runge-Kutta coefficient (dot product of A operator and Phi)
 
     # get zeta_wall using the psi value from the first cell center, adjacent to the boundary (Thom 1933):
-    #zeta_wall = ((np.matmul(params['inv_psi'],Phin))[:,0])*2./((params['z'][0])**2.) 
+    
     """
     for j in range(0,params['Nz']): # for each mode:
         krk[j,0] = krk[j,0] + (params['lBC'] * zeta_wall[j]) # can I remove this from a loop? YES!
     """
+
+
+
+    # NEED TO FIND A WAY TO SMOOTH THE FEILD SO THAT IT DOESN'T MESS UP THE TEMPORAL EVOLUTION?
+    """
     zeta_wall = np.zeros([params['Nz']],dtype=complex)
     for j in range(0,params['Nz']):
-        #print(((extrapolate_to_zero( Phin[j,:] , params['z'] , 6 ))[0]))
-        zeta_wall[j] = (extrapolate_to_zero( Phin[j,:] , params['z'] , 6 ))[0]
-    krk[:,0] = krk[:,0] + (params['lBC'] * zeta_wall) / 2. # forward difference to the wall, for the first cell center 
-    # (divide by 2 from the vorticity equation)
-
+        zeta_wall[j] = (extrapolate_to_zero( Phin[:,j] , params['z'] , 6 ))[0]
+    krk[0,:] = krk[0,:] + (params['lBC'] * zeta_wall) / 2. # forward difference to the wall, for the first cell center   
+    """
+    """
+    # Thom (1933) method:
+    zeta_wall = ((np.matmul(params['inv_psi'],Phin))[0,:])*2./((params['z'][0])**2.) 
+    # lBC comes from 'dirchlet' lower boundary condition (weight at -z[0])
+    krk[0,:] = krk[0,:] + (params['lBC2'] * zeta_wall) # (divide by 2 from the vorticity equation)
+    """
+    # Woods (1954) method to get wall vorticity:
+    zeta_wall = ((np.matmul(params['inv_psi'],Phin))[0,:])*3./((params['z'][0])**2.) - Phin[0,:]/2.  # Woods (1954)
+    # now complete the finite difference stencil for the diffusion of vorticity at the first cell center:
+    krk[0,:] = krk[0,:] + (params['lBC'] * zeta_wall) / 2. # the factor 2 is from the governing equations
 
   if case_flag == 'base_flow_test':
     b, u, v, bz, uz, vz, bzz, uzz, vzz = rotating_solution( params, time, 2 ) # dimensional
