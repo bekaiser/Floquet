@@ -390,8 +390,11 @@ def rk4( params , time , Phin , count , plot_flag , case_flag ):
     # lBC comes from 'dirchlet' lower boundary condition (weight at -z[0])
     krk[0,:] = krk[0,:] + (params['lBC2'] * zeta_wall) # (divide by 2 from the vorticity equation)
     """
-    # Woods (1954) method to get wall vorticity:
-    zeta_wall = ((np.matmul(params['inv_psi'],Phin))[0,:])*3./((params['z'][0])**2.) - Phin[0,:]/2.  # Woods (1954)
+    # get wall vorticity:
+    if params['grid_flag'] == 'cosine':
+        zeta_wall = ((np.matmul(params['inv_psi'],Phin))[0,:])*2./((params['z'][0])**2.) # Thom (1933)
+    else:
+        zeta_wall = ((np.matmul(params['inv_psi'],Phin))[0,:])*3./((params['z'][0])**2.) - Phin[0,:]/2.  # Woods (1954)
     # now complete the finite difference stencil for the diffusion of vorticity at the first cell center:
     krk[0,:] = krk[0,:] + (params['lBC'] * zeta_wall) / 2. # the factor 2 is from the governing equations
 
@@ -1164,9 +1167,16 @@ def diff_matrix( params , lower_BC_flag , upper_BC_flag , diff_order , stencil_s
 
    # lower (wall) BC sets variable to zero at the wall
    if lower_BC_flag == 'dirchlet 2':
-     lw, l0, l1, l2 = fornberg_weights(z[0], np.append(0.,z[0:3]) ,diff_order)[:,diff_order]
+     #lw, l0, l1, l2 = fornberg_weights(z[0], np.append(0.,z[0:3]) ,diff_order)[:,diff_order]
+     #lBC = lw
+     #pzz[0,0:3] = [ l0 , l1 , l2 ]
+     #lw, l0, l1, l2, l3, l4  = fornberg_weights(z[0], np.append(0.,z[0:5]) ,diff_order)[:,diff_order]
+     #lBC = lw
+     #pzz[0,0:5] = [ l0 , l1 , l2 , l3 , l4 ]
+     lw, l0, l1, l2, l3, l4, l5, l6, l7, l8, l9  = fornberg_weights(z[0], np.append(0.,z[0:10]) ,diff_order)[:,diff_order]
      lBC = lw
-     pzz[0,0:3] = [ l0 , l1 , l2 ]
+     pzz[0,0:10] = [ l0, l1, l2, l3, l4, l5, l6, l7, l8, l9 ]
+
    if lower_BC_flag == 'dirchlet':
      l0, l1, l2, l3 = fornberg_weights(z[0], np.append(-z[0],z[0:3]) ,diff_order)[:,diff_order]
      lBC = l0

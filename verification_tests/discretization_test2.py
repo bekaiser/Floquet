@@ -47,7 +47,7 @@ for n in range(0, Ng):
     Nz = int(Nr[n]) # resolution
     #print('Number of grid points: ',Nz)
  
-    grid_flag = 'uniform' #'cosine' # 'uniform' #'uniform 2'
+    grid_flag = 'cosine' # 'uniform' #'uniform 2'
     z,dz = fn.grid_choice( grid_flag , Nz , H ) # non-dimensional grid
 
     if n == 5:
@@ -137,9 +137,9 @@ for n in range(0, Ng):
 
 
     # do zeta_wall error:
-    #zeta_wallC = psi[0]*(2./((z[0])**2.)) # Thom (1933)
+    zeta_wallC = psi[0]*(2./((z[0])**2.)) # Thom (1933)
     #zeta_wallC0 = (psi[0]*8./3.)/((z[0])**2.) - (psi[1]*1./6.)/((z[0])**2.) # 2nd derivative, 4th order
-    zeta_wallC = (psi[0]*3.)/((z[0])**2.) - psi_zz[0]/2.  # Woods (1954)
+    #zeta_wallC = (psi[0]*3.)/((z[0])**2.) - psi_zz[0]/2.  # Woods (1954)
     zeta_wallE = abs(zeta_wall-zeta_wallC)/abs(zeta_wall)*100.
     L_zeta_wall[n] = zeta_wallE
   
@@ -147,8 +147,8 @@ for n in range(0, Ng):
     zeta_wallE2 = abs(zeta_wall-zeta_wallC2)/abs(zeta_wall)*100.
     L_zeta_wall2[n] = zeta_wallE2
 
-    zeta_wallC3 = (108.*psi[0]-27.*psi[1]+4.*psi[2]) / (18.*(2.*z[0])**2.) # Briley (1971) 4th order
-    zeta_wallE3 = abs(zeta_wall-zeta_wallC2)/abs(zeta_wall)*100.
+    zeta_wallC3 = (108.*psi[0]-27.*psi[1]+4.*psi[2]) / (18.*(z[0])**2.) # Briley (1971) 4th order
+    zeta_wallE3 = abs(zeta_wall-zeta_wallC3)/abs(zeta_wall)*100.
     L_zeta_wall3[n] = zeta_wallE3
 
     # now do exactly as in the solutions:
@@ -352,7 +352,7 @@ plt.subplot(1,3,1)
 plt.loglog(Nr,L_zeta_wall,color='goldenrod',linewidth=2.,label=r"$\mathrm{Woods}$ (1954) 2$^{nd}$ $\mathrm{order}$")
 plt.loglog(Nr,(L_zeta_wall[0]*0.5/Nr[0]**(-2.))*Nr**(-2.),'k',label=r"$O(N^{-2})$")
 #plt.loglog(Nr,L_zeta_wall3,color='olive',linewidth=2.,label=r"$\mathrm{Briley}$ (1971) 4$^{th}$ $\mathrm{order}$")
-#plt.loglog(Nr,(L_zeta_wall3[0]*100./Nr[0]**(-4.))*Nr**(-4.),'--k',label=r"$O(N^{-4})$")
+#plt.loglog(Nr,(L_zeta_wall3[0]*1./Nr[0]**(-4.))*Nr**(-4.),'--k',label=r"$O(N^{-4})$")
 #plt.loglog(Nr,L_zeta_wall2,color='olive',linewidth=2.,label=r"6$^{th}$ $\mathrm{order}$ $\mathrm{extrapolation}$")
 #plt.loglog(Nr,(L_zeta_wall2[0]*0.5/Nr[0]**(-6.))*Nr**(-6.),'k',label=r"$O(N^{-6})$")
 plt.xlabel(r"$N$ $\mathrm{grid}$ $\mathrm{points}$",fontsize=14)
