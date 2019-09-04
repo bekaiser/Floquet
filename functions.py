@@ -33,10 +33,10 @@ def count_points( params ):
 
 def remove_high_frequency( E ):
     G = np.copy(E)
-    locs=np.argwhere(np.imag(G)>0.5)
+    locs=np.argwhere(abs(np.imag(G))>0.5)
     Nl = np.shape(locs)[0]
     for m in range(0,Nl):
-        G[locs[m,:][0],locs[m,:][1]]=0.+0.j
+        G[locs[m,:][0]]=0.+0.j
     return G
 
 

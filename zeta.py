@@ -52,7 +52,7 @@ ai = np.array([0.475])
 grid_flag = 'hybrid cosine' #'  'cosine' # # 
 wall_BC_flag = 'BC'
 plot_freq = 0
-Nz = 120 # 
+Nz = 50 # 
 H = 100. # = Hd/dS, non-dimensional grid height
 CFL = 0.5 # 
 Hd = H*dS # m, dimensional domain height (arbitrary choice)
@@ -139,9 +139,9 @@ for i in range(0,Ni):
         M[j,i] = np.amax(np.abs(Fmult)) # maximum modulus, eigenvals = floquet multipliers
         Mr[j,i] = np.amax(np.real(Fmult))
         Mi[j,i] = np.amax(np.imag(Fmult))
-        print('\nmaximum modulus Phi = ',M[j,i])
-        print('\nmaximum real mu Phi = ',Mr[j,i])      
-        print('\nmaximum imag mu Phi = ',Mi[j,i]) 
+        #print('\nmaximum modulus Phi = ',M[j,i])
+        #print('\nmaximum real mu Phi = ',Mr[j,i])      
+        #print('\nmaximum imag mu Phi = ',Mi[j,i]) 
 
         M2[j,i] = np.amax(np.abs(Fmult2)) # maximum modulus, eigenvals = floquet multipliers
         Mr2[j,i] = np.amax(np.real(Fmult2))
@@ -149,6 +149,7 @@ for i in range(0,Ni):
         print('\nmaximum modulus Phi with no mu_i > 0.5 = ',M2[j,i])
         print('\nmaximum real mu Phi with no mu_i > 0.5  = ',Mr2[j,i])      
         print('\nmaximum imag mu Phi with no mu_i > 0.5  = ',Mi2[j,i]) 
+        print('\n')
 
         #Psin = np.real(np.dot(params['inv_psi'],Phin))
         """
@@ -201,7 +202,7 @@ print('CFL = ',CFL)
 print('Grid = ',grid_flag)
 print('number of points within delta = %i' %(Nc))
 print('\nmaximum modulus Phi = ',M)
-print('\nmaximum modulus Psi = ',MP)
+print('\nmaximum modulus Psi = ',M2)
 h5_filename = stat_path + "multiplier_Re%i_Re%i_a%i_a%i.h5" %(Rej[0],Rej[Nj-1],int(ai[0]*1000),int(ai[Ni-1]*1000))
 print(h5_filename)
 f2 = h5py.File(h5_filename, "w")
