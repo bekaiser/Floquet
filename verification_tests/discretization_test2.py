@@ -47,7 +47,7 @@ for n in range(0, Ng):
     Nz = int(Nr[n]) # resolution
     #print('Number of grid points: ',Nz)
  
-    grid_flag = 'cosine' # 'uniform' #'uniform 2'
+    grid_flag = "hybrid cosine" #"cosine" # "uniform" # 
     z,dz = fn.grid_choice( grid_flag , Nz , H ) # non-dimensional grid
 
     if n == 5:
@@ -137,9 +137,14 @@ for n in range(0, Ng):
 
 
     # do zeta_wall error:
-    zeta_wallC = psi[0]*(2./((z[0])**2.)) # Thom (1933)
+    if grid_flag == 'cosine':
+        print('cosine grid: zeta_wall = Thom (1933)')
+        zeta_wallC = psi[0]*(2./((z[0])**2.)) # Thom (1933)
+    else:
+        print('uniform grid: zeta_wall = Woods (1954)')
+        zeta_wallC = (psi[0]*3.)/((z[0])**2.) - psi_zz[0]/2.  # Woods (1954)
+
     #zeta_wallC0 = (psi[0]*8./3.)/((z[0])**2.) - (psi[1]*1./6.)/((z[0])**2.) # 2nd derivative, 4th order
-    #zeta_wallC = (psi[0]*3.)/((z[0])**2.) - psi_zz[0]/2.  # Woods (1954)
     zeta_wallE = abs(zeta_wall-zeta_wallC)/abs(zeta_wall)*100.
     L_zeta_wall[n] = zeta_wallE
   
@@ -345,35 +350,44 @@ plt.savefig(plotname,format="png")
 plt.close(fig);
 """
 
-
+if grid_flag == "cosine":
+    Llabel = r"$\mathrm{Thom}$ (1933) 2$^{nd}$ $\mathrm{order}$"
+else:
+    Llabel = r"$\mathrm{Woods}$ (1954) 2$^{nd}$ $\mathrm{order}$"
 plotname = figure_path + 'grid_convergence.png'
 fig = plt.figure(figsize=(15,5)); 
 plt.subplot(1,3,1)
-plt.loglog(Nr,L_zeta_wall,color='goldenrod',linewidth=2.,label=r"$\mathrm{Woods}$ (1954) 2$^{nd}$ $\mathrm{order}$")
+plt.loglog(Nr,L_zeta_wall,color='goldenrod',linewidth=2.,label=Llabel)
 plt.loglog(Nr,(L_zeta_wall[0]*0.5/Nr[0]**(-2.))*Nr**(-2.),'k',label=r"$O(N^{-2})$")
 #plt.loglog(Nr,L_zeta_wall3,color='olive',linewidth=2.,label=r"$\mathrm{Briley}$ (1971) 4$^{th}$ $\mathrm{order}$")
 #plt.loglog(Nr,(L_zeta_wall3[0]*1./Nr[0]**(-4.))*Nr**(-4.),'--k',label=r"$O(N^{-4})$")
 #plt.loglog(Nr,L_zeta_wall2,color='olive',linewidth=2.,label=r"6$^{th}$ $\mathrm{order}$ $\mathrm{extrapolation}$")
 #plt.loglog(Nr,(L_zeta_wall2[0]*0.5/Nr[0]**(-6.))*Nr**(-6.),'k',label=r"$O(N^{-6})$")
-plt.xlabel(r"$N$ $\mathrm{grid}$ $\mathrm{points}$",fontsize=14)
+plot_xlabel = r"$N$ $\mathrm{grid}$ $\mathrm{points}$, " + grid_flag + " $\mathrm{grid}$"
+plt.xlabel(plot_xlabel,fontsize=14)
 plt.ylabel(r"L$_\infty$ $\mathrm{error}$",fontsize=14)
-plt.title(r"$\mathrm{Wall}$ $\mathrm{vorticity}$ $\zeta_0$ $\mathrm{error}$",fontsize=13) #: Dirchlet top & open bottom BCs",fontsize=13)
+plot_title = r"$\mathrm{Wall}$ $\mathrm{vorticity}$ $\zeta_0$ $\mathrm{error}$"
+plt.title(plot_title,fontsize=13) #: Dirchlet top & open bottom BCs",fontsize=13)
 plt.grid(); plt.legend(loc=3,fontsize=13)
 plt.subplot(1,3,2)
 plt.loglog(Nr,L_zeta_zz,color='goldenrod',linewidth=2.,label=r"$\partial_{zz}\zeta$")
 #plt.loglog(Nr,Lb,'b',label=r"cosine grid")
 plt.loglog(Nr,(L_zeta_zz[0]*0.5/Nr[0]**(-2.))*Nr**(-2.),'k',label=r"$O(N^{-2})$")
-plt.xlabel(r"$N$ $\mathrm{grid}$ $\mathrm{points}$",fontsize=14)
+plot_xlabel = r"$N$ $\mathrm{grid}$ $\mathrm{points}$, " + grid_flag + " $\mathrm{grid}$"
+plt.xlabel(plot_xlabel,fontsize=14)
 #plt.ylabel(r"L$_\infty$ $\mathrm{error}$",fontsize=16)
-plt.title(r"$\mathrm{Vorticity}$ 2$^{nd}$ $\mathrm{derivative}$ $\mathrm{error}$",fontsize=13)
+plot_title = r"$\mathrm{Vorticity}$ 2$^{nd}$ $\mathrm{derivative}$ $\mathrm{error}$"
+plt.title(plot_title,fontsize=13)
 plt.grid(); plt.legend(loc=3,fontsize=13)
 plt.subplot(1,3,3)
 plt.loglog(Nr,L_psi,color='goldenrod',linewidth=2.,label=r"$\psi=(\partial_{zz})^{-1}\zeta$")
 #plt.loglog(Nr,Lb,'b',label=r"cosine grid")
 plt.loglog(Nr,(L_psi[0]*0.5/Nr[0]**(-2.))*Nr**(-2.),'k',label=r"$O(N^{-2})$")
-plt.xlabel(r"$N$ $\mathrm{grid}$ $\mathrm{points}$",fontsize=14)
+plot_xlabel = r"$N$ $\mathrm{grid}$ $\mathrm{points}$, " + grid_flag + " $\mathrm{grid}$"
+plt.xlabel(plot_xlabel,fontsize=14)
 #plt.ylabel(r"L$_\infty$ $\mathrm{error}$",fontsize=16)
-plt.title(r"$\mathrm{Vorticity}$-$\mathrm{streamfunction}$ $\mathrm{inversion}$ $\mathrm{error}$",fontsize=13)
+plot_title = r"$\mathrm{Vorticity}$-$\mathrm{streamfunction}$ $\mathrm{inversion}$ $\mathrm{error}$"
+plt.title(plot_title,fontsize=13)
 plt.grid(); plt.legend(loc=3,fontsize=13)
 plt.subplots_adjust(top=0.925, bottom=0.125, left=0.075, right=0.98, hspace=0.08, wspace=0.2)
 plt.savefig(plotname,format="png")

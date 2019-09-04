@@ -18,6 +18,29 @@ sysinfo.get_info('atlas')
 
 
 # =============================================================================    
+
+def count_points( params ):
+    #dS = params['dS']
+    z = params['z']
+    #Hd = params['Hd']
+    #Nz = params['Nz']
+    count = 0
+    for j in range(0,params['Nz']):
+         #if (z[j]*dS) <= dS:
+         if (z[j]) <= 1.:
+             count = count + 1
+    return count
+
+def remove_high_frequency( E ):
+    G = np.copy(E)
+    locs=np.argwhere(np.imag(G)>0.5)
+    Nl = np.shape(locs)[0]
+    for m in range(0,Nl):
+        G[locs[m,:][0],locs[m,:][1]]=0.+0.j
+    return G
+
+
+# =============================================================================    
 # time-step functions functions
 
 
@@ -97,6 +120,7 @@ def rk4( params , time , Phin , count , plot_flag , case_flag ):
   if case_flag == 'Hills_equation':
     A = np.matrix([[0.,1.],[-params['a']-params['b']*np.cos(time),0.]],dtype=complex)
     # note that time must be in radians
+    krk = np.matmul(A,Phin)
 
   if case_flag == 'inviscid_buoyancy':
     A21 = 2.*np.pi*1j*params['k']*np.sin(time)/(1.-params['c2']) #A21 = -2.*np.pi*np.sin(time)
@@ -394,6 +418,7 @@ def rk4( params , time , Phin , count , plot_flag , case_flag ):
     if params['grid_flag'] == 'cosine':
         zeta_wall = ((np.matmul(params['inv_psi'],Phin))[0,:])*2./((params['z'][0])**2.) # Thom (1933)
     else:
+        #print('here!')
         zeta_wall = ((np.matmul(params['inv_psi'],Phin))[0,:])*3./((params['z'][0])**2.) - Phin[0,:]/2.  # Woods (1954)
     # now complete the finite difference stencil for the diffusion of vorticity at the first cell center:
     krk[0,:] = krk[0,:] + (params['lBC'] * zeta_wall) / 2. # the factor 2 is from the governing equations
@@ -1167,6 +1192,9 @@ def diff_matrix( params , lower_BC_flag , upper_BC_flag , diff_order , stencil_s
 
    # lower (wall) BC sets variable to zero at the wall
    if lower_BC_flag == 'dirchlet 2':
+     #lw, l0, l1 = fornberg_weights(z[0], np.append(0.,z[0:2]) ,diff_order)[:,diff_order]
+     #lBC = lw
+     #pzz[0,0:2] = [ l0 , l1 ]
      #lw, l0, l1, l2 = fornberg_weights(z[0], np.append(0.,z[0:3]) ,diff_order)[:,diff_order]
      #lBC = lw
      #pzz[0,0:3] = [ l0 , l1 , l2 ]
@@ -1176,6 +1204,9 @@ def diff_matrix( params , lower_BC_flag , upper_BC_flag , diff_order , stencil_s
      lw, l0, l1, l2, l3, l4, l5, l6, l7, l8, l9  = fornberg_weights(z[0], np.append(0.,z[0:10]) ,diff_order)[:,diff_order]
      lBC = lw
      pzz[0,0:10] = [ l0, l1, l2, l3, l4, l5, l6, l7, l8, l9 ]
+     #lw, l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15  = fornberg_weights(z[0], np.append(0.,z[0:16]) ,diff_order)[:,diff_order]
+     #lBC = lw
+     #pzz[0,0:16] = [ l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15 ]
 
    if lower_BC_flag == 'dirchlet':
      l0, l1, l2, l3 = fornberg_weights(z[0], np.append(-z[0],z[0:3]) ,diff_order)[:,diff_order]
