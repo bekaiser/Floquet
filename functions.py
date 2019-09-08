@@ -373,9 +373,8 @@ def rk4( params , time , Phin , count , plot_flag , case_flag ):
             plt.title(r"$|\zeta_0|$ = %.8f" %(np.amax(abs(Phin0))),fontsize=13)
             plt.savefig(plotname,format="png"); plt.close(fig);
    
-  
-
-    A = params['A0'] #np.zeros( [int(params['Nz']),int(params['Nz'])] , dtype=complex ) 
+    # construct dynamical operator:
+    A = params['A0'] 
     if params['damper_scale'] == 0.: # no damper:
         A[:,:] = - uS*1j*params['a']*params['eye_matrix']*params['Re']/2. \
         + np.matmul(uzzS*1j*params['a']*params['eye_matrix']*params['Re']/2.,params['inv_psi']) \
@@ -388,39 +387,16 @@ def rk4( params , time , Phin , count , plot_flag , case_flag ):
     else:
         print('ERROR: incorrect damper scale specified')
 
-
     # Phin = [ modes (one per IC) , z location ] rows = solutions? Needs to be columns. PROBLEM!!!!!
     krk = np.matmul(A,Phin) # Runge-Kutta coefficient (dot product of A operator and Phi)
 
-    # get zeta_wall using the psi value from the first cell center, adjacent to the boundary (Thom 1933):
-    
-    """
-    for j in range(0,params['Nz']): # for each mode:
-        krk[j,0] = krk[j,0] + (params['lBC'] * zeta_wall[j]) # can I remove this from a loop? YES!
-    """
-
-
-
-    # NEED TO FIND A WAY TO SMOOTH THE FEILD SO THAT IT DOESN'T MESS UP THE TEMPORAL EVOLUTION?
-    """
-    zeta_wall = np.zeros([params['Nz']],dtype=complex)
-    for j in range(0,params['Nz']):
-        zeta_wall[j] = (extrapolate_to_zero( Phin[:,j] , params['z'] , 6 ))[0]
-    krk[0,:] = krk[0,:] + (params['lBC'] * zeta_wall) / 2. # forward difference to the wall, for the first cell center   
-    """
-    """
-    # Thom (1933) method:
-    zeta_wall = ((np.matmul(params['inv_psi'],Phin))[0,:])*2./((params['z'][0])**2.) 
-    # lBC comes from 'dirchlet' lower boundary condition (weight at -z[0])
-    krk[0,:] = krk[0,:] + (params['lBC2'] * zeta_wall) # (divide by 2 from the vorticity equation)
-    """
     # get wall vorticity:
     if params['grid_flag'] == 'cosine':
         zeta_wall = ((np.matmul(params['inv_psi'],Phin))[0,:])*2./((params['z'][0])**2.) # Thom (1933)
-    else:
-        #print('here!')
+    else: 
         zeta_wall = ((np.matmul(params['inv_psi'],Phin))[0,:])*3./((params['z'][0])**2.) - Phin[0,:]/2.  # Woods (1954)
-    # now complete the finite difference stencil for the diffusion of vorticity at the first cell center:
+
+    # now complete the finite difference stencil for the diffusion of vorticity at the first cell center (vorticity BC):
     krk[0,:] = krk[0,:] + (params['lBC'] * zeta_wall) / 2. # the factor 2 is from the governing equations
 
   if case_flag == 'base_flow_test':
