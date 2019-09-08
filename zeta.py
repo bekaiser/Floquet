@@ -77,7 +77,7 @@ for i in range(0,Ni):
         U = Re * (nu/dS) # Re = U*dS/nu, so ReB=Re/2
         dt = CFL*(z[0]/Re)  # = CFL*(np.amin(dz)/Re) 
         Nt = int(2.*np.pi/dt)
-        freq = int(Nt/100)
+        freq = int(Nt/10)
         print('number of time steps, Nt = ',Nt)
 
         inv_psi = np.linalg.inv( dzz_psi - (a**2.*eye_matrix) ) 
@@ -144,7 +144,6 @@ print('CFL = ',CFL)
 print('Grid = ',grid_flag)
 print('number of points within delta = %i' %(Nc))
 print('\nmaximum modulus Phi = ',M)
-print('\nmaximum modulus Psi = ',M2)
 h5_filename = stat_path + "multiplier_Re%i_Re%i_a%i_a%i.h5" %(Rej[0],Rej[Nj-1],int(ai[0]*1000),int(ai[Ni-1]*1000))
 print(h5_filename)
 f2 = h5py.File(h5_filename, "w")
