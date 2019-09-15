@@ -14,9 +14,10 @@ figure_path = "./figures/"
 stat_path = "./output/"
 email_flag = 0
 ic_plot_flag = 0
-damper_scale = 100. # off if set to 0.
+damper_scale = 0. # off if set to 0.
 spur_damper = np.inf # off if np.inf
-phi_path = '/home/bryan/git_repos/Floquet/figures/phi/'
+precondition = 'True'
+zeta_path = '/home/bryan/git_repos/Floquet/figures/zeta/'
 psi_path = '/home/bryan/git_repos/Floquet/figures/psi/'
 
 if email_flag == 1:
@@ -88,12 +89,27 @@ for i in range(0,Ni):
         # parameters for monodromy matrix computation:
         params = {'nu': nu, 'omg': omg, 'T': T, 'Td':T, 'U': U, 'inv_psi':inv_psi, 'plot_freq':plot_freq, 'grid_flag':grid_flag,
           'Nz':Nz, 'Nt':Nt, 'Re':Re,'a':a, 'H':H, 'Hd':Hd, 'dzz_zeta':dzz_zeta, 'CFL':CFL, 'A0':A0, 'damper_scale':damper_scale, 'spur_damper':spur_damper,
-          'dS':dS, 'z':z, 'dz':dz, 'eye_matrix':eye_matrix,'freq':freq, 'lBC':lBC, 'lBC2':lBC2, 'phi_path':phi_path, 'psi_path':psi_path} 
+          'dS':dS, 'z':z, 'dz':dz, 'eye_matrix':eye_matrix,'freq':freq, 'lBC':lBC, 'lBC2':lBC2, 'zeta_path':zeta_path, 'psi_path':psi_path} 
         Nc = fn.count_points( params )
         print('number of points within delta = %i' %(Nc))
 
         # initial conditions (prinicipal fundamental solution matrix):
-        Phi0 = np.eye(int(Nz),int(Nz),0,dtype=complex) 
+        if precondition == 'True':
+            # Gaussian centered at each grid point, 
+            # with np.exp(-(z-mu)**2./(2.*sig**2.)), sig=1., mu=0.:
+            Phi0 = np.eye(int(Nz),int(Nz),0,dtype=complex) + \
+               6.06530660e-01*np.eye(int(Nz),int(Nz),1,dtype=complex) + \
+               1.35335283e-01*np.eye(int(Nz),int(Nz),2,dtype=complex) + \
+               1.11089965e-02*np.eye(int(Nz),int(Nz),3,dtype=complex) + \
+               3.35462628e-04*np.eye(int(Nz),int(Nz),4,dtype=complex) + \
+               3.72665317e-06*np.eye(int(Nz),int(Nz),5,dtype=complex) + \
+               6.06530660e-01*np.eye(int(Nz),int(Nz),-1,dtype=complex) + \
+               1.35335283e-01*np.eye(int(Nz),int(Nz),-2,dtype=complex) + \
+               1.11089965e-02*np.eye(int(Nz),int(Nz),-3,dtype=complex) + \
+               3.35462628e-04*np.eye(int(Nz),int(Nz),-4,dtype=complex) + \
+               3.72665317e-06*np.eye(int(Nz),int(Nz),-5,dtype=complex) 
+        else:
+            Phi0 = np.eye(int(Nz),int(Nz),0,dtype=complex) 
 
         # compute monodromy matrix:
         Phin,final_time = fn.rk4_time_step( params, Phi0 , T/Nt, T , 'stokes' )

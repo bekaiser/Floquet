@@ -1718,7 +1718,7 @@ def plot_stokes( Phin , params, count, time ):
             z_plot = z_mode
             
             H = params['H']
-            plotname = params['phi_path'] +'%i.png' %(count)
+            plotname = params['zeta_path'] +'%i.png' %(count)
             #fig = plt.figure(figsize=(21,4.75))
             fig = plt.figure(figsize=(10,4.75))
             plt.subplot(121); plt.plot(Phi_plot,z_plot,'b')
