@@ -176,49 +176,40 @@ def rk4( params , time , Phin , count , plot_flag , case_flag ):
     # construct dynamical operator:
     Nz = int(params['Nz'])
     A = params['A0'] # shape(A) = 2*Nz x 2*Nz
+
+    # top left -> z=0, zeta
+    # bottom right -> z=H, b
+
     # dynamical operator chunk for zeta in zeta equation (top left A11):
-    A[Nz:int(2*Nz),0:Nz] = - U*1j*params['a']*params['eye_matrix']*params['Re']/2. \
+    A[0:Nz,0:Nz] = - U*1j*params['a']*params['eye_matrix']*params['Re']/2. \
         + np.matmul(Uzz*1j*params['a']*params['eye_matrix']*params['Re']/2.,params['inv_psi']) \
         + ( params['dzz_zeta'] - (params['a']**2.*params['eye_matrix']) ) / 2. 
-    if params['damper_scale'] >= 1.: 
-        A[Nz:int(2*Nz),0:Nz] = A[Nz:int(2*Nz),0:Nz] \
-        - 5000. * params['eye_matrix'] * np.exp( (params['z']-params['H']) / ( params['H'] / params['damper_scale'] ) )
+    #if params['damper_scale'] >= 1.: 
+    #    A[0:Nz,0:Nz] = A[0:Nz,0:Nz] - 5000. * params['eye_matrix'] * np.exp( (params['z']-params['H']) / ( params['H'] / params['damper_scale'] ) )
+
     # dynamical operator chunk for buoyancy in zeta equation: (top right A12)  
-    A[Nz:int(2*Nz),Nz:int(2*Nz)] = params['C2']*( params['dz_b']*np.sin(params['tht']) - 1j*params['a']*params['eye_matrix']*np.cos(params['tht']) )
-    if params['damper_scale'] >= 1.: 
-        A[Nz:int(2*Nz),Nz:int(2*Nz)] = A[Nz:int(2*Nz),Nz:int(2*Nz)] \
-        - 5000. * params['eye_matrix'] * np.exp( (params['z']-params['H']) / ( params['H'] / params['damper_scale'] ) )
+    A[0:Nz,Nz:int(2*Nz)] = params['C2']*( params['dz_b']*np.sin(params['tht']) - 1j*params['a']*params['eye_matrix']*np.cos(params['tht']) )
+
     # dynamical operator chunk for zeta in buoyancy equation: (bottom left A21)
-    A[0:Nz,0:Nz] = - np.matmul(Bz*1j*params['a']*params['eye_matrix']*params['Re']/2.,params['inv_psi'])
-    if params['damper_scale'] >= 1.: 
-        A[0:Nz,0:Nz] = A[0:Nz,0:Nz] \
-        - 5000. * params['eye_matrix'] * np.exp( (params['z']-params['H']) / ( params['H'] / params['damper_scale'] ) )
+    A[Nz:int(2*Nz),0:Nz] = - np.matmul(Bz*1j*params['a']*params['eye_matrix']*params['Re']/2.,params['inv_psi'])
+
     # dynamical operator chunk for buoyancy in buoyancy equation: (bottom right A22)
-    A[Nz:int(2*Nz),0:Nz] = ( params['dzz_b'] - (params['a']**2.*params['eye_matrix']) ) / (2.*params['Pr']) \
+    A[Nz:int(2*Nz),Nz:int(2*Nz)] = ( params['dzz_b'] - (params['a']**2.*params['eye_matrix']) ) / (2.*params['Pr']) \
                    - U*1j*params['a']*params['eye_matrix']*params['Re']/2.
-    if params['damper_scale'] >= 1.: 
-        A[Nz:int(2*Nz),0:Nz] = A[Nz:int(2*Nz),0:Nz] \
-        - 5000. * params['eye_matrix'] * np.exp( (params['z']-params['H']) / ( params['H'] / params['damper_scale'] ) )
+    #if params['damper_scale'] >= 1.: 
+    #    A[Nz:int(2*Nz),Nz:int(2*Nz)] = A[Nz:int(2*Nz),Nz:int(2*Nz)] \
+    #    - 5000. * params['eye_matrix'] * np.exp( (params['z']-params['H']) / ( params['H'] / params['damper_scale'] ) )
 
     krk = np.matmul(A,Phin) # Runge-Kutta coefficient (dot product of A operator and Phi)
 
     # get wall vorticity: 
     if params['grid_flag'] == 'cosine': 
-        zeta_wall = ((np.matmul(params['inv_psi'],Phin[Nz:int(2*Nz),:]))[0,:])*2./((params['z'][0])**2.) # Thom (1933)
+        zeta_wall = ((np.matmul(params['inv_psi'],Phin[0:Nz,:]))[0,:])*2./((params['z'][0])**2.) # Thom (1933)
     else: 
-        zeta_wall = ((np.matmul(params['inv_psi'],Phin[Nz:int(2*Nz),:]))[0,:])*3./((params['z'][0])**2.) - Phin[Nz,:]/2.  # Woods (1954)
-    """
-    if time/params['T'] < 1./params['spur_damper']:
-        #print('here')
-        for jj in range(0,params['Nz']):
-            if np.real(zeta_wall[jj]) < -1.:
-                zeta_wall[jj] = zeta_wall[jj]/abs(zeta_wall[jj]*params['spur_damper']**2.)
-            if np.real(zeta_wall[jj]) > 1.:
-                zeta_wall[jj] = zeta_wall[jj]/abs(zeta_wall[jj]*params['spur_damper']**2.)
-    """
+        zeta_wall = ((np.matmul(params['inv_psi'],Phin[0:Nz,:]))[0,:])*3./((params['z'][0])**2.) - Phin[0,:]/2.  # Woods (1954)
 
     # now complete the finite difference stencil for the diffusion of vorticity at the first cell center (vorticity BC):
-    krk[Nz,:] = krk[Nz,:] + (params['lBC'] * zeta_wall) / 2. # the factor 2 is from the governing equations
+    krk[0,:] = krk[0,:] + (params['lBC'] * zeta_wall) / 2. # the factor 2 is from the governing equations
     # spans the entire width 2*Nz of systems of equations for 2*Nz linearly independent solutions,
     # but only applies to A11 operator (zeta in zeta equation).
 
@@ -418,7 +409,7 @@ def grid_choice( grid_flag , Nz , H ):
 
  if grid_flag == 'hybrid cosine':
     # same as hybrid tanh, but use cosine so that there is clustering again at the top
-    H1 = H/5.
+    H1 = H/16.
     Nz1 = int(Nz*15/16)
     #Nz1 = int(Nz*3/4)
     print('Nz1 = ',Nz1)
@@ -1137,6 +1128,8 @@ def diff_matrix( params , lower_BC_flag , upper_BC_flag , diff_order , stencil_s
      l0, l1, l2, l3 = fornberg_weights(z[0], np.append(-z[0],z[0:3]) ,diff_order)[:,diff_order]
      #l1 = l1 + l0 # Neumann for dz(phi)=0 at z=0 (sets phi_ghost = phi_0)
      pzz[0,0:3] = np.array([ l1 + l0 , l2 , l3 ])
+
+
      """
      l0, l1, l2, l3, l4 = fornberg_weights(z[0], np.append(-z[0],z[0:4]) ,diff_order)[:,diff_order]
      #l1 = l1 + l0 # Neumann for dz(phi)=0 at z=0 (sets phi_ghost = phi_0)
@@ -1758,8 +1751,8 @@ def plot_abyss( Phin , params, count, time ):
 
     Nz = params['Nz']
     mode = 0
-    Zn = Phin[Nz:int(2*Nz),:] # zeta
-    Bn = Phin[0:Nz,:] # buoyancy
+    Bn = Phin[Nz:int(2*Nz),:] # zeta
+    Zn = Phin[0:Nz,:] # buoyancy
     Pn = np.real(np.dot(params['inv_psi'],Zn)) # psi
 
     # streamfunction:

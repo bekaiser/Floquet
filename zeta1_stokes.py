@@ -16,7 +16,6 @@ email_flag = 0
 ic_plot_flag = 0
 damper_scale = 0. # off if set to 0.
 spur_damper = np.inf # off if np.inf
-precondition = 'True'
 zeta_path = '/home/bryan/git_repos/Floquet/figures/zeta/'
 psi_path = '/home/bryan/git_repos/Floquet/figures/psi/'
 
@@ -41,6 +40,7 @@ Rej = np.array([600.])
 ai = np.array([0.1]) 
 #Rej = np.linspace(1300.,1400.,num=4,endpoint=True)
 #ai = np.linspace(0.025,0.5,num=20,endpoint=True)
+#ai = np.append(np.linspace(0.025,0.15,num=6,endpoint=True),np.append(np.linspace(0.16,0.55,num=40,endpoint=True),np.linspace(0.75,1.35,num=4,endpoint=True)))
 
 # grid
 grid_flag = 'uniform' #'hybrid cosine' #'  'cosine' # # 
@@ -80,7 +80,7 @@ for i in range(0,Ni):
         U = Re * (nu/dS) # Re = U*dS/nu, so ReB=Re/2
         dt = CFL*(z[0]/Re)  # = CFL*(np.amin(dz)/Re) 
         Nt = int(2.*np.pi/dt)
-        freq = int(Nt/100)
+        freq = int(Nt/10)
         print('number of time steps, Nt = ',Nt)
 
         inv_psi = np.linalg.inv( dzz_psi - (a**2.*eye_matrix) ) 
@@ -94,22 +94,7 @@ for i in range(0,Ni):
         print('number of points within delta = %i' %(Nc))
 
         # initial conditions (prinicipal fundamental solution matrix):
-        if precondition == 'True':
-            # Gaussian centered at each grid point, 
-            # with np.exp(-(z-mu)**2./(2.*sig**2.)), sig=1., mu=0.:
-            Phi0 = np.eye(int(Nz),int(Nz),0,dtype=complex) + \
-               6.06530660e-01*np.eye(int(Nz),int(Nz),1,dtype=complex) + \
-               1.35335283e-01*np.eye(int(Nz),int(Nz),2,dtype=complex) + \
-               1.11089965e-02*np.eye(int(Nz),int(Nz),3,dtype=complex) + \
-               3.35462628e-04*np.eye(int(Nz),int(Nz),4,dtype=complex) + \
-               3.72665317e-06*np.eye(int(Nz),int(Nz),5,dtype=complex) + \
-               6.06530660e-01*np.eye(int(Nz),int(Nz),-1,dtype=complex) + \
-               1.35335283e-01*np.eye(int(Nz),int(Nz),-2,dtype=complex) + \
-               1.11089965e-02*np.eye(int(Nz),int(Nz),-3,dtype=complex) + \
-               3.35462628e-04*np.eye(int(Nz),int(Nz),-4,dtype=complex) + \
-               3.72665317e-06*np.eye(int(Nz),int(Nz),-5,dtype=complex) 
-        else:
-            Phi0 = np.eye(int(Nz),int(Nz),0,dtype=complex) 
+        Phi0 = np.eye(int(Nz),int(Nz),0,dtype=complex) 
 
         # compute monodromy matrix:
         Phin,final_time = fn.rk4_time_step( params, Phi0 , T/Nt, T , 'stokes' )
@@ -118,14 +103,13 @@ for i in range(0,Ni):
         Fmult = np.linalg.eigvals(Phin) 
         # find locations where imag >= 0.5, then zero out those locations:
         # Fmult2 = fn.remove_high_frequency( Fmult )
-      
-        print(Fmult)      
+        #print(Fmult)      
  
         M[j,i] = np.amax(np.abs(Fmult)) # maximum modulus, eigenvals = floquet multipliers
         Mr[j,i] = np.amax(np.real(Fmult))
         Mi[j,i] = np.amax(np.imag(Fmult))
         print('\nmaximum modulus Phi = ',M[j,i])
-        #print('\nmaximum real mu Phi = ',Mr[j,i])      
+        print('\nmaximum real mu Phi = ',Mr[j,i])      
         #print('\nmaximum imag mu Phi = ',Mi[j,i]) 
 
         # output file with all multipliers, not just maxima:
