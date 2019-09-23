@@ -128,7 +128,7 @@ for i in range(0,Ni):
         Pn = np.real(np.dot(params['inv_psi'],Zn)) # psi
 
         # compute monodromy matrix:
-        Phin,final_time = fn.rk4_time_step( params, Phi0 , T/Nt, T , 'zeta1' ) # streamwise vorticity
+        Phin,final_time = fn.rk4_time_step( params, Phi0 , T/Nt, T , 'zeta2' ) # spanwise vorticity
 
         # store maxima:
         Fmult = np.linalg.eigvals(Phin) 

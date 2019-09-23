@@ -51,13 +51,15 @@ runpy.run_path('./verification_tests/discretization_test.py')
 print('\nVerifying spatial discrete derivatives are computed properly:\n')
 runpy.run_path('./verification_tests/discretization_test2.py')
 
-print('\nVerifying Floquet stability calculation using the Mathieu equation:\n')
-runpy.run_path('./verification_tests/Mathieu_test.py')
-
 print('\nVerifying changes to functions.py did not change Stokes 2nd problem stability:\n')
 runpy.run_path('./verification_tests/stokes_check.py')
-"""
 
 print('\nVerifying the non-dimensional base flow is :\n')
 runpy.run_path('./verification_tests/base_flow_test2.py')
+"""
+
+print('\nVerifying Floquet stability calculation using the Mathieu equation:\n')
+runpy.run_path('./verification_tests/Mathieu_test.py')
+
+
 

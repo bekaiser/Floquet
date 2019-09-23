@@ -167,12 +167,14 @@ T = 2.*np.pi # radians, non-dimensional period
 # dt in RK4 needs to be non-dimensional, as in dt = omg*T/Nt and omg*T = 2*pi
 
 # undamped Hill equation coefficients: f(t) = a + b*cos(t), A(t) = [[0,1],[-f(t),0]]
-Ngrid = 120 #400
+Ngrid = 140 #120 #400
 a = np.linspace(-1.,5.,num=Ngrid,endpoint=True)
 b = np.linspace(0.,8.,num=Ngrid,endpoint=True)
 
 strutt1 = np.zeros([Ngrid,Ngrid]); strutt2 = np.zeros([Ngrid,Ngrid])
 strutt3 = np.zeros([Ngrid,Ngrid]); strutt4 = np.zeros([Ngrid,Ngrid])
+
+strutt3r = np.zeros([Ngrid,Ngrid]);
 
 strutt12 = np.zeros([Ngrid,Ngrid]); strutt22 = np.zeros([Ngrid,Ngrid])
 strutt32 = np.zeros([Ngrid,Ngrid]); strutt42 = np.zeros([Ngrid,Ngrid])
@@ -205,10 +207,16 @@ for i in range(0,Ngrid):
     if TrOPH < 2.:
       strutt2[j,i] = 1.
     """
-    modH = np.abs(np.linalg.eigvals(PhinH)) # eigenvals = floquet multipliers
+    modH = np.linalg.eigvals(PhinH) # eigenvals = floquet multipliers
     #if modH[0] < 1. and modH[1] < 1.:
     #  strutt3[j,i] = 1.
-    strutt3[j,i] = np.log10(np.amax(modH))
+    #print(np.real(modH))
+
+    strutt3[j,i] = np.log10(np.amax(np.abs(modH)))
+    if np.amax(np.real(modH)) <= 0.:
+          strutt3r[j,i] = -100.
+    else:
+          strutt3r[j,i] = np.log10(np.amax(np.real(modH)))
     """
     modOPH = np.abs(np.linalg.eigvals(PhinOPH)) # eigenvals = floquet multipliers
     if modOPH[0] < 1. and modOPH[1] < 1.:
@@ -246,19 +254,44 @@ print('...Mathieu equation test complete!\nInspect output plots in /figures/Math
 
 A,B = np.meshgrid(a,b)
 
-plotname = figure_path +'strutt_eig_rk4.png' 
-plottitle = r"$\mathrm{Mathieu}$ $\mathrm{equation}$, $\mathrm{log}_{10}\hspace{0.5mm}(\mu)$" # $\mathrm{Floquet}$ $\mathrm{stability}$" 
+plotname = figure_path +'mathieu_modulus.png' 
+plottitle = r"$\mathrm{Mathieu}$ $\mathrm{equation}$, $\mathrm{log}_{10}\hspace{0.5mm}(|\mu|)$" # $\mathrm{Floquet}$ $\mathrm{stability}$" 
 fig = plt.figure()
-plt.subplot(111)
+ax=plt.subplot(111)
 CS = plt.contourf(A,B,strutt3,100,cmap='gist_gray')
-plt.colorbar(CS); 
-plt.plot(mcurve[:,0]/4,mcurve[:,1]/4,color='goldenrod',linewidth=2.5)
+plt.plot(mcurve[:,0]/4,mcurve[:,1]/4,color='goldenrod',linewidth=2.5,label=r"$\mathrm{Kovacic}$ $et$ $al.$ $(2018)$") #,linestyle='dashed')
+#CP3=ax.contour(A,B,strutt3,np.array([0.]),colors='dodgerblue',linewidths=2.,linestyles='dashed')
+cbar = plt.colorbar(CS);
+#cbar.add_lines(CP3) 
+plt.legend(loc=1,fontsize=15,facecolor='white', framealpha=1)
 plt.xlabel(r"$\delta$",fontsize=18);
 plt.ylabel(r"$\varepsilon$",fontsize=18); 
 plt.axis([-1.,5.,0.,8.])
 plt.title(plottitle,fontsize=16);
 plt.subplots_adjust(top=0.925, bottom=0.125, left=0.095, right=0.98, hspace=0.08, wspace=0.2)
 plt.savefig(plotname,format="png"); plt.close(fig);
+
+
+
+
+"""
+plotname = figure_path +'mathieu_real.png' 
+plottitle = r"$\mathrm{Mathieu}$ $\mathrm{equation}$, $\mathrm{log}_{10}\hspace{0.5mm}(\mathrm{real}[\mu])$" # $\mathrm{Floquet}$ $\mathrm{stability}$" 
+fig = plt.figure()
+ax=plt.subplot(111)
+CS = plt.contourf(A,B,strutt3r,100,cmap='gist_gray')
+plt.colorbar(CS); 
+plt.plot(mcurve[:,0]/4,mcurve[:,1]/4,color='goldenrod',linewidth=2.5)
+CP3=ax.contour(A,B,strutt3r,np.array([0.]),colors='mediumblue',linewidths=2.5,linestyles='dashed')
+cbar = plt.colorbar(CS);
+cbar.add_lines(CP3) 
+plt.xlabel(r"$\delta$",fontsize=18);
+plt.ylabel(r"$\varepsilon$",fontsize=18); 
+plt.axis([-1.,5.,0.,8.])
+plt.title(plottitle,fontsize=16);
+plt.subplots_adjust(top=0.925, bottom=0.125, left=0.095, right=0.98, hspace=0.08, wspace=0.2)
+plt.savefig(plotname,format="png"); plt.close(fig);
+"""
 
 """
 plotname = figure_path +'strutt_Tr_rk4.png' 

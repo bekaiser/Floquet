@@ -152,7 +152,7 @@ def rk4( params , time , Phin , count , plot_flag , case_flag ):
     dzz = ( partial_zz( params['z'], params['Nz'], params['H'], 'neumann' , 'neumann' )[0] ) / (params['Pr']*params['Re'])
     A = diag0 + dzz
 
-  if case_flag == 'zeta1':
+  if case_flag == 'zeta2': # spanwise vorticity
     """
     # single solution = [ zeta ; b ] , shape =  2*Nz rows, 1 col
     # Phi = [ zeta ; b ] , shape = 2*Nz rows, 2*Nz cols
@@ -213,7 +213,8 @@ def rk4( params , time , Phin , count , plot_flag , case_flag ):
     # spans the entire width 2*Nz of systems of equations for 2*Nz linearly independent solutions,
     # but only applies to A11 operator (zeta in zeta equation).
 
-  if case_flag == 'zeta2':
+  if case_flag == 'zeta1': # streamwise vorticity
+    """
     # rotating solutions:
     u = ( rotating_solution( params, time, 0 )[1] ) / params['U'] # non-dimensional advection
     uzz = ( rotating_solution( params, time, 2 )[7] ) / params['U'] * params['L']**2. # non-dimensional advection
@@ -234,6 +235,56 @@ def rk4( params , time , Phin , count , plot_flag , case_flag ):
     A[0:Nz,int(Nz):int(2*Nz)] = A12
     A[Nz:int(2*Nz),0:Nz] = A21
     A[Nz:int(2*Nz),Nz:int(2*Nz)] = A22
+    """
+    if params['plot_freq'] != 0:
+        pfreq = params['plot_freq']
+        if np.floor(count/pfreq) == count/pfreq:
+            plot_abyss( Phin, params, count, time )
+
+    # non-dimensional solutions
+    B, U, V, Bz, Uz, Vz = rotating_solution( params, time, 1 )
+    #U = U / params['U'] # non-dimensional
+    #Uzz = Uzz / (params['U']) * params['dS']**2. # non-dimensional
+    Bz = Bz * (params['dS']*params['omg']) / ( (params['N'])**2 * params['U'] )  # non-dimensional
+
+    # construct dynamical operator:
+    Nz = int(params['Nz'])
+    A = params['A0'] # shape(A) = 2*Nz x 2*Nz
+
+    # top left -> z=0, zeta
+    # bottom right -> z=H, b
+
+    # dynamical operator chunk for zeta in zeta equation (top left A11):
+    A[0:Nz,0:Nz] = ( params['dzz_zeta'] - (params['a']**2.*params['eye_matrix']) ) / 2. 
+    #if params['damper_scale'] >= 1.: 
+    #    A[0:Nz,0:Nz] = A[0:Nz,0:Nz] - 5000. * params['eye_matrix'] * np.exp( (params['z']-params['H']) / ( params['H'] / params['damper_scale'] ) )
+
+    # dynamical operator chunk for buoyancy in zeta equation: (top right A12)  
+    A[0:Nz,Nz:int(2*Nz)] = params['C2']*1j*params['a']*params['eye_matrix']*np.cos(params['tht']) 
+
+    # dynamical operator chunk for zeta in buoyancy equation: (bottom left A21)
+    A[Nz:int(2*Nz),0:Nz] = - np.matmul(Bz*1j*params['a']*params['eye_matrix']*params['Re']/2.,params['inv_psi'])
+
+    # dynamical operator chunk for buoyancy in buoyancy equation: (bottom right A22)
+    A[Nz:int(2*Nz),Nz:int(2*Nz)] = ( params['dzz_b'] - (params['a']**2.*params['eye_matrix']) ) / (2.*params['Pr']) 
+
+    #if params['damper_scale'] >= 1.: 
+    #    A[Nz:int(2*Nz),Nz:int(2*Nz)] = A[Nz:int(2*Nz),Nz:int(2*Nz)] \
+    #    - 5000. * params['eye_matrix'] * np.exp( (params['z']-params['H']) / ( params['H'] / params['damper_scale'] ) )
+
+    krk = np.matmul(A,Phin) # Runge-Kutta coefficient (dot product of A operator and Phi)
+ 
+    # get wall vorticity: 
+    if params['grid_flag'] == 'cosine': 
+        zeta_wall = ((np.matmul(params['inv_psi'],Phin[0:Nz,:]))[0,:])*2./((params['z'][0])**2.) # Thom (1933)
+    else: 
+        zeta_wall = ((np.matmul(params['inv_psi'],Phin[0:Nz,:]))[0,:])*3./((params['z'][0])**2.) - Phin[0,:]/2.  # Woods (1954)
+
+    # now complete the finite difference stencil for the diffusion of vorticity at the first cell center (vorticity BC):
+    krk[0,:] = krk[0,:] + (params['lBC'] * zeta_wall) / 2. # the factor 2 is from the governing equations
+    # spans the entire width 2*Nz of systems of equations for 2*Nz linearly independent solutions,
+    # but only applies to A11 operator (zeta in zeta equation).
+
 
   if case_flag == 'stokes':
     #u = ( rotating_solution( params, time, 0 )[1] ) / params['U'] # non-dimensional advection
