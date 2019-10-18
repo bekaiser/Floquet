@@ -19,10 +19,12 @@ email_flag = 0
 ic_plot_flag = 0
 damper_scale = 100. # off if set to 0.
 spur_damper = np.inf # off if np.inf
-zeta_path = '/home/bryan/git_repos/Floquet/figures/zeta/'
-psi_path = '/home/bryan/git_repos/Floquet/figures/psi/'
-b_path = '/home/bryan/git_repos/Floquet/figures/b/'
-
+#zeta_path = '/home/bryan/git_repos/Floquet/figures/zeta/'
+#psi_path = '/home/bryan/git_repos/Floquet/figures/psi/'
+#b_path = '/home/bryan/git_repos/Floquet/figures/b/'
+zeta_path = './figures/zeta/'
+psi_path = './figures/psi/'
+b_path = './figures/b/'
 
 if email_flag == 1:
     import smtplib, ssl
