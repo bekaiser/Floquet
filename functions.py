@@ -1,6 +1,6 @@
 # functions for Floquet analysis
 
-#import h5py
+import h5py
 import numpy as np
 import math as ma
 import matplotlib
@@ -15,6 +15,8 @@ import scipy
 from datetime import datetime
 import numpy.distutils.system_info as sysinfo
 sysinfo.get_info('atlas')
+
+import os # for contour plotting
 
 
 # =============================================================================    
@@ -1798,6 +1800,12 @@ def plot_stokes( Phin , params, count, time ):
             return
 
 
+def find(name, path):
+    for root, dirs, files in os.walk(path):
+        if name in files:
+            return os.path.join(root, name)
+
+
 def plot_abyss( Phin , params, count, time ):
 
     Nz = params['Nz']
@@ -1806,9 +1814,21 @@ def plot_abyss( Phin , params, count, time ):
     Zn = Phin[0:Nz,:] # buoyancy
     Pn = np.real(np.dot(params['inv_psi'],Zn)) # psi
 
+    # output file with all multipliers, not just maxima: 
+    #print(count)
+    h5_filename = params['stat_path'] + 'profiles_%i.h5' %(int(count))
+    if find( 'profiles_%i.h5' %(int(count)) , params['stat_path'] ) != h5_filename:
+        #print('here')
+        f2 = h5py.File(h5_filename, "w")
+        dset = f2.create_dataset('z', data=params['z'], dtype='f8')
+        dset = f2.create_dataset('n', data=count, dtype='f8')
+        dset = f2.create_dataset('Bnr', data=np.real(Bn), dtype='f8')
+        dset = f2.create_dataset('Znr', data=np.real(Zn), dtype='f8')
+        dset = f2.create_dataset('Pnr', data=np.real(Pn), dtype='f8') 
+        
+
+
     # streamfunction:
-
-
     Pn0 = np.zeros([1,int(2*Nz)])
     for j00 in range(0,int(2*Nz)):
          Pn0[:,j00] = extrapolate_to_zero( Pn[:,j00] , params['z'] , 6 )
@@ -1902,4 +1922,9 @@ def plot_abyss( Phin , params, count, time ):
     plt.savefig(plotname,format="png"); plt.close(fig);
 
     return
+
+
+
+
+
 

@@ -1,8 +1,4 @@
 
-# make sure the A dot phi operation is correct
-
-# fix wavenumber indexing
-
 import h5py
 import numpy as np
 import math as ma
@@ -41,8 +37,8 @@ omg = 2.*np.pi/44700. # rads/s
 nu = 1e-6
 dS = np.sqrt(2.*nu/omg) # Stokes' 2nd problem BL thickness
 
-Rej = np.array([25.])
-ai = np.array([0.05]) 
+Rej = np.array([200.])
+ai = np.array([0.3]) 
 #Rej = np.linspace(1300.,1400.,num=4,endpoint=True)
 #ai = np.linspace(0.025,0.5,num=20,endpoint=True)
 
@@ -59,7 +55,7 @@ wall_flag = 'moving'
 # grid
 grid_flag = 'uniform' #'hybrid cosine' #'  'cosine' # # 
 wall_BC_flag = 'BC'
-plot_freq = 1000
+plot_freq = 0
 Nz = 200 # 
 H = 32. # = Hd/dS, non-dimensional grid height
 CFL = 2. # 
@@ -114,7 +110,8 @@ for i in range(0,Ni):
         params = {'nu': nu, 'omg': omg, 'T': T, 'Td':T, 'U': U, 'inv_psi':inv_psi, 'plot_freq':plot_freq, 'grid_flag':grid_flag,
           'Nz':Nz, 'Nt':Nt, 'Re':Re,'a':a, 'H':H, 'Hd':Hd, 'dzz_zeta':dzz_zeta, 'CFL':CFL, 'A0':A0, 'damper_scale':damper_scale, 
           'spur_damper':spur_damper, 'Pr':Pr, 'tht':tht, 'N':N, 'f':f, 'kap':kap, 'L':U/omg, 'wall_flag':wall_flag, 
-          'dzz_b':dzz_b, 'dz_b':dz_b, 'C2':((N/omg)**2.), 'b_path':b_path, 'zeta_path':zeta_path, 'psi_path':psi_path,
+          'dzz_b':dzz_b, 'dz_b':dz_b, 'C2':((N/omg)**2.), 'b_path':b_path, 
+          'zeta_path':zeta_path, 'psi_path':psi_path, 'stat_path':stat_path,
           'dS':dS, 'z':z, 'dz':dz, 'eye_matrix':eye_matrix,'freq':freq, 'lBC':lBC, 'lBC2':lBC2} 
         Nc = fn.count_points( params )
         print('number of points within delta = %i' %(Nc))

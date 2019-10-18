@@ -1,13 +1,8 @@
 
 
-
-
-
 import runpy
 import os
 import shutil
-
-
 
 u_path = '/home/bryan/git_repos/Floquet/base_flow/u/'
 uz_path = '/home/bryan/git_repos/Floquet/base_flow/uz/'
