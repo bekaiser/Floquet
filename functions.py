@@ -1808,25 +1808,12 @@ def find(name, path):
 
 def plot_abyss( Phin , params, count, time ):
 
+
     Nz = params['Nz']
     mode = 0
-    Bn = Phin[Nz:int(2*Nz),:] # zeta
-    Zn = Phin[0:Nz,:] # buoyancy
+    Bn = Phin[Nz:int(2*Nz),:] # buoyancy
+    Zn = Phin[0:Nz,:] # zeta
     Pn = np.real(np.dot(params['inv_psi'],Zn)) # psi
-
-    # output file with all multipliers, not just maxima: 
-    #print(count)
-    h5_filename = params['stat_path'] + 'profiles_%i.h5' %(int(count))
-    if find( 'profiles_%i.h5' %(int(count)) , params['stat_path'] ) != h5_filename:
-        #print('here')
-        f2 = h5py.File(h5_filename, "w")
-        dset = f2.create_dataset('z', data=params['z'], dtype='f8')
-        dset = f2.create_dataset('n', data=count, dtype='f8')
-        dset = f2.create_dataset('Bnr', data=np.real(Bn), dtype='f8')
-        dset = f2.create_dataset('Znr', data=np.real(Zn), dtype='f8')
-        dset = f2.create_dataset('Pnr', data=np.real(Pn), dtype='f8') 
-        
-
 
     # streamfunction:
     Pn0 = np.zeros([1,int(2*Nz)])
@@ -1920,6 +1907,75 @@ def plot_abyss( Phin , params, count, time ):
     plt.xlabel(r"$b$",fontsize=13); plt.ylabel(r"$z/H$",fontsize=13)
     plt.grid()
     plt.savefig(plotname,format="png"); plt.close(fig);
+
+
+    """
+
+    if params['zeta_mode'] <= Nz-1: # a single streamwise vorticity mode
+      
+        imode = params['zeta_mode']
+
+        # non-dimensional solutions
+        B, U, V, Bz, Uz, Vz = rotating_solution( params, time, 1 )
+        #U = U / params['U'] # non-dimensional
+        #Uzz = Uzz / (params['U']) * params['dS']**2. # non-dimensional
+        Bz = Bz * (params['dS']*params['omg']) / ( (params['N'])**2 * params['U'] )  # non-dimensional
+
+        # construct dynamical operator:
+        Nz = int(params['Nz'])
+        A = params['A0'] # shape(A) = 2*Nz x 2*Nz
+
+        # top left -> z=0, zeta
+        # bottom right -> z=H, b
+        #print('shape zeta mode = ',np.shape(Phin[0:Nz,imode]))
+        #print('shape b mode = ',np.shape(Phin[Nz:int(2*Nz),imode]))
+
+        # dynamical operator chunk for zeta in zeta equation (top left A11):
+        #A[0:Nz,0:Nz] = ( params['dzz_zeta'] - (params['a']**2.*params['eye_matrix']) ) / 2. 
+        diff_zeta = np.dot( ( params['dzz_zeta'] - (params['a']**2.*params['eye_matrix']) ) / 2. , Phin[0:Nz,imode] )
+        zeta_wall = ((np.matmul(params['inv_psi'],Phin[0:Nz,imode]))[0])*3./((params['z'][0])**2.) - Phin[0,imode]/2.  # Woods (1954)
+        diff_zeta = diff_zeta + (params['lBC'] * zeta_wall) / 2.
+        # diffusion of streamwise vorticity
+        #print('shape diff_zeta = ',np.shape(diff_zeta))
+
+        # dynamical operator chunk for buoyancy in zeta equation: (top right A12)  
+        #A[0:Nz,Nz:int(2*Nz)] = params['C2']*1j*params['a']*params['eye_matrix']*np.cos(params['tht']) 
+        tilt_zeta = np.dot( params['C2']*1j*params['a']*params['eye_matrix']*np.cos(params['tht'])  , Phin[Nz:int(2*Nz),imode] )
+        # tilting of disturbance vorticity by the mean vorticity
+        #print('shape tilt_zeta = ',np.shape(tilt_zeta))
+
+        # dynamical operator chunk for zeta in buoyancy equation: (bottom left A21)
+        #A[Nz:int(2*Nz),0:Nz] = - np.matmul(Bz*1j*params['a']*params['eye_matrix']*params['Re']/2.,params['inv_psi'])
+        conv_b = np.dot( - np.matmul(Bz*1j*params['a']*params['eye_matrix']*params['Re']/2.,params['inv_psi']) , Phin[0:Nz,imode] ) 
+        # advection of mean stratification by disturbances        
+        #print('shape conv_b = ',np.shape(conv_b))
+
+        # dynamical operator chunk for buoyancy in buoyancy equation: (bottom right A22)
+        #A[Nz:int(2*Nz),Nz:int(2*Nz)] = ( params['dzz_b'] - (params['a']**2.*params['eye_matrix']) ) / (2.*params['Pr']) 
+        diff_b = np.dot( ( params['dzz_b'] - (params['a']**2.*params['eye_matrix']) ) / (2.*params['Pr']) , Phin[Nz:int(2*Nz),imode] )
+        #print('shape diff_b = ',np.shape(diff_b))
+
+
+    """
+
+    # output file with all multipliers, not just maxima: 
+    #print(count)
+    h5_filename = params['stat_path'] + 'profiles_%i.h5' %(int(count))
+    if find( 'profiles_%i.h5' %(int(count)) , params['stat_path'] ) != h5_filename:
+        #print('here')
+        f2 = h5py.File(h5_filename, "w")
+        dset = f2.create_dataset('z', data=params['z'], dtype='f8')
+        dset = f2.create_dataset('n', data=count, dtype='f8')
+        dset = f2.create_dataset('Bnr', data=np.real(Bn), dtype='f8')
+        dset = f2.create_dataset('Znr', data=np.real(Zn), dtype='f8')
+        dset = f2.create_dataset('Pnr', data=np.real(Pn), dtype='f8') 
+        dset = f2.create_dataset('Bni', data=np.imag(Bn), dtype='f8')
+        dset = f2.create_dataset('Zni', data=np.imag(Zn), dtype='f8')
+        dset = f2.create_dataset('Pni', data=np.imag(Pn), dtype='f8') 
+        #dset = f2.create_dataset('diff_zeta', data=np.real(diff_zeta), dtype='f8') 
+        #dset = f2.create_dataset('tilt_zeta', data=np.real(tilt_zeta), dtype='f8') 
+        #dset = f2.create_dataset('diff_b', data=np.real(diff_b), dtype='f8') 
+        #dset = f2.create_dataset('conv_b', data=np.real(conv_b), dtype='f8') 
 
     return
 
